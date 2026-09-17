@@ -177,8 +177,78 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.02em; }
+  h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: 0; }
 }
+
+/* Binosoz public presentation — industrial blueprint */
+.blueprint-site {
+  --background: oklch(0.145 0.012 255);
+  --foreground: oklch(0.96 0.006 90);
+  --card: oklch(0.18 0.012 255);
+  --card-foreground: oklch(0.96 0.006 90);
+  --popover: oklch(0.18 0.012 255);
+  --popover-foreground: oklch(0.96 0.006 90);
+  --primary: oklch(0.69 0.2 42);
+  --primary-foreground: oklch(0.14 0.012 255);
+  --secondary: oklch(0.94 0.012 90);
+  --secondary-foreground: oklch(0.16 0.012 255);
+  --muted: oklch(0.22 0.012 255);
+  --muted-foreground: oklch(0.69 0.012 255);
+  --accent: oklch(0.69 0.2 42);
+  --accent-foreground: oklch(0.14 0.012 255);
+  --border: oklch(0.96 0.006 90 / 14%);
+  --input: oklch(0.96 0.006 90 / 18%);
+  --ring: oklch(0.69 0.2 42);
+  --font-sans: "Sora", system-ui, sans-serif;
+  --font-display: "Sora", system-ui, sans-serif;
+  font-family: var(--font-sans);
+}
+.blueprint-site .font-display { font-family: "Sora", system-ui, sans-serif; }
+.blueprint-site .bp-mono,
+.blueprint-site .bp-kicker { font-family: "JetBrains Mono", monospace; letter-spacing: 0; }
+.bp-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--foreground) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--foreground) 5%, transparent) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+.bp-hero-shade {
+  background: linear-gradient(90deg, var(--background) 8%, color-mix(in oklab, var(--background) 94%, transparent) 48%, color-mix(in oklab, var(--background) 42%, transparent));
+}
+.bp-outline-text {
+  color: transparent;
+  -webkit-text-stroke: 1px color-mix(in oklab, var(--foreground) 72%, transparent);
+}
+.bp-nav-link { transition: color .2s ease; }
+.bp-nav-link:hover { color: var(--accent); }
+.bp-status-dot {
+  width: .45rem;
+  height: .45rem;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 .25rem color-mix(in oklab, var(--accent) 16%, transparent);
+  animation: bp-pulse 2s ease-in-out infinite;
+}
+.bp-scan {
+  background: linear-gradient(transparent, var(--accent), transparent);
+  animation: bp-scan 6s ease-in-out infinite;
+}
+.bp-screen-frame { box-shadow: 0 30px 70px -35px color-mix(in oklab, var(--accent) 35%, transparent); }
+.bp-screen-image { animation: bp-image-in .35s ease-out both; }
+.bp-module:hover { background: color-mix(in oklab, var(--accent) 8%, var(--card)); }
+.bp-reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s ease; }
+.bp-reveal[data-visible="true"] { opacity: 1; transform: translateY(0); }
+.bp-cta { background: linear-gradient(120deg, color-mix(in oklab, var(--primary) 82%, var(--background)), var(--primary)); }
+.bp-cta::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(to right, color-mix(in oklab, var(--primary-foreground) 12%, transparent) 1px, transparent 1px);
+  background-size: 56px 100%;
+}
+@keyframes bp-pulse { 50% { opacity: .45; transform: scale(.8); } }
+@keyframes bp-scan { 0%, 100% { transform: translateX(-25vw); opacity: 0; } 20%, 80% { opacity: .8; } 50% { transform: translateX(25vw); } }
+@keyframes bp-image-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
 /* Захираи камшуда — сатри сурхи аниматсионӣ дар склад */
 @keyframes low-stock-pulse {
@@ -191,4 +261,6 @@
 .low-stock-row td { color: var(--color-destructive); font-weight: 600; }
 @media (prefers-reduced-motion: reduce) {
   .low-stock-row { animation: none; background-color: color-mix(in oklch, var(--color-destructive) 18%, transparent); }
+  .bp-status-dot, .bp-scan, .bp-screen-image { animation: none; }
+  .bp-reveal { opacity: 1; transform: none; transition: none; }
 }
