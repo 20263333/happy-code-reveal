@@ -145,7 +145,7 @@ export function AppSidebar() {
         icon: Shield,
         items: [
           { title: "Super Admin", url: "/admin", icon: Shield, show: true },
-          { title: tr("Дастгирӣ"), url: "/support", icon: LifeBuoy, show: true },
+          { title: tr("Поддержка"), url: "/support", icon: LifeBuoy, show: true },
         ],
       },
     ];
@@ -163,7 +163,7 @@ export function AppSidebar() {
   } else {
     groups = [
       {
-        label: tr("Шуъбаи Фурӯш"),
+        label: tr("Отдел продаж"),
         icon: ShoppingCart,
         items: [
           {
@@ -175,7 +175,7 @@ export function AppSidebar() {
           { title: t("nav.projects"), url: "/projects", icon: Building2, show: mod("projects") },
           { title: t("nav.customers"), url: "/customers", icon: Users, show: mod("customers") },
           {
-            title: tr("Воронка фурӯш"),
+            title: tr("Воронка продаж"),
             url: "/crm-funnel",
             icon: TrendingUp,
             show: (isOwner || isManager || isDirector) && mod("crm-funnel"),
@@ -207,7 +207,7 @@ export function AppSidebar() {
         ],
       },
       {
-        label: tr("Шуъбаи Ҳуқуқӣ"),
+        label: tr("Юридический отдел"),
         icon: Scale,
         items: [
           {
@@ -217,13 +217,13 @@ export function AppSidebar() {
             show: (isOwner || isDirector) && mod("contracts"),
           },
           {
-            title: tr("Иҷозатномаҳо"),
+            title: tr("Разрешения"),
             url: "/permits",
             icon: Stamp,
             show: (isOwner || isAccountant || isDirector) && mod("permits"),
           },
           {
-            title: tr("Ҳисоботи давлатӣ"),
+            title: tr("Государственные отчёты"),
             url: "/tax-reports",
             icon: Landmark,
             show: (isOwner || isAccountant || isDirector) && mod("tax-reports"),
@@ -231,7 +231,7 @@ export function AppSidebar() {
         ],
       },
       {
-        label: tr("Шуъбаи Муҳосибот"),
+        label: tr("Бухгалтерия"),
         icon: Calculator,
         items: [
           { title: t("nav.expenses"), url: "/expenses", icon: Receipt, show: mod("expenses") },
@@ -250,9 +250,9 @@ export function AppSidebar() {
             icon: CreditCard,
             show: isOwner && mod("billing"),
           },
-          { title: "AI Кредитҳо", url: "/ai-credits", icon: Sparkles, show: isOwner },
+          { title: tr("AI кредиты"), url: "/ai-credits", icon: Sparkles, show: isOwner },
           {
-            title: "Скан Кредитҳо",
+            title: tr("Скан кредиты"),
             url: "/scan-credits",
             icon: ScanLine,
             show: isOwner && mod("scan-credits"),
@@ -260,18 +260,18 @@ export function AppSidebar() {
         ],
       },
       {
-        label: tr("Шуъбаи Назорати Сохтмон"),
+        label: tr("Отдел контроля строительства"),
         icon: HardHatIcon,
         items: [
           { title: t("nav.projects"), url: "/projects", icon: Building2, show: mod("projects") },
           {
-            title: tr("Табел"),
+            title: tr("Табель"),
             url: "/attendance",
             icon: HardHat,
             show: (isOwner || isAccountant || isManager || isDirector) && mod("attendance"),
           },
           {
-            title: tr("Пудратчиён"),
+            title: tr("Подрядчики"),
             url: "/subcontractors",
             icon: Wrench,
             show: (isOwner || isAccountant || isManager || isDirector) && mod("subcontractors"),
@@ -283,7 +283,7 @@ export function AppSidebar() {
             show: (isOwner || isAccountant || isManager || isDirector) && mod("equipment"),
           },
           {
-            title: tr("Сифат ва Бехатарӣ"),
+            title: tr("Качество и безопасность"),
             url: "/quality",
             icon: ShieldAlert,
             show: (isOwner || isManager || isDirector) && mod("quality"),
@@ -297,20 +297,20 @@ export function AppSidebar() {
         ],
       },
       {
-        label: tr("Шуъбаи Кадр"),
+        label: tr("Отдел кадров"),
         icon: UsersRound,
         items: [
           { title: t("nav.staff"), url: "/staff", icon: UserCog, show: isOwner && mod("staff") },
-          { title: tr("Директорҳо"), url: "/directors", icon: Shield, show: isOwner },
-          { title: tr("Ҳиссаи ман"), url: "/my-shares", icon: Percent, show: isDirector },
-          { title: tr("Даромади ман"), url: "/my-earnings", icon: Wallet, show: !!isTeamMember },
+          { title: tr("Директора"), url: "/directors", icon: Shield, show: isOwner },
+          { title: tr("Мои доли"), url: "/my-shares", icon: Percent, show: isDirector },
+          { title: tr("Мой доход"), url: "/my-earnings", icon: Wallet, show: !!isTeamMember },
           {
             title: tr("Настройки"),
             url: "/settings",
             icon: Settings,
             show: !isDirector && mod("settings"),
           },
-          { title: tr("Дастгирӣ"), url: "/support", icon: LifeBuoy, show: !isDirector },
+          { title: tr("Поддержка"), url: "/support", icon: LifeBuoy, show: !isDirector },
         ],
       },
       {
@@ -331,14 +331,14 @@ export function AppSidebar() {
   if (!isPlatformAdmin && !isOwner && !isDirector && !warehouseOnly) {
     const deptGroups: Record<string, NavGroup> = {
       sales: {
-        label: tr("Шуъбаи Фурӯш"),
+        label: tr("Отдел продаж"),
         icon: ShoppingCart,
         items: [
           { title: tr("Дашборд"), url: "/dashboard", icon: LayoutDashboard, show: true },
           { title: t("nav.projects"), url: "/projects", icon: Building2, show: mod("projects") },
           { title: t("nav.customers"), url: "/customers", icon: Users, show: mod("customers") },
           {
-            title: tr("Воронка фурӯш"),
+            title: tr("Воронка продаж"),
             url: "/crm-funnel",
             icon: TrendingUp,
             show: mod("crm-funnel"),
@@ -350,13 +350,13 @@ export function AppSidebar() {
         ],
       },
       legal: {
-        label: tr("Шуъбаи Ҳуқуқӣ"),
+        label: tr("Юридический отдел"),
         icon: Scale,
         items: [
           { title: tr("Договор"), url: "/contracts", icon: FileSignature, show: mod("contracts") },
-          { title: tr("Иҷозатномаҳо"), url: "/permits", icon: Stamp, show: mod("permits") },
+          { title: tr("Разрешения"), url: "/permits", icon: Stamp, show: mod("permits") },
           {
-            title: tr("Ҳисоботи давлатӣ"),
+            title: tr("Государственные отчёты"),
             url: "/tax-reports",
             icon: Landmark,
             show: mod("tax-reports"),
@@ -364,7 +364,7 @@ export function AppSidebar() {
         ],
       },
       accounting: {
-        label: tr("Шуъбаи Муҳосибот"),
+        label: tr("Бухгалтерия"),
         icon: Calculator,
         items: [
           { title: t("nav.expenses"), url: "/expenses", icon: Receipt, show: mod("expenses") },
@@ -373,7 +373,7 @@ export function AppSidebar() {
           { title: tr("Поставщики"), url: "/payables", icon: Banknote, show: mod("payables") },
           { title: tr("Отчёт ОПУ"), url: "/reports", icon: FileText, show: mod("reports") },
           { title: tr("Тарифы и оплата"), url: "/billing", icon: CreditCard, show: mod("billing") },
-          { title: "AI Кредитҳо", url: "/ai-credits", icon: Sparkles, show: true },
+          { title: tr("AI кредиты"), url: "/ai-credits", icon: Sparkles, show: true },
         ],
       },
       cashier: {
@@ -382,20 +382,20 @@ export function AppSidebar() {
         items: [{ title: tr("Кассир"), url: "/cashier", icon: Wallet, show: mod("cashier") }],
       },
       construction: {
-        label: tr("Шуъбаи Назорати Сохтмон"),
+        label: tr("Отдел контроля строительства"),
         icon: HardHatIcon,
         items: [
           { title: t("nav.projects"), url: "/projects", icon: Building2, show: mod("projects") },
-          { title: tr("Табел"), url: "/attendance", icon: HardHat, show: mod("attendance") },
+          { title: tr("Табель"), url: "/attendance", icon: HardHat, show: mod("attendance") },
           {
-            title: tr("Пудратчиён"),
+            title: tr("Подрядчики"),
             url: "/subcontractors",
             icon: Wrench,
             show: mod("subcontractors"),
           },
           { title: tr("Техника"), url: "/equipment", icon: Truck, show: mod("equipment") },
           {
-            title: tr("Сифат ва Бехатарӣ"),
+            title: tr("Качество и безопасность"),
             url: "/quality",
             icon: ShieldAlert,
             show: mod("quality"),
@@ -404,11 +404,11 @@ export function AppSidebar() {
         ],
       },
       hr: {
-        label: tr("Шуъбаи Кадр"),
+        label: tr("Отдел кадров"),
         icon: UsersRound,
         items: [
           { title: t("nav.staff"), url: "/staff", icon: UserCog, show: mod("staff") },
-          { title: tr("Директорҳо"), url: "/directors", icon: Shield, show: true },
+          { title: tr("Директора"), url: "/directors", icon: Shield, show: true },
           { title: tr("Настройки"), url: "/settings", icon: Settings, show: mod("settings") },
         ],
       },
@@ -426,9 +426,9 @@ export function AppSidebar() {
       if (items.length > 0) groups.push({ label: g.label, icon: g.icon, items });
     }
     groups.push({
-      label: tr("Дастгирӣ"),
+      label: tr("Поддержка"),
       icon: LifeBuoy,
-      items: [{ title: tr("Дастгирӣ"), url: "/support", icon: LifeBuoy, show: true }],
+      items: [{ title: tr("Поддержка"), url: "/support", icon: LifeBuoy, show: true }],
     });
   }
 

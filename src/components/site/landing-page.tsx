@@ -82,7 +82,7 @@ const PROBLEMS = [
 const FAQ = [
   ["Как начать работать?", "Регистрируете компанию, добавляете первый проект — и система готова. Обучение занимает один день."],
   ["Работает ли на телефоне?", "Да. Система открывается в браузере телефона, планшета и компьютера без установки."],
-  ["На каких языках интерфейс?", "Таджикский, русский и китайский — язык переключается одной кнопкой."],
+  ["На каких языках интерфейс?", "Русский, таджикский и English — язык переключается одной кнопкой."],
   ["Данные в безопасности?", "Данные каждой компании изолированы, доступ по ролям, документы хранятся приватно."],
 ];
 
@@ -118,45 +118,96 @@ function BrowserFrame({ children, imageKey }: { children: ReactNode; imageKey?: 
 }
 
 function ChessMock({ label }: { label: (s: string) => string }) {
-  const statuses = ["free", "sold", "booked", "free", "sold", "free", "free", "booked", "sold", "free", "free", "sold"];
+  const columns = [1, 2, 3, 4, 5, 6];
+  const rows = [
+    { floor: 9, cells: [
+      { number: 901, area: 72, status: "installment" },
+      { number: 902, area: 64, status: "sold" },
+      { number: 903, area: 88, status: "available" },
+      { number: 904, area: 54, status: "available" },
+      { number: 905, area: 78, status: "sold" },
+      { number: 906, area: 61, status: "unavailable" },
+    ] },
+    { floor: 8, cells: [
+      { number: 801, area: 72, status: "available" },
+      { number: 802, area: 64, status: "installment" },
+      { number: 803, area: 88, status: "sold" },
+      { number: 804, area: 54, status: "available" },
+      { number: 805, area: 78, status: "available" },
+      { number: 806, area: 61, status: "sold" },
+    ] },
+    { floor: 7, cells: [
+      { number: 701, area: 72, status: "sold" },
+      { number: 702, area: 64, status: "available" },
+      { number: 703, area: 88, status: "installment" },
+      { number: 704, area: 54, status: "unavailable" },
+      { number: 705, area: 78, status: "available" },
+      { number: 706, area: 61, status: "available" },
+    ] },
+    { floor: 6, cells: [
+      { number: 601, area: 72, status: "available" },
+      { number: 602, area: 64, status: "sold" },
+      { number: 603, area: 88, status: "available" },
+      { number: 604, area: 54, status: "installment" },
+      { number: 605, area: 78, status: "sold" },
+      { number: 606, area: 61, status: "available" },
+    ] },
+  ];
   const tone: Record<string, string> = {
-    free: "bg-background text-foreground border-border",
-    sold: "bg-primary/10 text-primary border-primary/30",
-    booked: "bg-warning/20 text-warning-foreground border-warning/40",
+    available: "bg-success text-success-foreground border-success",
+    installment: "bg-info text-primary-foreground border-info",
+    sold: "bg-destructive text-destructive-foreground border-destructive",
+    unavailable: "bg-warning text-warning-foreground border-warning",
+  };
+  const statusLabel: Record<string, string> = {
+    available: "Свободно",
+    installment: "Рассрочка",
+    sold: "Продано",
+    unavailable: "Недоступно",
   };
   return (
-    <div className="bg-background p-5 text-left text-foreground md:p-8">
+    <div className="bg-background p-4 text-left text-foreground md:p-7">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="font-display text-lg font-extrabold">{label("Блок 1")}</div>
-          <div className="text-xs text-muted-foreground">{label("ЖК Биносоз")}</div>
+          <div className="font-display text-lg font-extrabold">{label("Шахматка квартир")}</div>
+          <div className="text-xs text-muted-foreground">{label("Проект → блок → этаж → квартира")}</div>
         </div>
-        <div className="flex gap-2 text-[11px]">
-          <span className="rounded-full bg-primary/10 px-3 py-1 font-semibold text-primary">{label("Свободно")}: 48</span>
-          <span className="rounded-full bg-muted px-3 py-1 font-semibold">{label("Продано")}: 72</span>
+        <div className="flex flex-wrap gap-2 text-[11px]">
+          {Object.entries(statusLabel).map(([status, text]) => (
+            <span key={status} className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 font-semibold">
+              <span className={`h-2 w-2 rounded-full ${tone[status].split(" ")[0]}`} />
+              {label(text)}
+            </span>
+          ))}
         </div>
       </div>
-      <div className="mt-5 grid gap-3 sm:grid-cols-3">
-        {[["Квартир", "120"], ["Этажей", "9"], ["Продано", "60 %"]].map(([k, v]) => (
-          <div key={k} className="rounded-xl border border-border bg-card p-4">
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{label(k)}</div>
-            <div className="mt-1 font-display text-xl font-extrabold">{v}</div>
-          </div>
-        ))}
-      </div>
-      <div className="mt-6 grid gap-2 sm:grid-cols-3">
-        {[0, 1, 2].map((section) => (
-          <div key={section} className="rounded-xl border border-border p-3">
-            <div className="mb-2 text-[10px] uppercase tracking-widest text-muted-foreground">{label("Подъезд")} {section + 1}</div>
-            <div className="grid grid-cols-4 gap-1.5">
-              {statuses.map((s, i) => (
-                <div key={i} className={`flex h-8 items-center justify-center rounded-md border text-[11px] font-semibold ${tone[s]}`}>
-                  {section * 12 + i + 1}
-                </div>
+      <div className="mt-5 overflow-x-auto rounded-2xl border border-border bg-card p-3">
+        <table className="w-full min-w-[680px] border-separate border-spacing-2 text-sm">
+          <thead>
+            <tr>
+              <th className="sticky left-0 z-10 w-20 rounded-lg bg-muted px-3 py-3 text-left text-xs font-bold text-muted-foreground">{label("Этаж")}</th>
+              {columns.map((column) => (
+                <th key={column} className="rounded-lg bg-muted px-3 py-3 text-center text-xs font-bold text-muted-foreground">{column}</th>
               ))}
-            </div>
-          </div>
-        ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.floor}>
+                <td className="sticky left-0 z-10 rounded-lg bg-muted px-3 py-4 text-center font-display text-lg font-extrabold">{row.floor}</td>
+                {row.cells.map((cell) => (
+                  <td key={cell.number}>
+                    <div className={`min-h-20 rounded-xl border p-3 text-center shadow-sm ${tone[cell.status]}`}>
+                      <div className="text-xs font-bold">№{cell.number}</div>
+                      <div className="mt-1 text-[11px] opacity-90">{cell.area} {label("м²")}</div>
+                      <div className="mt-2 text-[10px] font-semibold opacity-90">{label(statusLabel[cell.status])}</div>
+                    </div>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -174,14 +225,12 @@ export function LandingPage() {
     return () => { active = false; };
   }, []);
 
-  const enterLabel = signedIn ? tr("Открыть систему") : tr("Войти");
-
   return (
     <div className="bino-site min-h-screen bg-background text-foreground">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-border/70 bg-background/85 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 lg:px-8">
           <a href="#top" className="flex items-center gap-2.5" aria-label="Binosoz.tj">
-            <img src={logoUrl} alt="" className="h-8 w-8 object-contain" />
+            <img src={logoUrl} alt="Binosoz.tj" className="h-8 w-8 object-contain" />
             <span className="font-display text-lg font-extrabold tracking-tight">Binosoz<span className="text-primary">.tj</span></span>
           </a>
           <nav className="hidden items-center gap-7 text-sm font-medium text-muted-foreground lg:flex">
@@ -193,9 +242,6 @@ export function LandingPage() {
           </nav>
           <div className="flex items-center gap-2">
             <LanguageToggle />
-            <Button asChild size="sm" className="rounded-full px-5">
-              <Link to="/auth">{enterLabel}</Link>
-            </Button>
           </div>
         </div>
       </header>
@@ -346,7 +392,7 @@ export function LandingPage() {
             <Reveal>
               <div className="text-xs font-bold uppercase tracking-widest text-primary">{tr("Рабочий процесс")}</div>
               <h2 className="mt-3 font-display text-3xl font-extrabold uppercase md:text-5xl">{tr("Запуск за один день")}</h2>
-              <p className="mt-5 max-w-md text-sm leading-7 text-muted-foreground">{tr("Работает на телефоне и компьютере")}. {tr("Таджикский, русский и 中文")}.</p>
+              <p className="mt-5 max-w-md text-sm leading-7 text-muted-foreground">{tr("Работает на телефоне и компьютере")}. {tr("Русский, таджикский и English")}.</p>
               <Button asChild size="lg" className="mt-7 h-12 rounded-full px-7">
                 <Link to="/auth">{signedIn ? tr("Открыть систему") : tr("Начать бесплатно")}<ArrowRight /></Link>
               </Button>
@@ -380,7 +426,7 @@ export function LandingPage() {
               <p className="mt-4 max-w-xl text-sm leading-7 text-muted-foreground">{tr("Доступ по ролям, изоляция данных между компаниями, приватное хранение документов и проверка прав на стороне сервера при каждом запросе.")}</p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              {[[Lock, "Данные каждой компании изолированы"], [Users, "Доступ по ролям"], [Smartphone, "Работает на телефоне и компьютере"], [Languages, "Таджикский, русский и 中文"]].map(([Icon, label]) => {
+              {[[Lock, "Данные каждой компании изолированы"], [Users, "Доступ по ролям"], [Smartphone, "Работает на телефоне и компьютере"], [Languages, "Русский, таджикский и English"]].map(([Icon, label]) => {
                 const FeatureIcon = Icon as ComponentType<{ className?: string }>;
                 return (
                   <div key={label as string} className="flex items-center gap-3 rounded-2xl bg-background p-4">
@@ -428,12 +474,12 @@ export function LandingPage() {
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-7xl flex-col justify-between gap-6 px-5 py-8 text-xs text-muted-foreground sm:flex-row sm:items-center lg:px-8">
           <div className="flex items-center gap-3">
-            <img src={logoUrl} alt="" className="h-7 w-7 object-contain" loading="lazy" />
+            <img src={logoUrl} alt="Binosoz.tj" className="h-7 w-7 object-contain" loading="lazy" />
             <span>© {new Date().getFullYear()} Binosoz.tj — {tr("Все права защищены.")}</span>
           </div>
           <div className="flex gap-6">
             <Link to="/trust" className="bino-nav-link">{tr("Безопасность")}</Link>
-            <Link to="/auth" className="bino-nav-link">{enterLabel}</Link>
+            <Link to="/auth" className="bino-nav-link">{signedIn ? tr("Открыть систему") : tr("Войти")}</Link>
           </div>
         </div>
       </footer>

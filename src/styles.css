@@ -223,13 +223,17 @@
   border-bottom: 1px solid var(--border);
 }
 .bino-dot { width: .6rem; height: .6rem; border-radius: 999px; display: inline-block; }
-.bino-screen-image { animation: bino-image-in .4s ease-out both; }
-.bino-card { transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease; }
-.bino-card:hover { transform: translateY(-4px); box-shadow: 0 24px 50px -30px color-mix(in oklab, var(--primary) 45%, transparent); border-color: color-mix(in oklab, var(--primary) 35%, transparent); }
+.bino-screen-image { animation: bino-image-in .55s cubic-bezier(.2,.8,.2,1) both; }
+.bino-card { transition: transform .35s ease, box-shadow .35s ease, border-color .35s ease; }
+.bino-card:hover { transform: translateY(-6px); box-shadow: 0 28px 58px -34px color-mix(in oklab, var(--primary) 48%, transparent); border-color: color-mix(in oklab, var(--primary) 35%, transparent); }
 .bino-band { background: linear-gradient(120deg, oklch(0.32 0.18 264), oklch(0.52 0.25 264) 55%, oklch(0.42 0.22 268)); }
-.bp-reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s ease; }
+.bp-reveal { opacity: 0; transform: translateY(36px) scale(.98); filter: blur(10px); transition: opacity .85s cubic-bezier(.2,.8,.2,1), transform .85s cubic-bezier(.2,.8,.2,1), filter .85s ease; }
 .bp-reveal[data-visible="true"] { opacity: 1; transform: translateY(0); }
-@keyframes bino-image-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.bp-reveal[data-visible="true"] { filter: blur(0); }
+.bp-reveal:nth-child(2) { transition-delay: .08s; }
+.bp-reveal:nth-child(3) { transition-delay: .14s; }
+.bp-reveal:nth-child(4) { transition-delay: .2s; }
+@keyframes bino-image-in { from { opacity: 0; transform: translateY(18px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
 
 /* Захираи камшуда — сатри сурхи аниматсионӣ дар склад */
@@ -243,6 +247,6 @@
 .low-stock-row td { color: var(--color-destructive); font-weight: 600; }
 @media (prefers-reduced-motion: reduce) {
   .low-stock-row { animation: none; background-color: color-mix(in oklch, var(--color-destructive) 18%, transparent); }
-  .bp-status-dot, .bp-scan, .bp-screen-image { animation: none; }
-  .bp-reveal { opacity: 1; transform: none; transition: none; }
+  .bino-screen-image { animation: none; }
+  .bp-reveal { opacity: 1; transform: none; filter: none; transition: none; }
 }

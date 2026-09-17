@@ -1,11 +1,11 @@
 import { createContext, Fragment, useContext, useEffect, useState, type ReactNode } from "react";
 
-export type Lang = "ru" | "tg" | "zh";
+export type Lang = "ru" | "tg" | "en";
 
 export const LANG_LABEL: Record<Lang, string> = {
   ru: "Русский",
   tg: "Тоҷикӣ",
-  zh: "中文",
+  en: "English",
 };
 
 const DICT = {
@@ -331,166 +331,166 @@ const DICT = {
     "staff.noProjects": "Таъин нашуда",
     "staff.revoke": "Гирифтани дастрасӣ",
   },
-  zh: {
+  en: {
     "app.name": "Binosoz.tj",
-    "app.tagline": "建筑管理",
-    "nav.menu": "菜单",
-    "nav.dashboard": "仪表板",
-    "nav.projects": "项目",
-    "nav.customers": "客户",
-    "nav.payments": "付款",
-    "nav.expenses": "支出",
-    "nav.staff": "员工",
-    "common.logout": "退出",
-    "common.save": "保存",
-    "common.cancel": "取消",
-    "common.add": "添加",
-    "common.create": "创建",
-    "common.loading": "加载中…",
-    "common.back": "返回",
-    "common.delete": "删除",
-    "common.edit": "编辑",
-    "common.search": "搜索",
-    "common.theme.light": "浅色主题",
-    "common.theme.dark": "深色主题",
-    "common.language": "语言",
-    "common.currency": "货币",
-    "project.tabs.apartments": "公寓",
-    "project.tabs.sales": "销售",
-    "project.tabs.expenses": "支出",
-    "project.tabs.payments": "付款",
-    "project.tabs.access": "访问",
-    "project.stats.total": "公寓总数",
-    "project.stats.sold": "已售",
-    "project.stats.revenue": "收入",
-    "project.stats.expenses": "支出",
-    "project.toProjects": "返回项目",
-    "project.addFloor": "添加楼层",
-    "project.newApartment": "公寓",
-    "project.newClient": "新销售",
-    "project.giveAccess": "授予访问权限",
-    "project.newPayment": "新付款",
-    "project.addExpense": "添加支出",
-    "project.noFloors": "无楼层",
-    "project.noFloorsDesc": "添加楼层和公寓以可视化。",
-    "project.noSales": "暂无销售",
-    "project.noExpenses": "无支出",
-    "project.noPayments": "暂无付款",
-    "project.noStaff": "无员工",
-    "project.floor": "楼层",
-    "apt.number": "编号",
-    "apt.area": "面积, 平方米",
-    "apt.rooms": "房间数",
-    "apt.price": "价格",
-    "apt.pricePerSqm": "每平方米价格",
-    "apt.total": "合计 (面积 × 价格)",
-    "apt.status": "状态",
-    "client.fullname": "客户姓名",
-    "client.phone": "电话",
-    "client.passport": "护照",
-    "client.address": "地址",
-    "client.notes": "备注",
-    "client.floor": "楼层",
-    "client.apartment": "公寓",
-    "client.area": "面积, 平方米",
-    "client.price": "价格",
-    "client.downPayment": "首付",
-    "client.deadline": "分期付款截止日期",
-    "client.create": "创建销售",
-    "payment.method": "付款方式",
-    "payment.method.cash": "现金",
-    "payment.method.card": "银行卡",
-    "payment.amount": "金额",
-    "payment.date": "日期",
-    "payment.note": "备注",
-    "payment.receipt": "收据 (照片/PDF)",
-    "payment.receiptRequired": "银行卡付款需要收据",
-    "payment.submit": "提交付款",
-    "payment.sale": "交易",
-    "access.title": "员工访问权限",
-    "access.desc": "创建登录名和密码 — 员工只能看到此项目。",
-    "access.email": "员工邮箱",
-    "access.password": "密码 (至少6个字符)",
-    "access.fullname": "姓名",
-    "access.create": "创建访问",
-    "access.existing": "已有访问权限",
-    "access.revoke": "撤销",
-    "table.client": "客户",
-    "table.apartment": "公寓",
-    "table.price": "价格",
-    "table.paid": "已付",
-    "table.remaining": "余额",
-    "table.deadline": "截止日期",
-    "table.date": "日期",
-    "table.category": "类别",
-    "table.description": "描述",
-    "table.amount": "金额",
-    "table.method": "方式",
-    "table.receipt": "收据",
-    "table.project": "项目",
-    "status.empty": "空闲",
-    "status.reserved": "预留",
-    "status.sold": "已售",
-    "status.installment": "分期",
-    "status.unavailable": "占用（不出售）",
-    "projectStatus.planning": "规划中",
-    "projectStatus.in_progress": "建设中",
-    "projectStatus.completed": "已完成",
-    "projectStatus.paused": "已暂停",
-    "floor.status": "楼层状态",
-    "floor.description": "描述",
-    "floor.status.planning": "规划中",
-    "floor.status.in_progress": "建设中",
-    "floor.status.completed": "已完成",
-    "expense.new": "新支出",
-    "expense.cat.cement": "水泥",
-    "expense.cat.blocks": "砌块",
-    "expense.cat.sand": "砂",
-    "expense.cat.gravel": "碎石",
-    "expense.cat.cable": "电线/电缆",
-    "expense.cat.wire": "电线",
-    "expense.cat.wire_6mm": "8平方电线",
-    "expense.cat.wire_visual": "明线",
-    "expense.cat.nails": "钉子/螺丝",
-    "expense.cat.lumber": "木材",
-    "expense.cat.formwork": "模板",
-    "expense.cat.electrical": "电气",
-    "expense.cat.plumbing": "给排水",
-    "expense.cat.plaster": "抹灰/腻子",
-    "expense.cat.paint": "油漆",
-    "expense.cat.tile": "瓷砖",
-    "expense.cat.windows": "窗户",
-    "expense.cat.doors": "门",
-    "expense.cat.roofing": "屋面",
-    "expense.cat.waterproof": "防水",
-    "expense.cat.insulation": "保温",
-    "expense.cat.welding": "焊接",
-    "expense.cat.tools": "工具",
-    "expense.cat.fuel": "燃料",
-    "expense.cat.elevator": "电梯",
-    "expense.cat.landscaping": "环境美化",
-    "expense.cat.concrete": "混凝土",
-    "expense.cat.rebar": "钢筋",
-    "expense.cat.salary": "工资",
-    "expense.cat.materials": "材料",
-    "expense.cat.equipment": "设备",
-    "expense.cat.transport": "运输",
-    "expense.cat.rent": "租金",
-    "expense.cat.taxes": "税费",
-    "expense.cat.other": "其他",
-    "expense.cat.compensation": "搬迁补偿",
-    "expense.cat.brick": "砖",
-    "expense.cat.masters": "工匠费用",
-    "expense.cat.partner_payout": "合伙人分配",
-    "expense.cat.car_loss": "车辆亏损",
-    "expense.cat.subcontract": "分包 (施工队)",
-    "payments.upcoming": "即将付款",
-    "payments.overdue": "已逾期",
-    "payments.dueIn": "还有",
-    "payments.days": "天",
-    "staff.projects": "项目",
-    "staff.noProjects": "未分配",
-    "staff.revoke": "撤销访问",
+    "app.tagline": "Construction management",
+    "nav.menu": "Menu",
+    "nav.dashboard": "Dashboard",
+    "nav.projects": "Projects",
+    "nav.customers": "Customers",
+    "nav.payments": "Payments",
+    "nav.expenses": "Expenses",
+    "nav.staff": "Staff",
+    "common.logout": "Log out",
+    "common.save": "Save",
+    "common.cancel": "Cancel",
+    "common.add": "Add",
+    "common.create": "Create",
+    "common.loading": "Loading…",
+    "common.back": "Back",
+    "common.delete": "Delete",
+    "common.edit": "Edit",
+    "common.search": "Search",
+    "common.theme.light": "Light theme",
+    "common.theme.dark": "Dark theme",
+    "common.language": "Language",
+    "common.currency": "Currency",
+    "project.tabs.apartments": "Apartments",
+    "project.tabs.sales": "Sales",
+    "project.tabs.expenses": "Expenses",
+    "project.tabs.payments": "Payments",
+    "project.tabs.access": "Access",
+    "project.stats.total": "Total apartments",
+    "project.stats.sold": "Sold",
+    "project.stats.revenue": "Revenue",
+    "project.stats.expenses": "Expenses",
+    "project.toProjects": "To projects",
+    "project.addFloor": "Add floor",
+    "project.newApartment": "Apartment",
+    "project.newClient": "New sale",
+    "project.giveAccess": "Grant access",
+    "project.newPayment": "New payment",
+    "project.addExpense": "Add expense",
+    "project.noFloors": "No floors",
+    "project.noFloorsDesc": "Add floors and apartments for visualization.",
+    "project.noSales": "No sales yet",
+    "project.noExpenses": "No expenses",
+    "project.noPayments": "No payments yet",
+    "project.noStaff": "No staff",
+    "project.floor": "Floor",
+    "apt.number": "Number",
+    "apt.area": "Area, m²",
+    "apt.rooms": "Rooms",
+    "apt.price": "Price",
+    "apt.pricePerSqm": "Price per 1 m²",
+    "apt.total": "Total (area × price)",
+    "apt.status": "Status",
+    "client.fullname": "Client full name",
+    "client.phone": "Phone",
+    "client.passport": "Passport",
+    "client.address": "Address",
+    "client.notes": "Notes",
+    "client.floor": "Floor",
+    "client.apartment": "Apartment",
+    "client.area": "Area, m²",
+    "client.price": "Price",
+    "client.downPayment": "First payment",
+    "client.deadline": "Installment deadline",
+    "client.create": "Create sale",
+    "payment.method": "Payment method",
+    "payment.method.cash": "Cash",
+    "payment.method.card": "Card",
+    "payment.amount": "Amount",
+    "payment.date": "Date",
+    "payment.note": "Note",
+    "payment.receipt": "Receipt (photo/PDF)",
+    "payment.receiptRequired": "Receipt is required for card payments",
+    "payment.submit": "Add payment",
+    "payment.sale": "Deal",
+    "access.title": "Staff access",
+    "access.desc": "Create a login and password — the employee will see only this project.",
+    "access.email": "Employee email",
+    "access.password": "Password (min. 6 characters)",
+    "access.fullname": "Full name",
+    "access.create": "Create access",
+    "access.existing": "Already have access",
+    "access.revoke": "Revoke",
+    "table.client": "Client",
+    "table.apartment": "Apartment",
+    "table.price": "Price",
+    "table.paid": "Paid",
+    "table.remaining": "Remaining",
+    "table.deadline": "Deadline",
+    "table.date": "Date",
+    "table.category": "Category",
+    "table.description": "Description",
+    "table.amount": "Amount",
+    "table.method": "Method",
+    "table.receipt": "Receipt",
+    "table.project": "Project",
+    "status.empty": "Available",
+    "status.reserved": "Reserved",
+    "status.sold": "Sold",
+    "status.installment": "Installment",
+    "status.unavailable": "Unavailable",
+    "projectStatus.planning": "Planning",
+    "projectStatus.in_progress": "In progress",
+    "projectStatus.completed": "Completed",
+    "projectStatus.paused": "Paused",
+    "floor.status": "Floor status",
+    "floor.description": "Description",
+    "floor.status.planning": "Planning",
+    "floor.status.in_progress": "In progress",
+    "floor.status.completed": "Completed",
+    "expense.new": "New expense",
+    "expense.cat.cement": "Cement",
+    "expense.cat.blocks": "Blocks",
+    "expense.cat.sand": "Sand",
+    "expense.cat.gravel": "Gravel",
+    "expense.cat.cable": "Wire / cable",
+    "expense.cat.wire": "Wire",
+    "expense.cat.wire_6mm": "8 mm² wire",
+    "expense.cat.wire_visual": "Visible wire",
+    "expense.cat.nails": "Nails / screws",
+    "expense.cat.lumber": "Boards / timber",
+    "expense.cat.formwork": "Formwork",
+    "expense.cat.electrical": "Electrical",
+    "expense.cat.plumbing": "Plumbing",
+    "expense.cat.plaster": "Plaster / putty",
+    "expense.cat.paint": "Paint",
+    "expense.cat.tile": "Tile",
+    "expense.cat.windows": "Windows",
+    "expense.cat.doors": "Doors",
+    "expense.cat.roofing": "Roofing",
+    "expense.cat.waterproof": "Waterproofing",
+    "expense.cat.insulation": "Insulation",
+    "expense.cat.welding": "Welding works",
+    "expense.cat.tools": "Tools",
+    "expense.cat.fuel": "Fuel",
+    "expense.cat.elevator": "Elevator",
+    "expense.cat.landscaping": "Landscaping",
+    "expense.cat.concrete": "Concrete",
+    "expense.cat.rebar": "Rebar",
+    "expense.cat.salary": "Salary",
+    "expense.cat.materials": "Materials",
+    "expense.cat.equipment": "Equipment",
+    "expense.cat.transport": "Transport",
+    "expense.cat.rent": "Rent",
+    "expense.cat.taxes": "Taxes",
+    "expense.cat.other": "Other",
+    "expense.cat.compensation": "Resettlement compensation",
+    "expense.cat.car_loss": "Car loss",
+    "expense.cat.subcontract": "Subcontract (crews)",
+    "expense.cat.brick": "Brick",
+    "expense.cat.masters": "Masters payment",
+    "expense.cat.partner_payout": "Partner payout",
+    "payments.upcoming": "Upcoming payments",
+    "payments.overdue": "Overdue",
+    "payments.dueIn": "In",
+    "payments.days": "days",
+    "staff.projects": "Projects",
+    "staff.noProjects": "Not assigned",
+    "staff.revoke": "Revoke access",
   },
 } as const;
 
@@ -498,36 +498,39 @@ type Key = keyof typeof DICT["ru"];
 
 // ---------------------------------------------------------------------------
 // Phrase-based translation. Phrase files under src/lib/phrases/*.ts export a
-// default map for Tajik (ru -> tg). Optional Chinese maps can be added under
-// src/lib/phrases-zh/*.ts (ru -> zh). Static DICT entries also feed both maps
+// default map for Tajik (ru -> tg). Optional English maps can be added under
+// src/lib/phrases-en/*.ts (ru -> en). Static DICT entries also feed both maps
 // so the DOM translator catches them for either language.
 // ---------------------------------------------------------------------------
 const tgModules = import.meta.glob("./phrases/*.ts", { eager: true }) as Record<
   string,
   { default?: Record<string, string> }
 >;
-const zhModules = import.meta.glob("./phrases-zh/*.ts", { eager: true }) as Record<
+const enModules = import.meta.glob("./phrases-en/*.ts", { eager: true }) as Record<
   string,
   { default?: Record<string, string> }
 >;
 
-const PHRASES: Record<Exclude<Lang, "ru">, Record<string, string>> = {
+const PHRASES: Record<Lang, Record<string, string>> = {
+  ru: {},
   tg: {},
-  zh: {},
+  en: {},
 };
 
-for (const mod of Object.values(tgModules)) {
-  if (mod.default) Object.assign(PHRASES.tg, mod.default);
+for (const path of Object.keys(tgModules).sort()) {
+  const mod = tgModules[path];
+  if (mod?.default) Object.assign(PHRASES.tg, mod.default);
 }
-for (const mod of Object.values(zhModules)) {
-  if (mod.default) Object.assign(PHRASES.zh, mod.default);
+for (const path of Object.keys(enModules).sort()) {
+  const mod = enModules[path];
+  if (mod?.default) Object.assign(PHRASES.en, mod.default);
 }
 for (const key of Object.keys(DICT.ru) as Key[]) {
   const ru = DICT.ru[key];
   const tg = DICT.tg[key];
-  const zh = DICT.zh[key];
+  const en = DICT.en[key];
   if (ru && tg && !(ru in PHRASES.tg)) PHRASES.tg[ru] = tg;
-  if (ru && zh && !(ru in PHRASES.zh)) PHRASES.zh[ru] = zh;
+  if (ru && en && !(ru in PHRASES.en)) PHRASES.en[ru] = en;
 }
 
 // ---------------------------------------------------------------------------
@@ -538,21 +541,25 @@ const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA", "CODE", "P
 const origText = new WeakMap<Text, string>();
 const origAttr = new WeakMap<Element, { placeholder?: string; title?: string }>();
 
+for (const [ru, tg] of Object.entries(PHRASES.tg)) {
+  if (tg && !(tg in PHRASES.ru)) PHRASES.ru[tg] = ru;
+}
+
+function resolveTranslation(text: string, lang: Lang) {
+  const russianSource = PHRASES.ru[text] ?? text;
+  if (lang === "ru") return russianSource;
+  return PHRASES[lang][russianSource] ?? PHRASES[lang][text] ?? russianSource;
+}
+
 function translateText(node: Text, lang: Lang) {
   const parent = node.parentElement;
   if (parent && SKIP_TAGS.has(parent.tagName)) return;
   const current = node.nodeValue ?? "";
   const trimmed = current.trim();
   if (!trimmed) return;
-  if (lang === "ru") {
-    const o = origText.get(node);
-    if (o != null && node.nodeValue !== o) node.nodeValue = o;
-    return;
-  }
-  const map = PHRASES[lang];
   const original = origText.get(node) ?? current;
   const originalTrimmed = original.trim();
-  const hit = map[originalTrimmed] ?? map[trimmed];
+  const hit = resolveTranslation(originalTrimmed, lang) || resolveTranslation(trimmed, lang);
   if (hit && hit !== originalTrimmed) {
     if (!origText.has(node)) origText.set(node, current);
     node.nodeValue = original.replace(originalTrimmed, hit);
@@ -570,19 +577,15 @@ function translateAttrs(el: Element, lang: Lang) {
     const trimmed = current.trim();
     if (!trimmed) continue;
     const store = origAttr.get(el) ?? {};
-    if (lang === "ru") {
-      if (store[attr] != null) el.setAttribute(attr, store[attr]!);
-      continue;
-    }
-    const map = PHRASES[lang];
     const original = store[attr] ?? current;
     const originalTrimmed = original.trim();
-    const hit = map[originalTrimmed] ?? map[trimmed];
+    const hit = resolveTranslation(originalTrimmed, lang) || resolveTranslation(trimmed, lang);
     if (hit && hit !== originalTrimmed) {
       if (store[attr] == null) { store[attr] = current; origAttr.set(el, store); }
       el.setAttribute(attr, original.replace(originalTrimmed, hit));
     } else if (store[attr] != null) {
-      el.setAttribute(attr, store[attr]!);
+      const originalAttr = store[attr];
+      if (originalAttr != null) el.setAttribute(attr, originalAttr);
     }
   }
 }
@@ -635,7 +638,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const saved = (typeof localStorage !== "undefined" && localStorage.getItem("lang")) as Lang | null;
-    if (saved === "ru" || saved === "tg" || saved === "zh") setLangState(saved);
+    if (saved === "ru" || saved === "tg" || saved === "en") setLangState(saved);
   }, []);
 
   useEffect(() => {
@@ -645,13 +648,14 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const setLang = (l: Lang) => {
     setLangState(l);
     if (typeof localStorage !== "undefined") localStorage.setItem("lang", l);
-    if (typeof document !== "undefined") document.documentElement.lang = l;
+    if (typeof document !== "undefined") document.documentElement.lang = l === "tg" ? "tg-Cyrl" : l;
   };
 
   const t = (key: Key) => DICT[lang][key] ?? DICT.ru[key] ?? key;
   const tr = (ru: string) => {
-    if (lang === "ru") return ru;
-    return PHRASES[lang][ru] ?? ru;
+    const source = PHRASES.ru[ru] ?? ru;
+    if (lang === "ru") return source;
+    return PHRASES[lang][source] ?? source;
   };
 
   // Remount the whole subtree whenever the language changes so every component

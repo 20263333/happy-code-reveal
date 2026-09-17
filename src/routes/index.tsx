@@ -43,7 +43,7 @@ export const Route = createFileRoute("/")({
           url: "https://binosoz.tj/",
           description:
             "ERP/CRM для строительных компаний: проекты, продажи квартир, рассрочка, платежи, склад, смета, табель и отчёты.",
-          inLanguage: ["tg", "ru", "zh"],
+          inLanguage: ["tg", "ru", "en"],
         }),
       },
     ],
