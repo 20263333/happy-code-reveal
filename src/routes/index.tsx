@@ -4,11 +4,11 @@ import { LandingPage } from "@/components/site/landing-page";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Binosoz.tj — ERP/CRM для строительных компаний" },
+      { title: "Binosoz.tj — Идоракунии сохтмон" },
       {
         name: "description",
         content:
-          "Платформа для застройщиков Таджикистана: проекты и квартиры, продажи и рассрочка, платежи, склад, смета, табель и отчёты в одной системе.",
+          "Барномаи муосир барои ширкатҳои сохтмонӣ: лоиҳа, фурӯш, пардохт, анбор, смета, табел ва ҳисобот дар як система.",
       },
       { property: "og:type", content: "website" },
       { property: "og:title", content: "Binosoz.tj — ERP/CRM для застройщиков" },
@@ -17,7 +17,6 @@ export const Route = createFileRoute("/")({
         content:
           "Ведите проекты, продажи квартир, рассрочки, склад и финансы строительной компании в одной системе.",
       },
-      { property: "og:url", content: "https://binosoz.tj/" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Binosoz.tj — ERP/CRM для застройщиков" },
       {
@@ -26,7 +25,12 @@ export const Route = createFileRoute("/")({
           "Проекты, продажи квартир, рассрочки, склад и финансы строительной компании в одной системе.",
       },
     ],
-    links: [{ rel: "canonical", href: "https://binosoz.tj/" }],
+    links: [
+      { rel: "canonical", href: "/" },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Sora:wght@400;500;600;700&display=swap" },
+    ],
     scripts: [
       {
         type: "application/ld+json",
