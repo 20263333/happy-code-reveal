@@ -638,7 +638,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const saved = (typeof localStorage !== "undefined" && localStorage.getItem("lang")) as Lang | null;
-    if (saved === "ru" || saved === "tg" || saved === "en") setLangState(saved);
+    if (saved === "ru" || saved === "tg" || saved === "en") {
+      setLangState(saved);
+      if (typeof document !== "undefined") document.documentElement.lang = saved === "tg" ? "tg-Cyrl" : saved;
+    }
   }, []);
 
   useEffect(() => {

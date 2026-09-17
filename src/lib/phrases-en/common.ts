@@ -53,7 +53,6 @@ const phrases: Record<string, string> = {
   "Продано квартир": "Apartments sold",
   "Свободных квартир": "Available apartments",
   "Клиенты с оплатой в системе": "Customers with payments in the system",
-  "Расрочкаи ин моҳ": "Installments this month",
   "100% оплата": "100% payment",
   "Рассрочка": "Installment",
   "Пардохти ипотека (рассрочка)": "Mortgage payment (installment)",
