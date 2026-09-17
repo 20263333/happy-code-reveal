@@ -33,7 +33,7 @@ function ScreenRotateButton() {
     try {
       const so = (window as any).screen?.orientation;
       if (!so) {
-        toast.error(tr("Гардонидани экран дастгирӣ намешавад"));
+        toast.error(tr("Поворот экрана не поддерживается"));
         return;
       }
       const current = so.type as string;
@@ -43,7 +43,7 @@ function ScreenRotateButton() {
         await so.lock("landscape-primary");
       }
     } catch (e) {
-      toast.error(tr("Гардонидани экран муяссар нашад. Браузер ё дастгоҳ дастгирӣ намекунад."));
+      toast.error(tr("Не удалось повернуть экран. Браузер или устройство не поддерживает."));
     }
   };
 
@@ -52,7 +52,7 @@ function ScreenRotateButton() {
       variant="ghost"
       size="icon"
       onClick={toggle}
-      title={tr("Гардонидани экран")}
+      title={tr("Повернуть экран")}
       className="hidden sm:flex"
     >
       <RotateCw className={cn("h-4 w-4", orientation === "landscape" && "rotate-90")} />
@@ -78,7 +78,7 @@ export function TopbarControls({ showAi }: { showAi?: boolean }) {
       <AiAssistantButton show={showAi} />
       <ScreenRotateButton />
       {hasPin && (
-        <Button variant="ghost" size="icon" onClick={() => lockNow()} title={tr("Қулф кардани барнома")}>
+        <Button variant="ghost" size="icon" onClick={() => lockNow()} title={tr("Заблокировать приложение")}>
           <Lock className="h-4 w-4" />
         </Button>
       )}
