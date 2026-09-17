@@ -584,7 +584,8 @@ function translateAttrs(el: Element, lang: Lang) {
       if (store[attr] == null) { store[attr] = current; origAttr.set(el, store); }
       el.setAttribute(attr, original.replace(originalTrimmed, hit));
     } else if (store[attr] != null) {
-      el.setAttribute(attr, store[attr]!);
+      const originalAttr = store[attr];
+      if (originalAttr != null) el.setAttribute(attr, originalAttr);
     }
   }
 }
