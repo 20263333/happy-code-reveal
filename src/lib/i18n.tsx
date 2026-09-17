@@ -517,11 +517,13 @@ const PHRASES: Record<Lang, Record<string, string>> = {
   en: {},
 };
 
-for (const mod of Object.values(tgModules)) {
-  if (mod.default) Object.assign(PHRASES.tg, mod.default);
+for (const path of Object.keys(tgModules).sort()) {
+  const mod = tgModules[path];
+  if (mod?.default) Object.assign(PHRASES.tg, mod.default);
 }
-for (const mod of Object.values(enModules)) {
-  if (mod.default) Object.assign(PHRASES.en, mod.default);
+for (const path of Object.keys(enModules).sort()) {
+  const mod = enModules[path];
+  if (mod?.default) Object.assign(PHRASES.en, mod.default);
 }
 for (const key of Object.keys(DICT.ru) as Key[]) {
   const ru = DICT.ru[key];
