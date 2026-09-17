@@ -227,7 +227,9 @@
 .bino-card { transition: transform .35s ease, box-shadow .35s ease, border-color .35s ease; }
 .bino-card:hover { transform: translateY(-6px); box-shadow: 0 28px 58px -34px color-mix(in oklab, var(--primary) 48%, transparent); border-color: color-mix(in oklab, var(--primary) 35%, transparent); }
 .bino-band { background: linear-gradient(120deg, oklch(0.32 0.18 264), oklch(0.52 0.25 264) 55%, oklch(0.42 0.22 268)); }
-.bp-reveal { opacity: 0; transform: translateY(36px) scale(.98); filter: blur(10px); transition: opacity .85s cubic-bezier(.2,.8,.2,1), transform .85s cubic-bezier(.2,.8,.2,1), filter .85s ease; }
+.bp-reveal { opacity: 0; transform: translateY(42px); filter: blur(8px); transition: opacity .9s cubic-bezier(.2,.8,.2,1), transform .9s cubic-bezier(.2,.8,.2,1), filter .9s ease; will-change: transform, opacity; }
+.bp-reveal[data-direction="left"] { transform: translateX(-110px); }
+.bp-reveal[data-direction="right"] { transform: translateX(110px); }
 .bp-reveal[data-visible="true"] { opacity: 1; transform: translateY(0); }
 .bp-reveal[data-visible="true"] { filter: blur(0); }
 .bp-reveal:nth-child(2) { transition-delay: .08s; }
