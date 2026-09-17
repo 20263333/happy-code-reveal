@@ -49,12 +49,12 @@ const MODULES: Module[] = [
   { icon: MessageCircle, title: "WhatsApp и СМС", text: "Автоматические уведомления клиентам о платежах и напоминания." },
 ];
 
-const SCREENS = [
+const SCREENS: { id: string; label: string; image?: string; title: string }[] = [
   { id: "dashboard", label: "Дашборд директора", image: dashboardShot, title: "Ключевые цифры компании на одном экране в реальном времени." },
-  { id: "projects", label: "Проекты и блоки", image: projectsShot, title: "Проект → блок → этаж → квартира. Наглядная шахматка со статусами квартир." },
+  { id: "chess", label: "Шахматка квартир", title: "Проект → блок → этаж → квартира. Наглядная шахматка со статусами квартир." },
   { id: "warehouse", label: "Склад", image: warehouseShot, title: "Приход, расход и остатки материалов; списание прямо на проект." },
-  { id: "finance", label: "Финансы и отчёты", image: financeShot, title: "Выручка, расходы, прибыль по проектам и налоговые отчёты." },
 ];
+
 
 const PROBLEMS = [
   {
