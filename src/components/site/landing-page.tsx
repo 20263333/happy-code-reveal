@@ -142,7 +142,7 @@ export function LandingPage() {
             )}
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Button asChild size="lg" className="bg-[var(--gradient-accent)] shadow-[var(--shadow-elegant)]">
+            <Button asChild size="lg" className="bg-accent text-accent-foreground shadow-[var(--shadow-elegant)] hover:bg-accent/90">
               <Link to="/auth">
                 {signedIn ? tr("Открыть систему") : tr("Начать бесплатно")}
                 <ArrowRight className="ml-1 h-4 w-4" />
@@ -161,7 +161,7 @@ export function LandingPage() {
           <ul className="mt-10 grid gap-3 text-sm text-white/80 sm:grid-cols-3">
             {[
               { icon: Smartphone, t: "Работает на телефоне и компьютере" },
-              { icon: Languages, t: "Тоҷикӣ, русӣ ва 中文" },
+              { icon: Languages, t: "Таджикский, русский и 中文" },
               { icon: Lock, t: "Данные каждой компании изолированы" },
             ].map(({ icon: Icon, t }) => (
               <li key={t} className="flex items-center gap-2">
