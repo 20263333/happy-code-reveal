@@ -83,9 +83,9 @@ function KioskLayout() {
           <div className="w-full max-w-4xl space-y-8">
             <div className="text-center space-y-3">
               <div className="mx-auto w-24 h-24 rounded-2xl bg-white flex items-center justify-center overflow-hidden shadow-lg">
-                <img src={logoUrl} alt="PLATFORM.TJ" className="w-full h-full object-contain" />
+                <img src={logoUrl} alt="Binosoz.tj" className="w-full h-full object-contain" />
               </div>
-              <h1 className="text-4xl font-bold">PLATFORM.TJ Kiosk</h1>
+              <h1 className="text-4xl font-bold">Binosoz.tj Kiosk</h1>
               <p className="text-slate-300 text-lg">Экрани сенсории намоиш ва фурӯши квартираҳо</p>
             </div>
 
@@ -118,9 +118,9 @@ function KioskLayout() {
         <form onSubmit={submit} className="w-full max-w-md space-y-6 p-8">
           <div className="text-center space-y-2">
             <div className="mx-auto w-20 h-20 rounded-2xl bg-white flex items-center justify-center overflow-hidden shadow-lg">
-              <img src={logoUrl} alt="PLATFORM.TJ" className="w-full h-full object-contain" />
+              <img src={logoUrl} alt="Binosoz.tj" className="w-full h-full object-contain" />
             </div>
-            <h1 className="text-3xl font-bold">PLATFORM.TJ Kiosk</h1>
+            <h1 className="text-3xl font-bold">Binosoz.tj Kiosk</h1>
             <p className="text-slate-400">PIN-кодро ворид кунед</p>
           </div>
           <Input
@@ -149,10 +149,10 @@ function KioskLayout() {
       <header className="flex items-center justify-between border-b border-border bg-card px-6 py-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center overflow-hidden border border-border">
-            <img src={logoUrl} alt="PLATFORM.TJ" className="w-full h-full object-contain" />
+            <img src={logoUrl} alt="Binosoz.tj" className="w-full h-full object-contain" />
           </div>
           <div>
-            <div className="font-bold text-lg">PLATFORM.TJ Kiosk</div>
+            <div className="font-bold text-lg">Binosoz.tj Kiosk</div>
             <div className="text-xs text-muted-foreground">Экрани фурӯш</div>
           </div>
         </div>

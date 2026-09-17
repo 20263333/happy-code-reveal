@@ -31,10 +31,10 @@ export function ShowcaseCompanies() {
   return (
     <div className="mt-10 border-t border-border pt-8">
       <h2 className="text-center font-display text-xl font-semibold">
-        {tr("Истифодабарандагони PLATFORM.TJ")}
+        {tr("Истифодабарандагони Binosoz.tj")}
       </h2>
       <p className="mt-1 text-center text-xs text-muted-foreground">
-        {tr("Кӣ аллакай бо PLATFORM.TJ кор мекунад")}
+        {tr("Кӣ аллакай бо Binosoz.tj кор мекунад")}
       </p>
 
       {useCarousel ? (

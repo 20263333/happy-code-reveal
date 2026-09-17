@@ -15,9 +15,9 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_app/supply")({
   head: () => ({
     meta: [
-      { title: "Снабженец — PLATFORM.TJ" },
+      { title: "Снабженец — Binosoz.tj" },
       { name: "description", content: "Назорати захираи камшудаи склад ва огоҳии снабженец." },
-      { property: "og:title", content: "Снабженец — PLATFORM.TJ" },
+      { property: "og:title", content: "Снабженец — Binosoz.tj" },
       { property: "og:description", content: "Захираи камшудаи склад ва огоҳиҳо." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PLATFORM.TJ — deploy the app on the VPS (run as root on 187.77.87.133)
+# Binosoz.tj — deploy the app on the VPS (run as root on 187.77.87.133)
 set -euo pipefail
 
 APP_DIR="/var/www/binosoz"
@@ -21,7 +21,7 @@ set +a
 # The Sales Partner receiver has stable built-in defaults. Export them for PM2
 # when the VPS env file still contains empty values, so background sync starts
 # immediately after deployment without a Super Admin settings screen.
-export SALES_PARTNER_WEBHOOK_URL="${SALES_PARTNER_WEBHOOK_URL:-https://fz.platform.tj/api/public/platform-sales-webhook}"
+export SALES_PARTNER_WEBHOOK_URL="${SALES_PARTNER_WEBHOOK_URL:-https://fz.binosoz.tj/api/public/platform-sales-webhook}"
 export SALES_PARTNER_WEBHOOK_SECRET="${SALES_PARTNER_WEBHOOK_SECRET:-platform-tj-sales-partner-2026-8f3c1a94b7e24d6fa05c9b31e7d24f60}"
 
 echo "==> 3/5 Install dependencies"
@@ -54,7 +54,7 @@ echo ""
 echo "================================================="
 echo " App deployed."
 echo " Local:    http://127.0.0.1:${APP_PORT}"
-echo " Public:   https://platform.tj"
+echo " Public:   https://binosoz.tj"
 echo " Sync:     Sales Partner every 3 seconds"
 echo " PM2:      pm2 status"
 echo " Logs:     pm2 logs binosoz"

@@ -18,7 +18,7 @@ import {
 } from "@/lib/notifications";
 
 export const Route = createFileRoute("/_app/notifications")({
-  head: () => ({ meta: [{ title: "Уведомления — PLATFORM.TJ" }] }),
+  head: () => ({ meta: [{ title: "Уведомления — Binosoz.tj" }] }),
   component: NotificationsPage,
 });
 

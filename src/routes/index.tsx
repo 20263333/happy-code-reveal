@@ -6,13 +6,13 @@ import { getStableSession, hasSavedSessionData } from "@/lib/auth-session";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "PLATFORM.TJ — ERP/CRM для строительных компаний" },
+      { title: "Binosoz.tj — ERP/CRM для строительных компаний" },
       { name: "description", content: "Платформа для застройщиков Таджикистана: проекты, продажи квартир, платежи, склад, смета и рассрочки в одном месте." },
-      { property: "og:title", content: "PLATFORM.TJ — ERP/CRM для застройщиков" },
+      { property: "og:title", content: "Binosoz.tj — ERP/CRM для застройщиков" },
       { property: "og:description", content: "Ведите проекты, продажи квартир, рассрочки и финансы строительной компании в одной системе." },
-      { property: "og:url", content: "https://platform.tj/" },
+      { property: "og:url", content: "https://binosoz.tj/" },
     ],
-    links: [{ rel: "canonical", href: "https://platform.tj/" }],
+    links: [{ rel: "canonical", href: "https://binosoz.tj/" }],
   }),
   component: IndexRedirect,
 });

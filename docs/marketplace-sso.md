@@ -1,10 +1,10 @@
-# Binosoz Market — SSO аз PLATFORM.TJ
+# Binosoz Market — SSO аз Binosoz.tj
 
-Тугмаи «Ба Binosoz Market» ва «Кушодани кабинет дар Market» аз PLATFORM.TJ ба ин endpoint дар лоиҳаи **Binosoz Homes** (https://binosoz-casa.lovable.app) мурочиат мекунанд. Пас аз даромадан ба Market, соҳиби ширкат бе воридкунии SMS/паррол кабинети худро мекушояд (тавассути телефони ширкат).
+Тугмаи «Ба Binosoz Market» ва «Кушодани кабинет дар Market» аз Binosoz.tj ба ин endpoint дар лоиҳаи **Binosoz Homes** (https://binosoz-casa.lovable.app) мурочиат мекунанд. Пас аз даромадан ба Market, соҳиби ширкат бе воридкунии SMS/паррол кабинети худро мекушояд (тавассути телефони ширкат).
 
 ## 1. Секрет
 
-`MARKETPLACE_SYNC_SECRET` — ҳамон қиматеро, ки дар PLATFORM.TJ гузоштаед, дар Binosoz Homes ҳам бо ҳамин ном илова кунед.
+`MARKETPLACE_SYNC_SECRET` — ҳамон қиматеро, ки дар Binosoz.tj гузоштаед, дар Binosoz Homes ҳам бо ҳамин ном илова кунед.
 
 ## 2. Server route: `src/routes/api/public/sso-login.ts`
 
@@ -102,4 +102,4 @@ export const Route = createFileRoute("/api/public/sso-login")({
 - Email provider фаъол бошад (magic-link истифода мекунад).
 - Дар Auth → URL Configuration Site URL ва redirect URL ба `https://binosoz-casa.lovable.app` (ва домени custom-и худ) илова карда шаванд.
 
-Пас аз ин, вақте ки соҳиби ширкат аз PLATFORM.TJ тугмаро пахш мекунад, дар як табчаи нав мустақим ба кабинети худ дар Binosoz Market ворид мешавад.
+Пас аз ин, вақте ки соҳиби ширкат аз Binosoz.tj тугмаро пахш мекунад, дар як табчаи нав мустақим ба кабинети худ дар Binosoz Market ворид мешавад.

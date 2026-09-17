@@ -21,9 +21,9 @@ export const Route = createFileRoute("/_app/directors")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Директорҳо — PLATFORM.TJ" },
+      { title: "Директорҳо — Binosoz.tj" },
       { name: "description", content: "Идоракунии директорҳо ва шарикони ширкати сохтмонӣ." },
-      { property: "og:title", content: "Директорҳо — PLATFORM.TJ" },
+      { property: "og:title", content: "Директорҳо — Binosoz.tj" },
       { property: "og:description", content: "Идоракунии директорҳо ва шарикони ширкати сохтмонӣ." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

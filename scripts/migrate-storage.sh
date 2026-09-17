@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PLATFORM.TJ — migrate storage files from Lovable Cloud to self-hosted VPS Supabase
+# Binosoz.tj — migrate storage files from Lovable Cloud to self-hosted VPS Supabase
 # Requires rclone and S3-compatible credentials for the source bucket.
 # Run as root on the VPS.
 set -euo pipefail

@@ -7,12 +7,12 @@ import { fileToDataUrl, setScanPreview } from "@/lib/passport-scan-store";
 export const Route = createFileRoute("/passport-scan")({
   head: () => ({
     meta: [
-      { title: "Сканирование паспорта — PLATFORM.TJ" },
+      { title: "Сканирование паспорта — Binosoz.tj" },
       {
         name: "description",
         content: "Загрузите документ с камеры устройства или выберите готовое фото паспорта из галереи.",
       },
-      { property: "og:title", content: "Сканирование паспорта — PLATFORM.TJ" },
+      { property: "og:title", content: "Сканирование паспорта — Binosoz.tj" },
       {
         property: "og:description",
         content: "Загрузите документ с камеры устройства или выберите готовое фото паспорта из галереи.",

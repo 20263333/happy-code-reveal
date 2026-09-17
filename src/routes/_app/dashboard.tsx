@@ -31,9 +31,9 @@ import { getDashboardStats } from "@/lib/dashboard.functions";
 export const Route = createFileRoute("/_app/dashboard")({
   head: () => ({
     meta: [
-      { title: "Дашборд — PLATFORM.TJ" },
+      { title: "Дашборд — Binosoz.tj" },
       { name: "description", content: "Нишондиҳандаҳои зиндаи фурӯш, пардохт, хароҷот ва сохтмон." },
-      { property: "og:title", content: "Дашборд — PLATFORM.TJ" },
+      { property: "og:title", content: "Дашборд — Binosoz.tj" },
       { property: "og:description", content: "Нишондиҳандаҳои зиндаи фурӯш, пардохт, хароҷот ва сохтмон." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

@@ -11,9 +11,9 @@ export const Route = createFileRoute("/_app/my-earnings")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Даромади ман — PLATFORM.TJ" },
+      { title: "Даромади ман — Binosoz.tj" },
       { name: "description", content: "Дашборди менеҷер: даромад, пардохт ва бақияи маблағ" },
-      { property: "og:title", content: "Даромади ман — PLATFORM.TJ" },
+      { property: "og:title", content: "Даромади ман — Binosoz.tj" },
       { property: "og:description", content: "Дашборди менеҷери фурӯш: даромад ва бақия" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

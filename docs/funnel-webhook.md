@@ -1,6 +1,6 @@
 # Интегратсияи воронкаи фурӯш + WhatsApp → profit-flow-logic
 
-PLATFORM.TJ маълумоти воронкаи фурӯш (лидҳо, менеҷерҳо) ва чатҳои WhatsApp-ро
+Binosoz.tj маълумоти воронкаи фурӯш (лидҳо, менеҷерҳо) ва чатҳои WhatsApp-ро
 тавассути push-webhook ба барномаи `profit-flow-logic` мефиристад.
 
 ## Endpoint барои қабул дар барномаи дуюм
@@ -22,7 +22,7 @@ Headers:
 
 ```json
 {
-  "source": "platform.tj",
+  "source": "binosoz.tj",
   "event": "funnel.sync",
   "sent_at": "2026-08-31T05:00:00.000Z",
   "company": { "id": "uuid" },

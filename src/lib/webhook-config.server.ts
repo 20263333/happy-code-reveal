@@ -7,7 +7,7 @@ export type SalesPartnerWebhookConfig = { url: string | null; secret: string | n
 
 /** Суроға ва сирри пешфарз — дар ҳар ду барнома айнан якхела. */
 export const DEFAULT_SALES_PARTNER_WEBHOOK_URL =
-  "https://fz.platform.tj/api/public/platform-sales-webhook";
+  "https://fz.binosoz.tj/api/public/platform-sales-webhook";
 export const DEFAULT_SALES_PARTNER_WEBHOOK_SECRET =
   "platform-tj-sales-partner-2026-8f3c1a94b7e24d6fa05c9b31e7d24f60";
 

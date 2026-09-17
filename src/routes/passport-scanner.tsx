@@ -20,9 +20,9 @@ import { analyzeFrame, enhanceImage, warpDocument, type Point } from "@/lib/doc-
 export const Route = createFileRoute("/passport-scanner")({
   head: () => ({
     meta: [
-      { title: "Камера сканера паспорта — PLATFORM.TJ" },
+      { title: "Камера сканера паспорта — Binosoz.tj" },
       { name: "description", content: "Автоматическое определение границ документа и съёмка паспорта." },
-      { property: "og:title", content: "Камера сканера паспорта — PLATFORM.TJ" },
+      { property: "og:title", content: "Камера сканера паспорта — Binosoz.tj" },
       { property: "og:description", content: "Автоматическое определение границ документа и съёмка паспорта." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

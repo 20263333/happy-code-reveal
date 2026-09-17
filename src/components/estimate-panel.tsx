@@ -592,7 +592,7 @@ async function exportEstimatePDF(estimate: any, items: any[], actual: number) {
   const { default: jsPDF } = await import("jspdf");
   const autoTable = (await import("jspdf-autotable")).default;
   const doc = new jsPDF();
-  doc.setFontSize(15); doc.text("PLATFORM.TJ — Smeta", 14, 18);
+  doc.setFontSize(15); doc.text("Binosoz.tj — Smeta", 14, 18);
   doc.setFontSize(10);
   doc.text(`${estimate.name}  (V${estimate.version})`, 14, 26);
   doc.text(`Status: ${estimateStatusLabel(estimate.status)}`, 14, 32);

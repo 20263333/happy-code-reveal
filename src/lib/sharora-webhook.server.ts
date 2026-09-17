@@ -35,7 +35,7 @@ export async function pushApartmentEvent(
   if (!url || !secret) return { ok: false, error: "webhook_not_configured" };
 
   const body = JSON.stringify({
-    source: "platform.tj",
+    source: "binosoz.tj",
     event,
     sent_at: new Date().toISOString(),
     data,

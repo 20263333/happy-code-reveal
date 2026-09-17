@@ -16,7 +16,7 @@ import { ZhkBlockFilter, useZhkBlockFilter } from "@/components/zhk-block-filter
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/debtors")({
-  head: () => ({ meta: [{ title: "Должники — PLATFORM.TJ" }] }),
+  head: () => ({ meta: [{ title: "Должники — Binosoz.tj" }] }),
   component: DebtorsPage,
 });
 

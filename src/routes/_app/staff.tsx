@@ -25,7 +25,7 @@ import { toast } from "sonner";
 
 
 export const Route = createFileRoute("/_app/staff")({
-  head: () => ({ meta: [{ title: "Сотрудники — PLATFORM.TJ" }] }),
+  head: () => ({ meta: [{ title: "Сотрудники — Binosoz.tj" }] }),
   component: StaffPage,
 });
 

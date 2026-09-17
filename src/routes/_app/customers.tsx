@@ -26,7 +26,7 @@ import { ZhkBlockFilter, useZhkBlockFilter, type ZhkBlockValue } from "@/compone
 import { ContractGeneratorButtons } from "@/components/contract-generator-buttons";
 
 export const Route = createFileRoute("/_app/customers")({
-  head: () => ({ meta: [{ title: "Клиенты — PLATFORM.TJ" }] }),
+  head: () => ({ meta: [{ title: "Клиенты — Binosoz.tj" }] }),
   component: CustomersPage,
 });
 
@@ -372,7 +372,7 @@ function CustomersPage() {
         @media print { body { margin: 12mm; } }
       </style></head><body>
       <div class="company-header">
-        <div class="name">${esc(company?.name || "PLATFORM.TJ")}</div>
+        <div class="name">${esc(company?.name || "Binosoz.tj")}</div>
         ${company?.phone ? `<div class="phone">${tr("Телефон")}: ${esc(company.phone)}</div>` : ""}
       </div>
       <h1>${esc(c.fullname)}</h1>
@@ -503,7 +503,7 @@ function CustomersPage() {
         @media print { body { margin: 12mm; } }
       </style></head><body>
       <div class="company-header">
-        <div class="name">${esc(company?.name || "PLATFORM.TJ")}</div>
+        <div class="name">${esc(company?.name || "Binosoz.tj")}</div>
       </div>
       <h1>${esc((contract.contract_title || "").replace(/\s*№\s*$/, ""))} № ${esc((c.sales || []).map((s: any) => s.sale_number).filter(Boolean).join(", ") || c.fullname?.split(" ")[0] || "")}</h1>
       <div class="meta">

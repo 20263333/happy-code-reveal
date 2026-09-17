@@ -28,7 +28,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/payments")({
-  head: () => ({ meta: [{ title: "Платежи — PLATFORM.TJ" }] }),
+  head: () => ({ meta: [{ title: "Платежи — Binosoz.tj" }] }),
   component: PaymentsPage,
 });
 

@@ -17,7 +17,7 @@ import { useT } from "@/lib/i18n";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/_app/billing")({
-  head: () => ({ meta: [{ title: "Тарифы и оплата — PLATFORM.TJ" }] }),
+  head: () => ({ meta: [{ title: "Тарифы и оплата — Binosoz.tj" }] }),
   component: BillingPage,
 });
 

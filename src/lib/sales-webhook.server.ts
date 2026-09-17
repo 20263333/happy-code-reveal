@@ -7,7 +7,7 @@ export type SalesPartnerEvent =
   | "snapshot.sync";
 
 export type SalesPartnerPayload = {
-  source: "platform.tj";
+  source: "binosoz.tj";
   event: SalesPartnerEvent;
   sent_at: string;
   company: { id: string; name?: string | null };
@@ -29,7 +29,7 @@ export async function pushSalesPartnerEvent(
   if (!url || !secret) return { ok: false, error: "webhook_not_configured" };
 
   const payload: SalesPartnerPayload = {
-    source: "platform.tj",
+    source: "binosoz.tj",
     event,
     sent_at: new Date().toISOString(),
     company,
@@ -45,7 +45,7 @@ export async function pushSalesPartnerEvent(
       headers: {
         "content-type": "application/json",
         "accept": "application/json",
-        "user-agent": "PLATFORM.TJ-Sales-Partner-Sync/1.0",
+        "user-agent": "Binosoz.tj-Sales-Partner-Sync/1.0",
         "x-platform-signature": signature,
         "x-platform-event": event,
       },

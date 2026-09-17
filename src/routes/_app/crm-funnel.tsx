@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { formatDate } from "@/lib/constants";
 
 export const Route = createFileRoute("/_app/crm-funnel")({
-  head: () => ({ meta: [{ title: "Воронка фурӯш — PLATFORM.TJ" }] }),
+  head: () => ({ meta: [{ title: "Воронка фурӯш — Binosoz.tj" }] }),
   component: CrmFunnelPage,
 });
 

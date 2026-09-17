@@ -7,17 +7,17 @@ import { useT } from "@/lib/i18n";
 export const Route = createFileRoute("/trust")({
   head: () => ({
     meta: [
-      { title: "Безопасность и конфиденциальность — PLATFORM.TJ" },
+      { title: "Безопасность и конфиденциальность — Binosoz.tj" },
       {
         name: "description",
         content:
-          "Как PLATFORM.TJ защищает данные строительных компаний: доступ по ролям, изоляция данных компаний и приватное хранение документов.",
+          "Как Binosoz.tj защищает данные строительных компаний: доступ по ролям, изоляция данных компаний и приватное хранение документов.",
       },
-      { property: "og:title", content: "Безопасность и конфиденциальность — PLATFORM.TJ" },
+      { property: "og:title", content: "Безопасность и конфиденциальность — Binosoz.tj" },
       {
         property: "og:description",
         content:
-          "Обзор мер безопасности и конфиденциальности PLATFORM.TJ. Страница поддерживается владельцем приложения.",
+          "Обзор мер безопасности и конфиденциальности Binosoz.tj. Страница поддерживается владельцем приложения.",
       },
     ],
   }),
@@ -54,8 +54,8 @@ function TrustPage() {
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
-            <img src={logoUrl} alt="PLATFORM.TJ" className="h-8 w-8 rounded-lg object-contain" />
-            <span className="font-display text-base font-semibold">PLATFORM.TJ</span>
+            <img src={logoUrl} alt="Binosoz.tj" className="h-8 w-8 rounded-lg object-contain" />
+            <span className="font-display text-base font-semibold">Binosoz.tj</span>
           </div>
           <LanguageToggle />
         </div>
@@ -81,7 +81,7 @@ function TrustPage() {
 
         <p className="mt-4 text-sm text-muted-foreground">
           {tr(
-            "Эта страница поддерживается командой PLATFORM.TJ и отвечает на частые вопросы о безопасности и конфиденциальности данных в системе. Это редактируемое содержимое приложения, а не независимая сертификация.",
+            "Эта страница поддерживается командой Binosoz.tj и отвечает на частые вопросы о безопасности и конфиденциальности данных в системе. Это редактируемое содержимое приложения, а не независимая сертификация.",
           )}
         </p>
 

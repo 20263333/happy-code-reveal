@@ -14,7 +14,7 @@ import { verifyWorkerFaceAuthed } from "@/lib/face-id.functions";
 import { FaceCaptureDialog } from "@/components/face-capture-dialog";
 
 export const Route = createFileRoute("/_app/tabel-kiosk")({
-  head: () => ({ meta: [{ title: "Табел-Kiosk — PLATFORM.TJ" }] }),
+  head: () => ({ meta: [{ title: "Табел-Kiosk — Binosoz.tj" }] }),
   component: TabelKioskPage,
 });
 

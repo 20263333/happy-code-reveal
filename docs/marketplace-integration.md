@@ -1,10 +1,10 @@
-# Binosoz Market — endpoint to receive listings from PLATFORM.TJ
+# Binosoz Market — endpoint to receive listings from Binosoz.tj
 
-Copy the two files below into project **Binosoz Homes** (https://binosoz-casa.lovable.app) and add one secret. Then the "Ба Binosoz Market" button in PLATFORM.TJ will start working.
+Copy the two files below into project **Binosoz Homes** (https://binosoz-casa.lovable.app) and add one secret. Then the "Ба Binosoz Market" button in Binosoz.tj will start working.
 
 ## 1. Add secret in Binosoz Homes
 
-`MARKETPLACE_SYNC_SECRET` — **paste the SAME value** you saved in PLATFORM.TJ.
+`MARKETPLACE_SYNC_SECRET` — **paste the SAME value** you saved in Binosoz.tj.
 
 ## 2. Migration
 
@@ -97,4 +97,4 @@ export const Route = createFileRoute("/api/public/import-listings")({
 });
 ```
 
-Пас аз ин, тугмаи «Ба Binosoz Market» дар PLATFORM.TJ дар ҳар як блок кор мекунад.
+Пас аз ин, тугмаи «Ба Binosoz Market» дар Binosoz.tj дар ҳар як блок кор мекунад.

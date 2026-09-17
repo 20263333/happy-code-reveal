@@ -43,7 +43,7 @@ async function run(request: Request) {
   const stream = new ReadableStream({
     async start(controller) {
       const push = (s: string) => controller.enqueue(encoder.encode(s));
-      push("-- PLATFORM.TJ data export\n");
+      push("-- Binosoz.tj data export\n");
       push("SET session_replication_role = replica;\n\n");
       for (const t of list) {
         push(`\n-- ${t.schema_name}.${t.table_name} (${t.row_count} rows)\n`);

@@ -21,7 +21,7 @@ import { toast } from "sonner";
 
 
 export const Route = createFileRoute("/_app/projects/")({
-  head: () => ({ meta: [{ title: "Проекты — PLATFORM.TJ" }] }),
+  head: () => ({ meta: [{ title: "Проекты — Binosoz.tj" }] }),
   component: ProjectsList,
 });
 

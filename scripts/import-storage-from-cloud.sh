@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PLATFORM.TJ — танҳо файлҳоро (суратҳо, ҳуҷҷатҳо) аз Lovable Cloud ба VPS мекӯчонад
+# Binosoz.tj — танҳо файлҳоро (суратҳо, ҳуҷҷатҳо) аз Lovable Cloud ба VPS мекӯчонад
 # ва сабтҳои storage.buckets / storage.objects-ро дар базаи VPS барқарор мекунад.
 #
 # Истифода:

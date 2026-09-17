@@ -14,7 +14,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/subcontractors")({
-  head: () => ({ meta: [{ title: "Пудратчиён — PLATFORM.TJ" }] }),
+  head: () => ({ meta: [{ title: "Пудратчиён — Binosoz.tj" }] }),
   component: SubcontractorsPage,
 });
 

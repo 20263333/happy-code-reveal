@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { formatDate } from "@/lib/constants";
 
 export const Route = createFileRoute("/_app/tax-reports")({
-  head: () => ({ meta: [{ title: "Ҳисоботи давлатӣ — PLATFORM.TJ" }] }),
+  head: () => ({ meta: [{ title: "Ҳисоботи давлатӣ — Binosoz.tj" }] }),
   component: TaxReportsPage,
 });
 
