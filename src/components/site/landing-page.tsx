@@ -105,7 +105,7 @@ function Reveal({ children, className = "" }: { children: ReactNode; className?:
   return <div ref={ref} className={`bp-reveal ${className}`}>{children}</div>;
 }
 
-function BrowserFrame({ src, alt, imageKey }: { src: string; alt: string; imageKey?: string }) {
+function BrowserFrame({ children, imageKey }: { children: ReactNode; imageKey?: string }) {
   return (
     <div className="bino-frame">
       <div className="bino-frame-bar flex items-center gap-2 px-4 py-3">
@@ -114,7 +114,52 @@ function BrowserFrame({ src, alt, imageKey }: { src: string; alt: string; imageK
         <span className="bino-dot bg-success/70" />
         <span className="mx-auto rounded-full bg-background px-4 py-1 text-[11px] text-muted-foreground">binosoz.tj</span>
       </div>
-      <img key={imageKey} src={src} alt={alt} className="bino-screen-image w-full" loading="lazy" />
+      <div key={imageKey} className="bino-screen-image">{children}</div>
+    </div>
+  );
+}
+
+function ChessMock({ label }: { label: (s: string) => string }) {
+  const statuses = ["free", "sold", "booked", "free", "sold", "free", "free", "booked", "sold", "free", "free", "sold"];
+  const tone: Record<string, string> = {
+    free: "bg-background text-foreground border-border",
+    sold: "bg-primary/10 text-primary border-primary/30",
+    booked: "bg-warning/20 text-warning-foreground border-warning/40",
+  };
+  return (
+    <div className="bg-background p-5 text-left md:p-8">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="font-display text-lg font-extrabold">{label("Блок 1")}</div>
+          <div className="text-xs text-muted-foreground">{label("ЖК Биносоз")}</div>
+        </div>
+        <div className="flex gap-2 text-[11px]">
+          <span className="rounded-full bg-primary/10 px-3 py-1 font-semibold text-primary">{label("Свободно")}: 48</span>
+          <span className="rounded-full bg-muted px-3 py-1 font-semibold">{label("Продано")}: 72</span>
+        </div>
+      </div>
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        {[["Квартир", "120"], ["Этажей", "9"], ["Продано", "60 %"]].map(([k, v]) => (
+          <div key={k} className="rounded-xl border border-border bg-card p-4">
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{label(k)}</div>
+            <div className="mt-1 font-display text-xl font-extrabold">{v}</div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-6 grid gap-2 sm:grid-cols-3">
+        {[0, 1, 2].map((section) => (
+          <div key={section} className="rounded-xl border border-border p-3">
+            <div className="mb-2 text-[10px] uppercase tracking-widest text-muted-foreground">{label("Подъезд")} {section + 1}</div>
+            <div className="grid grid-cols-4 gap-1.5">
+              {statuses.map((s, i) => (
+                <div key={i} className={`flex h-8 items-center justify-center rounded-md border text-[11px] font-semibold ${tone[s]}`}>
+                  {section * 12 + i + 1}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
