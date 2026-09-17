@@ -36,7 +36,7 @@ export function InstallmentsCard({
   isPlatformAdmin?: boolean;
 }) {
   const { formatMoney } = usePrefs();
-  const { tr } = useT();
+  const { lang, tr } = useT();
   const getInstallments = useServerFn(getCompanyInstallments);
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -71,7 +71,7 @@ export function InstallmentsCard({
       const key = monthKey(d);
       let g = map.get(key);
       if (!g) {
-        g = { key, label: `${MONTHS_TG[d.getMonth()]} ${d.getFullYear()}`, total: 0, paidTotal: 0, items: [] };
+        g = { key, label: `${tr(MONTHS_TG[d.getMonth()] ?? "")} ${d.getFullYear()}`, total: 0, paidTotal: 0, items: [] };
         map.set(key, g);
       }
       const amount = Number(r.amount || 0);
@@ -92,7 +92,7 @@ export function InstallmentsCard({
       });
     }
     return Array.from(map.values()).sort((a, b) => a.key.localeCompare(b.key));
-  }, [scoped, tr]);
+  }, [scoped, tr, lang]);
 
   const today = new Date();
   const todayKey = monthKey(today);
@@ -112,8 +112,8 @@ export function InstallmentsCard({
   const currentPaidCount = current?.items.filter((i) => i.paid).length ?? 0;
   const currentMonthLabel = useMemo(() => {
     const d = current ? new Date(`${current.key}-01`) : nextMonth;
-    return `${tr("Расрочкаи")} ${MONTHS_TG[d.getMonth()]} ${d.getFullYear()}`;
-  }, [current, nextMonth, tr]);
+    return `${tr("Расрочкаи")} ${tr(MONTHS_TG[d.getMonth()] ?? "")} ${d.getFullYear()}`;
+  }, [current, nextMonth, tr, lang]);
 
 
 
