@@ -60,8 +60,10 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 
   const formatMoney = (n: number | null | undefined) => {
     const v = Number(n ?? 0);
-    const locale = currency === "RUB" ? "ru-RU" : currency === "USD" ? "en-US" : "ru-RU";
-    return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(v) + " " + CURRENCY_SYMBOL[currency];
+    const lang = typeof document !== "undefined" ? document.documentElement.lang : "ru";
+    const locale = currency === "RUB" ? "ru-RU" : currency === "USD" || lang === "en" ? "en-US" : "ru-RU";
+    const symbol = currency === "TJS" && lang === "en" ? "TJS" : CURRENCY_SYMBOL[currency];
+    return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(v) + " " + symbol;
   };
 
   return (
