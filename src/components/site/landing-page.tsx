@@ -16,7 +16,6 @@ import {
   Tractor,
   FileSignature,
   BadgeCheck,
-  GaugeCircle,
   BarChart3,
   MessageCircle,
   ScanLine,
