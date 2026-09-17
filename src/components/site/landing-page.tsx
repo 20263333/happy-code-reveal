@@ -14,6 +14,7 @@ import {
   HardHat,
   Languages,
   Lock,
+  Menu,
   MessageCircle,
   RefreshCw,
   ShieldCheck,
@@ -21,6 +22,7 @@ import {
   Truck,
   Users,
   Wallet,
+  X,
 } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { useAppLogo } from "@/lib/app-logos";
@@ -86,7 +88,7 @@ const FAQ = [
   ["Данные в безопасности?", "Данные каждой компании изолированы, доступ по ролям, документы хранятся приватно."],
 ];
 
-function Reveal({ children, className = "" }: { children: ReactNode; className?: string }) {
+function Reveal({ children, className = "", direction = "up" }: { children: ReactNode; className?: string; direction?: "up" | "left" | "right" }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const node = ref.current;
@@ -100,7 +102,7 @@ function Reveal({ children, className = "" }: { children: ReactNode; className?:
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
-  return <div ref={ref} className={`bp-reveal ${className}`}>{children}</div>;
+  return <div ref={ref} data-direction={direction} className={`bp-reveal ${className}`}>{children}</div>;
 }
 
 function BrowserFrame({ children, imageKey }: { children: ReactNode; imageKey?: string }) {
@@ -218,6 +220,17 @@ export function LandingPage() {
   const logoUrl = useAppLogo("light");
   const [signedIn, setSignedIn] = useState(false);
   const [screen, setScreen] = useState(SCREENS[0]);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const navItems = [
+    ["Возможности", "#product"],
+    ["Модули", "#modules"],
+    ["Цены", "#pricing"],
+    ["Для строителей", "#builders"],
+    ["Для руководителей", "#leaders"],
+    ["FAQ", "#faq"],
+    ["Контакты", "#contact"],
+  ];
 
   useEffect(() => {
     let active = true;
@@ -228,22 +241,30 @@ export function LandingPage() {
   return (
     <div className="bino-site min-h-screen bg-background text-foreground">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-border/70 bg-background/85 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 lg:px-8">
+        <div className="mx-auto grid h-16 max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 xl:flex lg:px-8">
           <a href="#top" className="flex items-center gap-2.5" aria-label="Binosoz.tj">
             <img src={logoUrl} alt="Binosoz.tj" className="h-8 w-8 object-contain" />
             <span className="font-display text-lg font-extrabold tracking-tight">Binosoz<span className="text-primary">.tj</span></span>
           </a>
-          <nav className="hidden items-center gap-7 text-sm font-medium text-muted-foreground lg:flex">
-            <a href="#problem" className="bino-nav-link">{tr("Проблемы")}</a>
-            <a href="#product" className="bino-nav-link">{tr("Возможности")}</a>
-            <a href="#modules" className="bino-nav-link">{tr("Модули")}</a>
-            <a href="#how" className="bino-nav-link">{tr("Как это работает")}</a>
-            <a href="#faq" className="bino-nav-link">{tr("Вопросы")}</a>
+          <nav className="hidden items-center gap-5 text-sm font-medium text-muted-foreground xl:flex">
+            {navItems.map(([label, href]) => <a key={href} href={href} className="bino-nav-link whitespace-nowrap">{tr(label)}</a>)}
           </nav>
           <div className="flex items-center gap-2">
             <LanguageToggle />
+            <Button variant="ghost" size="icon" className="xl:hidden" onClick={() => setMobileMenuOpen((value) => !value)} aria-label={tr("Открыть меню")} aria-expanded={mobileMenuOpen}>
+              {mobileMenuOpen ? <X /> : <Menu />}
+            </Button>
           </div>
         </div>
+        {mobileMenuOpen && (
+          <nav className="border-t border-border bg-background px-5 py-4 xl:hidden">
+            <div className="mx-auto grid max-w-7xl gap-1">
+              {navItems.map(([label, href]) => (
+                <a key={href} href={href} onClick={() => setMobileMenuOpen(false)} className="rounded-lg px-3 py-3 text-sm font-semibold text-foreground hover:bg-muted">{tr(label)}</a>
+              ))}
+            </div>
+          </nav>
+        )}
       </header>
 
       <main id="top" className="pt-16">
@@ -267,7 +288,7 @@ export function LandingPage() {
               </Button>
             </div>
           </div>
-          <Reveal className="relative mx-auto mt-14 max-w-6xl">
+          <Reveal direction="right" className="relative mx-auto mt-14 max-w-6xl">
             <BrowserFrame><img src={dashboardShot} alt={tr("Дашборд директора")} className="w-full" /></BrowserFrame>
           </Reveal>
           <div className="relative mx-auto mt-14 grid max-w-5xl grid-cols-2 gap-6 text-center md:grid-cols-4">
@@ -288,8 +309,8 @@ export function LandingPage() {
               <p className="mt-4 text-sm text-muted-foreground md:text-base">{tr("Если хотя бы один пункт про вашу компанию — Binosoz.tj заменит таблицы, чаты и стопки бумаг.")}</p>
             </Reveal>
             <div className="mt-10 grid gap-6 lg:grid-cols-2">
-              {PROBLEMS.map((block) => (
-                <Reveal key={block.title}>
+               {PROBLEMS.map((block, index) => (
+                 <Reveal key={block.title} direction={index % 2 === 0 ? "left" : "right"}>
                   <div className="h-full rounded-3xl bg-card p-6 md:p-8">
                     <div className={`text-xs font-bold uppercase tracking-widest ${block.tone === "primary" ? "text-primary" : "text-success"}`}>{tr(block.role)}</div>
                     <h3 className="mt-3 font-display text-xl font-bold md:text-2xl">{tr(block.title)}</h3>
@@ -309,7 +330,7 @@ export function LandingPage() {
         </section>
 
         <section className="bino-band px-5 py-20 text-primary-foreground lg:px-8">
-          <Reveal className="mx-auto max-w-7xl text-center">
+           <Reveal direction="left" className="mx-auto max-w-7xl text-center">
             <h2 className="font-display text-3xl font-extrabold uppercase md:text-5xl">{tr("Одна система — вся компания")}</h2>
             <p className="mx-auto mt-4 max-w-2xl text-sm text-primary-foreground/80 md:text-base">{tr("Binosoz.tj закрывает весь цикл: от первой заявки клиента до последнего отчёта по прибыли.")}</p>
             <div className="mt-12 grid gap-10 md:grid-cols-3">
@@ -337,7 +358,7 @@ export function LandingPage() {
               <h2 className="mt-3 font-display text-3xl font-extrabold uppercase md:text-5xl">{tr("Вся стройка видна на одном экране")}</h2>
               <p className="mt-4 text-sm text-muted-foreground md:text-base">{tr("Продажи, платежи и расходы сразу видны в отчётах и на дашборде.")}</p>
             </Reveal>
-            <Reveal className="mt-10">
+            <Reveal direction="right" className="mt-10">
               <div className="flex flex-wrap gap-2" role="tablist" aria-label={tr("Разделы системы")}>
                 {SCREENS.map((item) => (
                   <Button
@@ -360,6 +381,42 @@ export function LandingPage() {
                 </BrowserFrame>
               </div>
               <p className="mt-4 text-sm text-muted-foreground">{tr(screen.title)}</p>
+            </Reveal>
+          </div>
+        </section>
+
+        <section id="builders" className="scroll-mt-20 overflow-hidden bg-card px-5 py-20 lg:px-8">
+          <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2">
+            <Reveal direction="left">
+              <BrowserFrame><img src={warehouseShot} alt={tr("Контроль стройки и материалов")} className="w-full" loading="lazy" /></BrowserFrame>
+            </Reveal>
+            <Reveal direction="right">
+              <div className="text-xs font-bold uppercase tracking-widest text-success">{tr("Для строителей")}</div>
+              <h2 className="mt-3 font-display text-3xl font-extrabold uppercase md:text-5xl">{tr("Стройка, склад и люди работают вместе")}</h2>
+              <p className="mt-5 text-sm leading-7 text-muted-foreground md:text-base">{tr("Прораб отправляет заявку на материал, складчик выдаёт его, а расход сразу относится к нужному проекту. Табель, техника, подрядчики и качество остаются под контролем.")}</p>
+              <div className="mt-7 grid gap-3 sm:grid-cols-2">
+                {["Заявки и закупки материалов", "Остатки и движение склада", "Табель рабочих и зарплата", "Смета, качество и график"].map((item) => (
+                  <div key={item} className="flex items-center gap-3 rounded-xl bg-background p-4 text-sm font-semibold"><Check className="h-4 w-4 shrink-0 text-success" />{tr(item)}</div>
+                ))}
+              </div>
+            </Reveal>
+          </div>
+        </section>
+
+        <section id="leaders" className="scroll-mt-20 overflow-hidden px-5 py-20 lg:px-8">
+          <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2">
+            <Reveal direction="left" className="lg:order-1">
+              <div className="text-xs font-bold uppercase tracking-widest text-primary">{tr("Для руководителей")}</div>
+              <h2 className="mt-3 font-display text-3xl font-extrabold uppercase md:text-5xl">{tr("Решения на основе точных цифр")}</h2>
+              <p className="mt-5 text-sm leading-7 text-muted-foreground md:text-base">{tr("Директор видит продажи, поступления, долги, расходы и прибыль по каждому проекту. Отчёты обновляются вместе с работой команды — без ручного сбора данных.")}</p>
+              <div className="mt-7 space-y-3">
+                {["Финансы и прибыль по проектам", "Просрочки и план платежей", "Роли и персональные права доступа", "Доли партнёров и распределение дохода"].map((item) => (
+                  <div key={item} className="flex items-center gap-3 border-b border-border pb-3 text-sm font-semibold"><Check className="h-4 w-4 shrink-0 text-primary" />{tr(item)}</div>
+                ))}
+              </div>
+            </Reveal>
+            <Reveal direction="right" className="lg:order-2">
+              <BrowserFrame><img src={dashboardShot} alt={tr("Аналитика для руководителя")} className="w-full" loading="lazy" /></BrowserFrame>
             </Reveal>
           </div>
         </section>
@@ -418,6 +475,32 @@ export function LandingPage() {
           </div>
         </section>
 
+        <section id="pricing" className="scroll-mt-20 bg-card px-5 py-20 lg:px-8">
+          <div className="mx-auto max-w-7xl">
+            <Reveal className="mx-auto max-w-3xl text-center">
+              <div className="text-xs font-bold uppercase tracking-widest text-primary">{tr("Цены")}</div>
+              <h2 className="mt-3 font-display text-3xl font-extrabold uppercase md:text-5xl">{tr("Начните с нужных модулей")}</h2>
+              <p className="mt-4 text-sm leading-7 text-muted-foreground md:text-base">{tr("Стоимость рассчитывается по количеству проектов, сотрудников и подключённых возможностей. Вы платите только за то, чем пользуется ваша компания.")}</p>
+            </Reveal>
+            <div className="mt-10 grid gap-5 md:grid-cols-3">
+              {[
+                ["Старт", "Для небольшой команды", "Проекты, квартиры, клиенты и продажи"],
+                ["Бизнес", "Для растущей компании", "Финансы, склад, смета, сотрудники и отчёты"],
+                ["Компания", "Для нескольких проектов", "Все модули, роли, интеграции и сопровождение"],
+              ].map(([name, caption, text], index) => (
+                <Reveal key={name} direction={index === 0 ? "left" : index === 2 ? "right" : "up"} className="h-full">
+                  <article className={`h-full rounded-2xl border p-7 ${index === 1 ? "border-primary bg-background shadow-lg" : "border-border bg-background"}`}>
+                    <h3 className="font-display text-xl font-extrabold">{tr(name)}</h3>
+                    <p className="mt-1 text-xs font-semibold text-primary">{tr(caption)}</p>
+                    <p className="mt-5 text-sm leading-6 text-muted-foreground">{tr(text)}</p>
+                    <Button asChild variant={index === 1 ? "default" : "outline"} className="mt-7 w-full rounded-full"><a href="#contact">{tr("Узнать стоимость")}</a></Button>
+                  </article>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <section className="px-5 pb-20 lg:px-8">
           <Reveal className="mx-auto grid max-w-7xl gap-10 rounded-3xl bg-card p-8 lg:grid-cols-2 lg:items-center lg:p-12">
             <div>
@@ -460,8 +543,8 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section className="px-5 pb-20 lg:px-8">
-          <Reveal className="bino-band mx-auto max-w-7xl rounded-3xl px-6 py-16 text-center text-primary-foreground">
+        <section id="contact" className="scroll-mt-20 px-5 pb-20 lg:px-8">
+          <Reveal direction="right" className="bino-band mx-auto max-w-7xl rounded-3xl px-6 py-16 text-center text-primary-foreground">
             <h2 className="font-display text-3xl font-extrabold uppercase md:text-5xl">{tr("Готовы навести порядок в компании?")}</h2>
             <p className="mx-auto mt-4 max-w-xl text-sm text-primary-foreground/80">{tr("Создайте аккаунт и добавьте первый проект уже сегодня.")}</p>
             <Button asChild size="lg" variant="secondary" className="mt-8 h-12 rounded-full px-7">
