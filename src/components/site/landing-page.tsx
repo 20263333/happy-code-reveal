@@ -28,9 +28,7 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { Button } from "@/components/ui/button";
 import { getStableSession } from "@/lib/auth-session";
 import dashboardShot from "@/assets/product/dashboard.png";
-import projectsShot from "@/assets/product/sales.png";
 import warehouseShot from "@/assets/product/warehouse.png";
-import financeShot from "@/assets/product/finance.png";
 
 type Module = { icon: ComponentType<{ className?: string }>; title: string; text: string };
 
@@ -224,7 +222,7 @@ export function LandingPage() {
             </div>
           </div>
           <Reveal className="relative mx-auto mt-14 max-w-6xl">
-            <BrowserFrame src={dashboardShot} alt={tr("Дашборд директора")} />
+            <BrowserFrame><img src={dashboardShot} alt={tr("Дашборд директора")} className="w-full" /></BrowserFrame>
           </Reveal>
           <div className="relative mx-auto mt-14 grid max-w-5xl grid-cols-2 gap-6 text-center md:grid-cols-4">
             {[["22+", "модулей в системе"], ["3", "языка интерфейса"], ["24/7", "доступ из любой точки"], ["1", "единая система"]].map(([value, label]) => (
@@ -281,7 +279,7 @@ export function LandingPage() {
               })}
             </div>
             <div className="mx-auto mt-14 max-w-5xl">
-              <BrowserFrame src={projectsShot} alt={tr("Проекты и блоки")} />
+              <BrowserFrame><ChessMock label={tr} /></BrowserFrame>
             </div>
           </Reveal>
         </section>
@@ -309,7 +307,11 @@ export function LandingPage() {
                 ))}
               </div>
               <div className="mt-6">
-                <BrowserFrame src={screen.image} alt={tr(screen.label)} imageKey={screen.id} />
+                <BrowserFrame imageKey={screen.id}>
+                  {screen.image
+                    ? <img src={screen.image} alt={tr(screen.label)} className="w-full" loading="lazy" />
+                    : <ChessMock label={tr} />}
+                </BrowserFrame>
               </div>
               <p className="mt-4 text-sm text-muted-foreground">{tr(screen.title)}</p>
             </Reveal>
