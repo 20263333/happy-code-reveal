@@ -99,8 +99,6 @@ const phrases: Record<string, string> = {
   "Можно перенести данные из Excel?": "Can data be imported from Excel?",
   "Да, мы помогаем перенести список квартир, клиентов и графики рассрочки.": "Yes, we help import apartment lists, customers, and installment schedules.",
   "На каком языке интерфейс?": "Which languages does the interface support?",
-  "Таджикский, русский и китайский — язык переключается в один клик.": "Russian, Tajik and English — switch the language with one click.",
-  "Данные в безопасности?": "Is the data secure?",
   "Данные каждой компании изолированы, доступ по ролям, документы хранятся приватно.": "Each company's data is isolated, access is role-based, and documents are stored privately.",
   "Готовы навести порядок в компании?": "Ready to bring order to your company?",
   "Создайте аккаунт и добавьте первый проект уже сегодня.": "Create an account and add your first project today.",
