@@ -199,7 +199,7 @@ function ChessMock({ label }: { label: (s: string) => string }) {
                   <td key={cell.number}>
                     <div className={`min-h-20 rounded-xl border p-3 text-center shadow-sm ${tone[cell.status]}`}>
                       <div className="text-xs font-bold">№{cell.number}</div>
-                      <div className="mt-1 text-[11px] opacity-90">{cell.area} м²</div>
+                      <div className="mt-1 text-[11px] opacity-90">{cell.area} {label("м²")}</div>
                       <div className="mt-2 text-[10px] font-semibold opacity-90">{label(statusLabel[cell.status])}</div>
                     </div>
                   </td>
