@@ -125,7 +125,7 @@ function ChessMock({ label }: { label: (s: string) => string }) {
     booked: "bg-warning/20 text-warning-foreground border-warning/40",
   };
   return (
-    <div className="bg-background p-5 text-left md:p-8">
+    <div className="bg-background p-5 text-left text-foreground md:p-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="font-display text-lg font-extrabold">{label("Блок 1")}</div>
