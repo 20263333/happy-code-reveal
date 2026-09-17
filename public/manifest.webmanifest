@@ -1,0 +1,16 @@
+{
+  "name": "PLATFORM.TJ",
+  "short_name": "PLATFORM.TJ",
+  "description": "ERP/CRM для строительных компаний: проекты, продажи квартир, платежи и расходы.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#13315c",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

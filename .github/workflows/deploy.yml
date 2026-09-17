@@ -1,0 +1,52 @@
+name: Deploy to RuVDS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_PROJECT_ID: ${{ secrets.VITE_SUPABASE_PROJECT_ID }}
+        run: bun run build
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H 45.132.18.93 >> ~/.ssh/known_hosts
+
+      - name: Deploy build to server
+        run: |
+          rsync -avz --delete \
+            --exclude='.git' --exclude='node_modules' \
+            ./ root@45.132.18.93:/var/www/binosoz/
+
+      - name: Restart app on server
+        run: |
+          ssh root@45.132.18.93 << 'EOF'
+            set -e
+            cd /var/www/binosoz
+            export PATH="$HOME/.bun/bin:$PATH"
+            bun install --production --frozen-lockfile
+            pm2 restart binosoz || pm2 start "bun run start" --name binosoz
+            pm2 save
+          EOF
