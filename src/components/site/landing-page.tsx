@@ -241,23 +241,23 @@ export function LandingPage() {
   return (
     <div className="bino-site min-h-screen bg-background text-foreground">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-border/70 bg-background/85 backdrop-blur-xl">
-        <div className="mx-auto grid h-16 max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 lg:flex lg:px-8">
+        <div className="mx-auto grid h-16 max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 xl:flex lg:px-8">
           <a href="#top" className="flex items-center gap-2.5" aria-label="Binosoz.tj">
             <img src={logoUrl} alt="Binosoz.tj" className="h-8 w-8 object-contain" />
             <span className="font-display text-lg font-extrabold tracking-tight">Binosoz<span className="text-primary">.tj</span></span>
           </a>
-          <nav className="hidden items-center gap-5 text-sm font-medium text-muted-foreground lg:flex">
+          <nav className="hidden items-center gap-5 text-sm font-medium text-muted-foreground xl:flex">
             {navItems.map(([label, href]) => <a key={href} href={href} className="bino-nav-link whitespace-nowrap">{tr(label)}</a>)}
           </nav>
           <div className="flex items-center gap-2">
             <LanguageToggle />
-            <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileMenuOpen((value) => !value)} aria-label={tr("Открыть меню")} aria-expanded={mobileMenuOpen}>
+            <Button variant="ghost" size="icon" className="xl:hidden" onClick={() => setMobileMenuOpen((value) => !value)} aria-label={tr("Открыть меню")} aria-expanded={mobileMenuOpen}>
               {mobileMenuOpen ? <X /> : <Menu />}
             </Button>
           </div>
         </div>
         {mobileMenuOpen && (
-          <nav className="border-t border-border bg-background px-5 py-4 lg:hidden">
+          <nav className="border-t border-border bg-background px-5 py-4 xl:hidden">
             <div className="mx-auto grid max-w-7xl gap-1">
               {navItems.map(([label, href]) => (
                 <a key={href} href={href} onClick={() => setMobileMenuOpen(false)} className="rounded-lg px-3 py-3 text-sm font-semibold text-foreground hover:bg-muted">{tr(label)}</a>
