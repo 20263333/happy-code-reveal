@@ -6,6 +6,7 @@ import {
   Boxes,
   Building2,
   Calculator,
+  Check,
   Clock3,
   CreditCard,
   FileSignature,
