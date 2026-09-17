@@ -10,7 +10,7 @@ export const LANG_LABEL: Record<Lang, string> = {
 
 const DICT = {
   ru: {
-    "app.name": "PLATFORM.TJ",
+    "app.name": "Binosoz.tj",
     "app.tagline": "Управление застройкой",
     "nav.menu": "Меню",
     "nav.dashboard": "Дашборд",
@@ -171,7 +171,7 @@ const DICT = {
     "staff.revoke": "Отозвать доступ",
   },
   tg: {
-    "app.name": "PLATFORM.TJ",
+    "app.name": "Binosoz.tj",
     "app.tagline": "Идоракунии сохтмон",
     "nav.menu": "Меню",
     "nav.dashboard": "Дашборд",
@@ -332,7 +332,7 @@ const DICT = {
     "staff.revoke": "Гирифтани дастрасӣ",
   },
   zh: {
-    "app.name": "PLATFORM.TJ",
+    "app.name": "Binosoz.tj",
     "app.tagline": "建筑管理",
     "nav.menu": "菜单",
     "nav.dashboard": "仪表板",

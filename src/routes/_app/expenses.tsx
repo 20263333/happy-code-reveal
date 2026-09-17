@@ -33,7 +33,7 @@ import { rollbackExpense } from "@/lib/distribution.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/expenses")({
-  head: () => ({ meta: [{ title: "Расходы — PLATFORM.TJ" }] }),
+  head: () => ({ meta: [{ title: "Расходы — Binosoz.tj" }] }),
   component: ExpensesPage,
   errorComponent: ({ error, reset }) => {
     const { tr } = useT();

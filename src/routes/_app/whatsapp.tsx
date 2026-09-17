@@ -30,7 +30,7 @@ import {
 export const Route = createFileRoute("/_app/whatsapp")({
   head: () => ({
     meta: [
-      { title: "WhatsApp (Wappi) — PLATFORM.TJ" },
+      { title: "WhatsApp (Wappi) — Binosoz.tj" },
       {
         name: "description",
         content: "Чатҳои WhatsApp-и мизоҷон дар CRM: паёмҳои воридотӣ ва содиротӣ.",

@@ -83,11 +83,11 @@ export function InstallPrompt() {
         <div className="flex items-start gap-3">
           <img
             src={iconUrl}
-            alt="PLATFORM.TJ"
+            alt="Binosoz.tj"
             className="h-14 w-14 shrink-0 rounded-xl border border-border"
           />
           <div className="min-w-0 flex-1">
-            <p className="font-display text-base font-semibold leading-tight">Установить PLATFORM.TJ</p>
+            <p className="font-display text-base font-semibold leading-tight">Установить Binosoz.tj</p>
             <p className="mt-1 text-sm text-muted-foreground">
               Добавьте приложение на главный экран — быстрый запуск и работа как в обычной программе.
             </p>

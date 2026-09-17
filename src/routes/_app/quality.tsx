@@ -21,7 +21,7 @@ import { ConstructionPhotosTab } from "@/components/construction-photos-tab";
 import { MaterialActsTab } from "@/components/material-acts-tab";
 
 export const Route = createFileRoute("/_app/quality")({
-  head: () => ({ meta: [{ title: "Сифат ва Бехатарӣ — PLATFORM.TJ" }] }),
+  head: () => ({ meta: [{ title: "Сифат ва Бехатарӣ — Binosoz.tj" }] }),
   component: QualityPage,
 });
 

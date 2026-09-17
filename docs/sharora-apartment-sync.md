@@ -1,6 +1,6 @@
-# Интегратсияи хонаҳо: PLATFORM.TJ → sharora.tj
+# Интегратсияи хонаҳо: Binosoz.tj → sharora.tj
 
-PLATFORM.TJ ҳолати хонаҳоро (холӣ / рассрочка / фурӯхта / банд) бо **webhook (push)**
+Binosoz.tj ҳолати хонаҳоро (холӣ / рассрочка / фурӯхта / банд) бо **webhook (push)**
 мефиристад. Ҳар дафъа ки хона сохта, тағйир ё фурӯхта шавад — дархост меояд.
 
 ## 1. Формати дархост
@@ -17,7 +17,7 @@ Body (як хона):
 
 ```json
 {
-  "source": "platform.tj",
+  "source": "binosoz.tj",
   "event": "apartment.updated",
   "sent_at": "2026-08-24T10:00:00.000Z",
   "data": {
@@ -43,7 +43,7 @@ Body (синхронизатсияи пурра — `apartment.snapshot`):
 
 ```json
 {
-  "source": "platform.tj",
+  "source": "binosoz.tj",
   "event": "apartment.snapshot",
   "sent_at": "...",
   "data": { "apartments": [ { ...ҳамон сохтор... } ] }
@@ -339,8 +339,8 @@ supabase
 | Барнома | Ном | Қимат |
 |---|---|---|
 | sharora.tj | `PLATFORM_WEBHOOK_SECRET` | як пароли тасодуфӣ (масалан `openssl rand -hex 32`) |
-| PLATFORM.TJ | `SHARORA_WEBHOOK_SECRET` | **айнан ҳамон қимат** |
-| PLATFORM.TJ | `SHARORA_WEBHOOK_URL` | `https://sharora.tj/api/public/platform-apartments-webhook` |
+| Binosoz.tj | `SHARORA_WEBHOOK_SECRET` | **айнан ҳамон қимат** |
+| Binosoz.tj | `SHARORA_WEBHOOK_URL` | `https://sharora.tj/api/public/platform-apartments-webhook` |
 
-Баъд аз танзим: дар PLATFORM.TJ → **Танзимот → Интегратсия бо sharora.tj** →
+Баъд аз танзим: дар Binosoz.tj → **Танзимот → Интегратсия бо sharora.tj** →
 тугмаи «Синхронизатсияи пурра» — ҳамаи хонаҳо якбора мераванд.

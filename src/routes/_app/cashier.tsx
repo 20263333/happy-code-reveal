@@ -19,7 +19,7 @@ import { formatDate } from "@/lib/constants";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/cashier")({
-  head: () => ({ meta: [{ title: "Кассир — PLATFORM.TJ" }] }),
+  head: () => ({ meta: [{ title: "Кассир — Binosoz.tj" }] }),
   component: CashierPage,
 });
 
@@ -235,7 +235,7 @@ function CashierPage() {
       ${op.counterparty ? `<div class="row"><span>${tr("Ҷониб")}</span><span>${op.counterparty}</span></div>` : ""}
       ${op.note ? `<div class="row"><span>${tr("Эзоҳ")}</span><span>${op.note}</span></div>` : ""}
       <div class="row big"><span>${tr("Маблағ")}</span><span>${formatMoney(Number(op.amount))} ${op.currency}</span></div>
-      <p style="text-align:center;margin-top:32px;color:#666">PLATFORM.TJ</p>
+      <p style="text-align:center;margin-top:32px;color:#666">Binosoz.tj</p>
       <script>window.print()</script></body></html>`);
     w.document.close();
   };

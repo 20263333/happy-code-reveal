@@ -26,7 +26,7 @@ import { ExcelImportWorkers } from "@/components/excel-import-workers";
 
 
 export const Route = createFileRoute("/_app/attendance")({
-  head: () => ({ meta: [{ title: "Табел коргарон — PLATFORM.TJ" }] }),
+  head: () => ({ meta: [{ title: "Табел коргарон — Binosoz.tj" }] }),
   component: AttendancePage,
 });
 

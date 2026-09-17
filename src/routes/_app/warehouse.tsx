@@ -51,7 +51,7 @@ async function uploadOcrImage(
 }
 
 export const Route = createFileRoute("/_app/warehouse")({
-  head: () => ({ meta: [{ title: "Склад — PLATFORM.TJ" }] }),
+  head: () => ({ meta: [{ title: "Склад — Binosoz.tj" }] }),
   component: WarehousePage,
 });
 
@@ -235,7 +235,7 @@ function WarehousePage() {
   const headerHtml = `
     <div class="doc-no">№________</div>
     <div class="company-header">
-      <div class="name">${esc(company?.name || "PLATFORM.TJ")}</div>
+      <div class="name">${esc(company?.name || "Binosoz.tj")}</div>
     </div>
   `;
 

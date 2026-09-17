@@ -22,9 +22,9 @@ import {
 export const Route = createFileRoute("/passport-preview")({
   head: () => ({
     meta: [
-      { title: "Проверка фото паспорта — PLATFORM.TJ" },
+      { title: "Проверка фото паспорта — Binosoz.tj" },
       { name: "description", content: "Сравните оригинал, улучшенное и обрезанное изображение паспорта." },
-      { property: "og:title", content: "Проверка фото паспорта — PLATFORM.TJ" },
+      { property: "og:title", content: "Проверка фото паспорта — Binosoz.tj" },
       { property: "og:description", content: "Сравните оригинал, улучшенное и обрезанное изображение паспорта." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

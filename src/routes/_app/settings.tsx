@@ -25,7 +25,7 @@ import { PinCodeSection } from "@/components/settings/pin-code-section";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/settings")({
-  head: () => ({ meta: [{ title: "Настройки — PLATFORM.TJ" }] }),
+  head: () => ({ meta: [{ title: "Настройки — Binosoz.tj" }] }),
   component: SettingsPage,
 });
 
@@ -222,7 +222,7 @@ function SmsSettingsSection({ companyId }: { companyId: string }) {
   const [saving, setSaving] = useState(false);
 
   const [testPhone, setTestPhone] = useState("");
-  const [testText, setTestText] = useState("Озмоиши OSON SMS аз PLATFORM.TJ.");
+  const [testText, setTestText] = useState("Озмоиши OSON SMS аз Binosoz.tj.");
   const [sending, setSending] = useState(false);
 
   // Танзимот метавонад умумии ширкат ("") ё барои як лоиҳа (project id) бошад

@@ -20,7 +20,7 @@ import { getStableSession, hasSavedSessionData } from "@/lib/auth-session";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/reports")({
-  head: () => ({ meta: [{ title: "Отчёт ОПУ — PLATFORM.TJ" }] }),
+  head: () => ({ meta: [{ title: "Отчёт ОПУ — Binosoz.tj" }] }),
   beforeLoad: async () => {
     if (typeof window === "undefined") return;
     const session = await getStableSession();

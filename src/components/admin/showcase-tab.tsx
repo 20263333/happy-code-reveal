@@ -251,7 +251,7 @@ export function ShowcaseTab() {
               </div>
               <div className="space-y-1">
                 <Label>Сайт</Label>
-                <Input placeholder="platform.tj" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} />
+                <Input placeholder="binosoz.tj" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">

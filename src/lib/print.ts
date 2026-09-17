@@ -108,7 +108,7 @@ export function openPrintWindow(opts: {
     </style></head><body>
     ${docNoHtml}
     <div class="company-header">
-      <div class="name">${esc(company?.name || "PLATFORM.TJ")}</div>
+      <div class="name">${esc(company?.name || "Binosoz.tj")}</div>
     </div>
     ${contentHtml}
     ${usdBoxHtml}

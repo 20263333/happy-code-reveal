@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PLATFORM.TJ — migrate Lovable Cloud data to the self-hosted VPS Supabase
+# Binosoz.tj — migrate Lovable Cloud data to the self-hosted VPS Supabase
 # Run on the VPS as root after scripts/vps-install.sh finished successfully.
 # IMPORTANT: you need a PostgreSQL dump from Lovable Cloud to restore.
 set -euo pipefail
@@ -10,7 +10,7 @@ CREDS="/root/supabase-credentials.txt"
 DUMP_FILE="${1:-/root/lovable-cloud-dump.sql}"
 
 echo "================================================="
-echo " PLATFORM.TJ VPS Migration Helper"
+echo " Binosoz.tj VPS Migration Helper"
 echo "================================================="
 
 if [[ ! -f "$CREDS" ]]; then

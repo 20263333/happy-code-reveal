@@ -1,10 +1,10 @@
-# Шарики фурӯш — webhook аз PLATFORM.TJ ба profit-flow-logic
+# Шарики фурӯш — webhook аз Binosoz.tj ба profit-flow-logic
 
-PLATFORM.TJ ҳангоми ҳар як ҳодиса POST мефиристад ба URL-и дар секрет `SALES_PARTNER_WEBHOOK_URL` гузошта.
+Binosoz.tj ҳангоми ҳар як ҳодиса POST мефиристад ба URL-и дар секрет `SALES_PARTNER_WEBHOOK_URL` гузошта.
 
 ## 1. Секретҳо
 
-Дар PLATFORM.TJ:
+Дар Binosoz.tj:
 - `SALES_PARTNER_WEBHOOK_URL` = `https://profit-flow-logic.lovable.app/api/public/platform-sales-webhook`
 - `SALES_PARTNER_WEBHOOK_SECRET` = сатри тасодуфии дароз
 
@@ -14,7 +14,7 @@ PLATFORM.TJ ҳангоми ҳар як ҳодиса POST мефиристад б
 
 ```json
 {
-  "source": "platform.tj",
+  "source": "binosoz.tj",
   "event": "payout.created",       // member.created | member.updated | payout.created | snapshot.sync
   "sent_at": "2026-08-24T07:00:00.000Z",
   "company": { "id": "uuid" },
@@ -73,7 +73,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { z } from "zod";
 
 const Payload = z.object({
-  source: z.literal("platform.tj"),
+  source: z.literal("binosoz.tj"),
   event: z.enum(["member.created", "member.updated", "payout.created", "snapshot.sync"]),
   sent_at: z.string(),
   company: z.object({ id: z.string() }),
@@ -150,4 +150,4 @@ export const Route = createFileRoute("/api/public/platform-sales-webhook")({
 });
 ```
 
-Пас аз ин, ҳар пардохт ба Шарики фурӯш дар PLATFORM.TJ фавран дар profit-flow-logic пайдо мешавад; тугмаи «Синхронизатсия» тамоми маълумотро якбора мефиристад.
+Пас аз ин, ҳар пардохт ба Шарики фурӯш дар Binosoz.tj фавран дар profit-flow-logic пайдо мешавад; тугмаи «Синхронизатсия» тамоми маълумотро якбора мефиристад.

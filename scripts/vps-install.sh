@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PLATFORM.TJ — VPS bootstrap (Hostinger KVM 2, Ubuntu 24.04)
+# Binosoz.tj — VPS bootstrap (Hostinger KVM 2, Ubuntu 24.04)
 # Server: 187.77.87.133
 # Run as root:  bash /root/vps-install.sh
 # Installs: Docker + self-hosted Supabase + Bun + PM2 + Nginx + firewall
@@ -60,7 +60,7 @@ docker compose up -d
 echo "==> 4/8 Save credentials"
 mkdir -p /root
 cat > /root/supabase-credentials.txt <<EOF
-PLATFORM.TJ VPS bootstrap credentials
+Binosoz.tj VPS bootstrap credentials
 =====================================
 Server IP: ${SERVER_IP}
 Supabase Studio: http://${SERVER_IP}:8000

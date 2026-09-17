@@ -16,7 +16,7 @@ import { ContractTemplateUploads } from "@/components/contract-template-uploads"
 import type { ContractExtractResult } from "@/lib/contract.functions";
 
 export const Route = createFileRoute("/_app/contracts")({
-  head: () => ({ meta: [{ title: "Договор — PLATFORM.TJ" }] }),
+  head: () => ({ meta: [{ title: "Договор — Binosoz.tj" }] }),
   component: ContractsPage,
 });
 

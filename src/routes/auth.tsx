@@ -18,13 +18,13 @@ import { ShowcaseCompanies } from "@/components/showcase-companies";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Вход и регистрация — PLATFORM.TJ" },
-      { name: "description", content: "Войдите в PLATFORM.TJ через Google или оставьте заявку на подключение вашей строительной компании." },
-      { property: "og:title", content: "Вход в PLATFORM.TJ" },
+      { title: "Вход и регистрация — Binosoz.tj" },
+      { name: "description", content: "Войдите в Binosoz.tj через Google или оставьте заявку на подключение вашей строительной компании." },
+      { property: "og:title", content: "Вход в Binosoz.tj" },
       { property: "og:description", content: "Доступ для владельцев строительных компаний и сотрудников: Google-вход и заявка на регистрацию." },
-      { property: "og:url", content: "https://platform.tj/auth" },
+      { property: "og:url", content: "https://binosoz.tj/auth" },
     ],
-    links: [{ rel: "canonical", href: "https://platform.tj/auth" }],
+    links: [{ rel: "canonical", href: "https://binosoz.tj/auth" }],
   }),
   beforeLoad: async () => {
     if (typeof window === "undefined") return;
@@ -100,9 +100,9 @@ function AuthPage() {
       <div className="relative hidden bg-sidebar p-12 text-sidebar-foreground lg:flex lg:flex-col lg:justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white overflow-hidden">
-            <img src={logoUrl} alt="PLATFORM.TJ" className="h-full w-full object-contain" />
+            <img src={logoUrl} alt="Binosoz.tj" className="h-full w-full object-contain" />
           </div>
-          <span className="font-display text-lg font-semibold">PLATFORM.TJ</span>
+          <span className="font-display text-lg font-semibold">Binosoz.tj</span>
         </div>
         <div className="space-y-4">
           <h2 className="font-display text-4xl font-semibold leading-tight">
@@ -112,12 +112,12 @@ function AuthPage() {
             {tr("Каждая компания — отдельный контур. Проекты, продажи, платежи и расходы в одном месте.")}
           </p>
         </div>
-        <p className="text-xs text-sidebar-foreground/40">© {new Date().getFullYear()} PLATFORM.TJ</p>
+        <p className="text-xs text-sidebar-foreground/40">© {new Date().getFullYear()} Binosoz.tj</p>
       </div>
 
       <div className="surface-light flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
-          <img src={logoUrl} alt="PLATFORM.TJ" className="mb-6 h-16 w-16 object-contain lg:hidden" />
+          <img src={logoUrl} alt="Binosoz.tj" className="mb-6 h-16 w-16 object-contain lg:hidden" />
           <h1 className="font-display text-2xl font-semibold tracking-tight">{tr("Вход в систему")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{tr("Войдите или отправьте заявку компании.")}</p>
 

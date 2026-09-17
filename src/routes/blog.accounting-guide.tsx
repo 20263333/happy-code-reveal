@@ -4,11 +4,11 @@ import { ArrowLeft, CheckCircle2 } from "lucide-react";
 export const Route = createFileRoute("/blog/accounting-guide")({
   head: () => ({
     meta: [
-      { title: "Бухгалтерский учёт в строительстве: полное руководство — PLATFORM.TJ" },
+      { title: "Бухгалтерский учёт в строительстве: полное руководство — Binosoz.tj" },
       {
         name: "description",
         content:
-          "Как вести бухгалтерский учёт в строительной компании: контроль расходов, документооборот, учёт проектов и материалов. Практическое руководство от PLATFORM.TJ.",
+          "Как вести бухгалтерский учёт в строительной компании: контроль расходов, документооборот, учёт проектов и материалов. Практическое руководство от Binosoz.tj.",
       },
       { property: "og:title", content: "Бухгалтерский учёт в строительстве — руководство" },
       {
@@ -16,11 +16,11 @@ export const Route = createFileRoute("/blog/accounting-guide")({
         content:
           "Практическое руководство по бухгалтерскому учёту для застройщиков: расходы, склад, сметы и продажи в одной системе.",
       },
-      { property: "og:url", content: "https://platform.tj/blog/accounting-guide" },
+      { property: "og:url", content: "https://binosoz.tj/blog/accounting-guide" },
       { property: "og:type", content: "article" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: [{ rel: "canonical", href: "https://platform.tj/blog/accounting-guide" }],
+    links: [{ rel: "canonical", href: "https://binosoz.tj/blog/accounting-guide" }],
     scripts: [
       {
         type: "application/ld+json",
@@ -30,13 +30,13 @@ export const Route = createFileRoute("/blog/accounting-guide")({
           headline: "Бухгалтерский учёт в строительстве: полное руководство",
           description:
             "Как вести бухгалтерский учёт в строительной компании: контроль расходов, документооборот, учёт проектов и материалов.",
-          author: { "@type": "Organization", name: "PLATFORM.TJ" },
+          author: { "@type": "Organization", name: "Binosoz.tj" },
           publisher: {
             "@type": "Organization",
-            name: "PLATFORM.TJ",
-            logo: { "@type": "ImageObject", url: "https://platform.tj/icon-192.png" },
+            name: "Binosoz.tj",
+            logo: { "@type": "ImageObject", url: "https://binosoz.tj/icon-192.png" },
           },
-          mainEntityOfPage: "https://platform.tj/blog/accounting-guide",
+          mainEntityOfPage: "https://binosoz.tj/blog/accounting-guide",
           inLanguage: "ru",
         }),
       },
@@ -51,7 +51,7 @@ function AccountingGuidePage() {
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
           <Link to="/" className="font-display text-base font-semibold">
-            PLATFORM.TJ
+            Binosoz.tj
           </Link>
           <Link
             to="/auth"
@@ -125,10 +125,10 @@ function AccountingGuidePage() {
             </ol>
 
             <h2 className="font-display text-2xl font-semibold">
-              Как PLATFORM.TJ решает эти задачи
+              Как Binosoz.tj решает эти задачи
             </h2>
             <p>
-              PLATFORM.TJ — это ERP/CRM для строительных компаний Таджикистана. Данные каждой
+              Binosoz.tj — это ERP/CRM для строительных компаний Таджикистана. Данные каждой
               компании изолированы, доступ разграничен по ролям (владелец, бухгалтер, складчик,
               прораб, директор), а все модули работают в одной системе:
             </p>
@@ -159,7 +159,7 @@ function AccountingGuidePage() {
 
           <div className="mt-10 rounded-2xl border border-border bg-card p-6">
             <h3 className="font-display text-lg font-semibold">
-              Попробуйте PLATFORM.TJ для своей компании
+              Попробуйте Binosoz.tj для своей компании
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
               Регистрация занимает пару минут — войдите через Google и оставьте заявку на

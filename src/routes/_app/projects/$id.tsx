@@ -82,7 +82,7 @@ function Facade3dSection({
 }
 
 export const Route = createFileRoute("/_app/projects/$id")({
-  head: () => ({ meta: [{ title: "Проект — PLATFORM.TJ" }] }),
+  head: () => ({ meta: [{ title: "Проект — Binosoz.tj" }] }),
   validateSearch: (s: Record<string, unknown>): { tab?: string } =>
     typeof s.tab === "string" ? { tab: s.tab } : {},
   component: ProjectDetail,

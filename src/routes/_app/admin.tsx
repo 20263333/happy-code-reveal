@@ -66,7 +66,7 @@ import { AppLogosTab } from "@/components/admin/app-logos-tab";
 
 
 export const Route = createFileRoute("/_app/admin")({
-  head: () => ({ meta: [{ title: "Super Admin — PLATFORM.TJ" }] }),
+  head: () => ({ meta: [{ title: "Super Admin — Binosoz.tj" }] }),
   component: AdminPage,
 });
 

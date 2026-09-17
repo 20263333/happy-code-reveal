@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { formatDate } from "@/lib/constants";
 
 export const Route = createFileRoute("/_app/gantt")({
-  head: () => ({ meta: [{ title: "График сохтмон — PLATFORM.TJ" }] }),
+  head: () => ({ meta: [{ title: "График сохтмон — Binosoz.tj" }] }),
   component: GanttPage,
 });
 

@@ -149,7 +149,7 @@ const server = http.createServer(async (req, res) => {
 
 const port = Number(process.env.PORT || process.env.APP_PORT || 3000);
 server.listen(port, "127.0.0.1", () => {
-  console.log(`PLATFORM.TJ server listening on http://127.0.0.1:${port}`);
+  console.log(`Binosoz.tj server listening on http://127.0.0.1:${port}`);
 });
 
 // Keep the Sales Partner card synchronized even when nobody has the dashboard

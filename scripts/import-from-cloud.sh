@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PLATFORM.TJ — маълумоти Lovable Cloud-ро ба сервери худӣ (VPS) мекӯчонад.
+# Binosoz.tj — маълумоти Lovable Cloud-ро ба сервери худӣ (VPS) мекӯчонад.
 # Истифода:
 #   bash scripts/import-from-cloud.sh <APP_URL> <EXPORT_SECRET>
 # Мисол:

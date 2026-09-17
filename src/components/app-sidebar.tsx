@@ -440,7 +440,7 @@ export function AppSidebar() {
       <SidebarHeader className="border-b border-sidebar-border px-3 py-4">
         <Link to="/" onClick={closeMobile} className="flex items-center gap-3 min-w-0">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white overflow-hidden">
-            <img src={faviconUrl} alt="PLATFORM.TJ" className="h-full w-full object-contain" />
+            <img src={faviconUrl} alt="Binosoz.tj" className="h-full w-full object-contain" />
           </div>
           {!collapsed && (
             <div className="flex min-w-0 flex-col">

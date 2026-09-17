@@ -50,9 +50,9 @@ import {
 export const Route = createFileRoute("/passport-review")({
   head: () => ({
     meta: [
-      { title: "Проверка данных паспорта — PLATFORM.TJ" },
+      { title: "Проверка данных паспорта — Binosoz.tj" },
       { name: "description", content: "Структурированные данные паспорта с оценкой уверенности и ручным редактированием." },
-      { property: "og:title", content: "Проверка данных паспорта — PLATFORM.TJ" },
+      { property: "og:title", content: "Проверка данных паспорта — Binosoz.tj" },
       { property: "og:description", content: "Структурированные данные паспорта с оценкой уверенности и ручным редактированием." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import { formatDate } from "@/lib/constants";
 
 export const Route = createFileRoute("/_app/equipment")({
-  head: () => ({ meta: [{ title: "Техника — PLATFORM.TJ" }] }),
+  head: () => ({ meta: [{ title: "Техника — Binosoz.tj" }] }),
   component: EquipmentPage,
 });
 

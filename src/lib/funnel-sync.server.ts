@@ -13,7 +13,7 @@ export type FunnelEvent =
   | "message.created"; // паёми нави WhatsApp
 
 export type FunnelPayload = {
-  source: "platform.tj";
+  source: "binosoz.tj";
   event: FunnelEvent;
   sent_at: string;
   company: { id: string; name?: string | null };

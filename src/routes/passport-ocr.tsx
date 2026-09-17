@@ -23,9 +23,9 @@ import { recognizeImage, type OcrResult } from "@/lib/paddle-ocr";
 export const Route = createFileRoute("/passport-ocr")({
   head: () => ({
     meta: [
-      { title: "Распознавание паспорта — PLATFORM.TJ" },
+      { title: "Распознавание паспорта — Binosoz.tj" },
       { name: "description", content: "Распознавание текста документа движком PaddleOCR прямо в браузере." },
-      { property: "og:title", content: "Распознавание паспорта — PLATFORM.TJ" },
+      { property: "og:title", content: "Распознавание паспорта — Binosoz.tj" },
       { property: "og:description", content: "Распознавание текста документа движком PaddleOCR прямо в браузере." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

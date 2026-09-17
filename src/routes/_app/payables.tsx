@@ -28,7 +28,7 @@ import { useCompanyHeader, openPrintWindow, esc } from "@/lib/print";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/payables")({
-  head: () => ({ meta: [{ title: "Поставщики — PLATFORM.TJ" }] }),
+  head: () => ({ meta: [{ title: "Поставщики — Binosoz.tj" }] }),
   component: PayablesPage,
   errorComponent: ({ error, reset }) => (
     <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-sm">
