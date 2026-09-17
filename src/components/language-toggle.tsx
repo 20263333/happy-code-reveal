@@ -23,7 +23,7 @@ export function LanguageToggle({ align = "end" }: { align?: "start" | "center" |
         <DropdownMenuRadioGroup value={lang} onValueChange={(v) => setLang(v as Lang)}>
           <DropdownMenuRadioItem value="ru">Русский</DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="tg">Тоҷикӣ</DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value="zh">中文</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="en">English</DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>
