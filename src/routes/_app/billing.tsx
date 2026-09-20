@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { CreditCard, Copy, Upload, Check, Clock, X, Infinity as InfIcon, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -13,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { billingPeriodLabel, billingPeriodShort } from "@/lib/constants";
 import { useT } from "@/lib/i18n";
+import { submitSubscriptionPayment } from "@/lib/billing.functions";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
@@ -29,7 +31,7 @@ const PROVIDER_LABELS: Record<string, string> = {
 
 function BillingPage() {
   const { tr } = useT();
-  const { user, companyId, isOwner } = useAuth();
+  const { user, companyId, isOwner, loading: authLoading, profileLoaded } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [tariffId, setTariffId] = useState<string | null>(null);
@@ -37,6 +39,7 @@ function BillingPage() {
   const [file, setFile] = useState<File | null>(null);
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const submitPayment = useServerFn(submitSubscriptionPayment);
 
   const { data: tariffs = [] } = useQuery({
     queryKey: ["tariffs"],
@@ -68,9 +71,10 @@ function BillingPage() {
   const { data: history = [] } = useQuery({
     queryKey: ["my-subscription-payments", companyId],
     queryFn: async () => {
-      const { data } = await (supabase as any).from("subscription_payments")
+      const { data, error } = await (supabase as any).from("subscription_payments")
         .select("*, tariff:tariffs(name, duration_days)")
         .order("created_at", { ascending: false });
+      if (error) throw new Error(error.message);
       return data ?? [];
     },
     enabled: !!companyId,
@@ -91,7 +95,8 @@ function BillingPage() {
   };
 
   const submit = async () => {
-    if (!user || !companyId) return;
+    if (authLoading || !profileLoaded) { toast.error(tr("Маълумоти ҳисоб ҳоло бор мешавад")); return; }
+    if (!user || !companyId) { toast.error(tr("Ширкат ёфт нашуд")); return; }
     if (!isOwner) { toast.error(tr("Только владелец компании может оплачивать")); return; }
     if (!selectedTariff || !file) {
       toast.error(tr("Выберите тариф и загрузите чек")); return;
@@ -103,16 +108,11 @@ function BillingPage() {
       const { error: upErr } = await supabase.storage.from("subscription-receipts")
         .upload(path, file, { upsert: false, contentType: file.type });
       if (upErr) throw upErr;
-      const { error: insErr } = await (supabase as any).from("subscription_payments").insert({
-        company_id: companyId,
+      await submitPayment({ data: {
         tariff_id: selectedTariff.id,
         payment_method_id: selectedMethod?.id ?? null,
-        amount: selectedTariff.price,
-        currency: selectedTariff.currency,
-        receipt_url: path,
-        created_by: user.id,
-      });
-      if (insErr) throw insErr;
+        receipt_path: path,
+      } });
       toast.success(tr("Чек отправлен на проверку"));
       setFile(null); setNote("");
       qc.invalidateQueries({ queryKey: ["my-subscription-payments"] });
@@ -229,7 +229,7 @@ function BillingPage() {
             <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} />
           </div>
           <div className="flex gap-2">
-            <Button onClick={submit} disabled={submitting || !file || !isOwner}>
+            <Button onClick={submit} disabled={submitting || authLoading || !profileLoaded || !file || !isOwner || !companyId}>
               <Upload className="h-4 w-4" /> {submitting ? tr("Отправка…") : tr("Отправить на проверку")}
             </Button>
             <Button variant="outline" onClick={() => navigate({ to: "/dashboard" })}>{tr("Назад")}</Button>

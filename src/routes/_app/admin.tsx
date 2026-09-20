@@ -53,6 +53,7 @@ import {
   approveChangeRequest,
   rejectChangeRequest,
   getReceiptSignedUrl,
+  listSubscriptionPaymentsForAdmin,
 } from "@/lib/billing.functions";
 import { restoreDeletedRecord } from "@/lib/trash.functions";
 import { useAuth } from "@/hooks/use-auth";
@@ -863,18 +864,11 @@ function PaymentRequestsTab() {
   const approveFn = useServerFn(approveSubscriptionPayment);
   const rejectFn = useServerFn(rejectSubscriptionPayment);
   const signedFn = useServerFn(getReceiptSignedUrl);
+  const listPaymentsFn = useServerFn(listSubscriptionPaymentsForAdmin);
 
-  const { data: items = [] } = useQuery({
+  const { data: items = [], error, isLoading, refetch } = useQuery({
     queryKey: ["all-subscription-payments"],
-    queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from("subscription_payments")
-        .select(
-          "*, tariff:tariffs(name, duration_days), method:payment_methods(provider, label), company:companies(name)",
-        )
-        .order("created_at", { ascending: false });
-      return data ?? [];
-    },
+    queryFn: () => listPaymentsFn(),
     refetchInterval: 30000,
   });
   const approve = useMutation({
@@ -904,6 +898,13 @@ function PaymentRequestsTab() {
     }
   };
 
+  if (isLoading) return <div className="py-10 text-center text-muted-foreground">Загрузка…</div>;
+  if (error) return (
+    <div className="flex flex-wrap items-center justify-between gap-3 pt-6 text-sm text-destructive">
+      <span>Не удалось загрузить заявки: {error.message}</span>
+      <Button type="button" size="sm" variant="outline" onClick={() => void refetch()}>Повторить</Button>
+    </div>
+  );
   if (items.length === 0)
     return <p className="pt-6 text-sm text-muted-foreground">Заявок на оплату пока нет.</p>;
 

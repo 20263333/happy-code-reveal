@@ -3,9 +3,89 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 async function requireAdmin(supabase: any, userId: string) {
-  const { data } = await supabase.from("platform_admins").select("user_id").eq("user_id", userId).maybeSingle();
+  const { data, error } = await supabase.from("platform_admins").select("user_id").eq("user_id", userId).maybeSingle();
+  if (error) throw new Error(error.message);
   if (!data) throw new Error("Танҳо Super Admin");
 }
+
+export const submitSubscriptionPayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({
+    tariff_id: z.string().uuid(),
+    payment_method_id: z.string().uuid().nullable(),
+    receipt_path: z.string().min(3).max(500),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as any;
+
+    const [{ data: owned, error: ownedError }, { data: profile, error: profileError }, { data: ownerRole, error: roleError }] = await Promise.all([
+      admin.from("companies").select("id").eq("owner_user_id", userId).maybeSingle(),
+      admin.from("profiles").select("company_id").eq("id", userId).maybeSingle(),
+      admin.from("user_roles").select("user_id").eq("user_id", userId).eq("role", "owner").maybeSingle(),
+    ]);
+    if (ownedError || profileError || roleError) {
+      throw new Error(ownedError?.message ?? profileError?.message ?? roleError?.message ?? "Маълумоти ширкат хонда нашуд");
+    }
+
+    const companyId = owned?.id ?? (ownerRole ? profile?.company_id : null);
+    if (!companyId) throw new Error("Танҳо соҳиби ширкат метавонад пардохт фиристад");
+    if (!data.receipt_path.startsWith(`${companyId}/`)) throw new Error("Роҳи чек нодуруст аст");
+
+    const [{ data: tariff, error: tariffError }, methodResult] = await Promise.all([
+      admin.from("tariffs").select("id,price,currency").eq("id", data.tariff_id).eq("is_active", true).maybeSingle(),
+      data.payment_method_id
+        ? admin.from("payment_methods").select("id").eq("id", data.payment_method_id).eq("is_active", true).maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+    ]);
+    if (tariffError) throw new Error(tariffError.message);
+    if (!tariff) throw new Error("Тарифи интихобшуда ёфт нашуд");
+    if (methodResult.error) throw new Error(methodResult.error.message);
+    if (data.payment_method_id && !methodResult.data) throw new Error("Реквизити пардохт ёфт нашуд");
+
+    const [folder, fileName] = data.receipt_path.split("/");
+    if (!folder || !fileName || folder !== companyId) throw new Error("Роҳи чек нодуруст аст");
+    const { data: uploaded, error: storageError } = await admin.storage
+      .from("subscription-receipts")
+      .list(folder, { search: fileName, limit: 10 });
+    if (storageError) throw new Error(storageError.message);
+    if (!(uploaded ?? []).some((item: { name: string }) => item.name === fileName)) {
+      throw new Error("Файли чек дар сервер ёфт нашуд");
+    }
+
+    const { data: payment, error: insertError } = await admin.from("subscription_payments").insert({
+      company_id: companyId,
+      tariff_id: tariff.id,
+      payment_method_id: data.payment_method_id,
+      amount: tariff.price,
+      currency: tariff.currency,
+      receipt_url: data.receipt_path,
+      created_by: userId,
+      status: "pending",
+      activated_until: null,
+      reviewed_by: null,
+      reviewed_at: null,
+    }).select("id,status").single();
+    if (insertError || !payment) {
+      await admin.storage.from("subscription-receipts").remove([data.receipt_path]);
+      throw new Error(insertError?.message ?? "Дархости пардохт сабт нашуд");
+    }
+    return payment as { id: string; status: string };
+  });
+
+export const listSubscriptionPaymentsForAdmin = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await (supabaseAdmin as any)
+      .from("subscription_payments")
+      .select("*, tariff:tariffs(name, duration_days), method:payment_methods(provider, label), company:companies(name)")
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
 
 export const approveSubscriptionPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
