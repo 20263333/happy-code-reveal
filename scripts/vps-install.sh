@@ -93,13 +93,19 @@ Service role key: ${SERVICE_ROLE_KEY}
 EOF
 chmod 600 /root/supabase-credentials.txt
 
-echo "==> 5/8 Bun + PM2"
+echo "==> 5/8 Bun + Node.js + PM2"
 curl -fsSL https://bun.sh/install | bash
 export BUN_INSTALL="/root/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 echo 'export BUN_INSTALL="/root/.bun"' >> /root/.bashrc
 echo 'export PATH="$BUN_INSTALL/bin:$PATH"' >> /root/.bashrc
 bun --version
+
+# Install Node.js 22 (includes npm) — PM2 and the Vite build need it
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+apt-get install -y nodejs
+node --version
+npm --version
 npm install -g pm2
 
 echo "==> 6/8 App directory"
