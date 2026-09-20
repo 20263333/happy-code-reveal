@@ -10,6 +10,69 @@ const CreateProjectSchema = z.object({
   cover_url: z.string().max(500).optional().nullable(),
 });
 
+export const listProjects = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { userId, supabase } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const [profileResult, ownedResult] = await Promise.all([
+      (supabaseAdmin as any).from("profiles").select("company_id").eq("id", userId).maybeSingle(),
+      (supabaseAdmin as any).from("companies").select("id").eq("owner_user_id", userId).maybeSingle(),
+    ]);
+    const companyId = (profileResult.data as any)?.company_id ?? (ownedResult.data as any)?.id ?? null;
+
+    let roots: any[] = [];
+    if (companyId) {
+      const { data, error } = await (supabaseAdmin as any)
+        .from("projects")
+        .select("id, name, location, status, cover_url, created_at")
+        .eq("company_id", companyId)
+        .is("parent_id", null)
+        .order("created_at", { ascending: true });
+      if (error) throw new Error(error.message);
+      roots = data ?? [];
+    } else {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, name, location, status, cover_url, created_at")
+        .is("parent_id", null)
+        .order("created_at", { ascending: true });
+      if (error) throw new Error(error.message);
+      roots = data ?? [];
+    }
+
+    const rootIds = roots.map((project) => project.id as string);
+    if (!rootIds.length) return [];
+
+    const { data: children, error: childrenError } = await (supabaseAdmin as any)
+      .from("projects")
+      .select("id, parent_id")
+      .in("parent_id", rootIds);
+    if (childrenError) throw new Error(childrenError.message);
+
+    const childIds = (children ?? []).map((project: any) => project.id as string);
+    let apartments: any[] = [];
+    if (childIds.length) {
+      const { data, error } = await (supabaseAdmin as any)
+        .from("apartments")
+        .select("project_id, status")
+        .in("project_id", childIds);
+      if (error) throw new Error(error.message);
+      apartments = data ?? [];
+    }
+
+    return roots.map((project) => ({
+      ...project,
+      children: (children ?? [])
+        .filter((child: any) => child.parent_id === project.id)
+        .map((child: any) => ({
+          id: child.id,
+          apartments: apartments.filter((apartment: any) => apartment.project_id === child.id),
+        })),
+    }));
+  });
+
 export const createProject = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => CreateProjectSchema.parse(d))
