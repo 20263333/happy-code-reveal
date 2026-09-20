@@ -46,8 +46,7 @@ export const structurePassport = createServerFn({ method: "POST" })
     } as Input;
   })
   .handler(async ({ data }): Promise<PassportResult> => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("LOVABLE_API_KEY нест");
+    const provider = requireAiProvider();
 
     const linesBlock = data.lines
       .map((l, i) => `${i + 1}. ${l.text}  [conf ${Math.round((l.confidence ?? 0) * 100)}%]`)
