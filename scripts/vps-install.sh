@@ -35,24 +35,43 @@ if [ ! -d "$SUPA_DIR/.git" ]; then
 fi
 cd "$SUPA_DIR/docker"
 
-cp .env.example .env
-POSTGRES_PASSWORD=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | head -c 32)
-JWT_SECRET=$(openssl rand -base64 32)
-ANON_KEY=$(openssl rand -base64 32)
-SERVICE_ROLE_KEY=$(openssl rand -base64 32)
-DASHBOARD_PASSWORD=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | head -c 16)
+cp -f .env.example .env
+POSTGRES_PASSWORD=$(openssl rand -base64 48 | tr -dc 'a-zA-Z0-9' | head -c 32)
+JWT_SECRET=$(openssl rand -base64 48 | tr -dc 'a-zA-Z0-9' | head -c 48)
+DASHBOARD_PASSWORD=$(openssl rand -base64 48 | tr -dc 'a-zA-Z0-9' | head -c 16)
 
-sed -i "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=${POSTGRES_PASSWORD}/" .env
-sed -i "s/^JWT_SECRET=.*/JWT_SECRET=${JWT_SECRET}/" .env
-sed -i "s/^ANON_KEY=.*/ANON_KEY=${ANON_KEY}/" .env
-sed -i "s/^SERVICE_ROLE_KEY=.*/SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}/" .env
-sed -i "s/^DASHBOARD_USERNAME=.*/DASHBOARD_USERNAME=supabase/" .env
-sed -i "s/^DASHBOARD_PASSWORD=.*/DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD}/" .env
-sed -i "s/^SITE_URL=.*/SITE_URL=http:\/\/${SERVER_IP}:8000/" .env
-sed -i "s/^API_EXTERNAL_URL=.*/API_EXTERNAL_URL=http:\/\/${SERVER_IP}:8000/" .env
-sed -i "s/^SUPABASE_PUBLIC_URL=.*/SUPABASE_PUBLIC_URL=http:\/\/${SERVER_IP}:8000/" .env
-sed -i "s/^KONG_HTTP_PORT=.*/KONG_HTTP_PORT=8000/" .env
-sed -i "s/^KONG_HTTPS_PORT=.*/KONG_HTTPS_PORT=8443/" .env
+# Supabase API keys must be HS256 JWTs signed with JWT_SECRET
+b64url() { openssl base64 -e -A | tr '+/' '-_' | tr -d '='; }
+gen_jwt() {
+  local payload="$1" secret="$2"
+  local header payload_b64 sig
+  header=$(printf '%s' '{"alg":"HS256","typ":"JWT"}' | b64url)
+  payload_b64=$(printf '%s' "$payload" | b64url)
+  sig=$(printf '%s' "${header}.${payload_b64}" | openssl dgst -sha256 -hmac "$secret" -binary | b64url)
+  printf '%s' "${header}.${payload_b64}.${sig}"
+}
+ANON_KEY=$(gen_jwt '{"role":"anon","iss":"supabase","iat":1750000000,"exp":2050000000}' "$JWT_SECRET")
+SERVICE_ROLE_KEY=$(gen_jwt '{"role":"service_role","iss":"supabase","iat":1750000000,"exp":2050000000}' "$JWT_SECRET")
+
+set_env() { # set_env KEY VALUE — safe replace in .env
+  local key="$1" value="$2"
+  if grep -q "^${key}=" .env; then
+    sed -i "s|^${key}=.*|${key}=${value}|" .env
+  else
+    echo "${key}=${value}" >> .env
+  fi
+}
+set_env POSTGRES_PASSWORD "$POSTGRES_PASSWORD"
+set_env JWT_SECRET "$JWT_SECRET"
+set_env ANON_KEY "$ANON_KEY"
+set_env SERVICE_ROLE_KEY "$SERVICE_ROLE_KEY"
+set_env DASHBOARD_USERNAME "supabase"
+set_env DASHBOARD_PASSWORD "$DASHBOARD_PASSWORD"
+set_env SITE_URL "http://${SERVER_IP}:8000"
+set_env API_EXTERNAL_URL "http://${SERVER_IP}:8000"
+set_env SUPABASE_PUBLIC_URL "http://${SERVER_IP}:8000"
+set_env KONG_HTTP_PORT "8000"
+set_env KONG_HTTPS_PORT "8443"
 
 docker compose pull
 docker compose up -d
