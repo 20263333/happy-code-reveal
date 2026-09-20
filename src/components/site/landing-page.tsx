@@ -34,6 +34,7 @@ import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
 import { useAppLogo } from "@/lib/app-logos";
 import { LanguageToggle } from "@/components/language-toggle";
+import { SiteClients } from "@/components/site/site-clients";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
