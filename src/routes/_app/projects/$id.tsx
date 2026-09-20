@@ -897,9 +897,11 @@ function ProjectBlocksView({ project, projectId, isOwner }: { project: any; proj
                     onClick={async (e) => {
                       e.preventDefault(); e.stopPropagation();
                       if (!confirm(`${tr("Удалить проект")} "${b.name}"? ${tr("Все данные будут потеряны.")}`)) return;
-                      const { error } = await supabase.from("projects").delete().eq("id", b.id);
-                      if (error) toast.error(error.message);
-                      else { toast.success(tr("Удалено")); qc.invalidateQueries({ queryKey: ["project-blocks", projectId] }); }
+                      try {
+                        await deleteBlock({ data: { block_id: b.id } });
+                        toast.success(tr("Удалено"));
+                        qc.invalidateQueries({ queryKey: ["project-blocks", projectId] });
+                      } catch (err: any) { toast.error(err?.message || "Хатогӣ"); }
                     }}
                     className="absolute top-2 right-2 h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 hover:bg-destructive/10"
                   >
