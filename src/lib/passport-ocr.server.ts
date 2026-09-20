@@ -56,8 +56,11 @@ type OcrProvider = {
 };
 
 function resolveOcrProvider(): OcrProvider | null {
+  const forced = process.env.AI_PROVIDER?.trim().toLowerCase();
+  const openaiKeyPref = process.env.OPENAI_API_KEY?.trim();
+  const preferOpenAI = forced === "openai" ? !!openaiKeyPref : forced === "lovable" ? false : !!openaiKeyPref;
   const lovableKey = process.env.LOVABLE_API_KEY?.trim();
-  if (lovableKey) {
+  if (!preferOpenAI && lovableKey) {
     return {
       name: "Lovable AI Gateway",
       url: "https://ai.gateway.lovable.dev/v1/chat/completions",
