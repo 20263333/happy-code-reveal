@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireAiProvider } from "./ai-provider.server";
 
 // Client sends { base64, mime } — we forward as multipart to Lovable AI STT.
 export const transcribeAudio = createServerFn({ method: "POST" })
