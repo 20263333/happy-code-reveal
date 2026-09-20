@@ -45,14 +45,18 @@ function asDataUrl(s: string): string {
 
 const RETRYABLE_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
 const OCR_ERROR_MESSAGE = "Passport could not be recognized. Please take a clearer photo.";
-const FLASH_MODEL = "openai/gpt-5.4-mini";
-const PRO_MODEL = "openai/gpt-5.4";
+// Gemini reads ID documents reliably and does not refuse personal documents,
+// so it is the primary OCR model; the OpenAI model stays as a second opinion.
+const FLASH_MODEL = "google/gemini-3.8-flash";
+const PRO_MODEL = "google/gemini-3.8-flash";
+const FALLBACK_MODEL = "openai/gpt-5.4";
 type OcrProvider = {
   name: string;
   url: string;
   headers: Record<string, string>;
   flash: string;
   pro: string;
+  fallback: string;
 };
 
 function resolveOcrProvider(): OcrProvider | null {
@@ -70,6 +74,7 @@ function resolveOcrProvider(): OcrProvider | null {
       },
       flash: FLASH_MODEL,
       pro: PRO_MODEL,
+      fallback: FALLBACK_MODEL,
     };
   }
   const openaiKey = process.env.OPENAI_API_KEY?.trim();
@@ -80,6 +85,7 @@ function resolveOcrProvider(): OcrProvider | null {
       headers: { Authorization: `Bearer ${openaiKey}` },
       flash: process.env.OPENAI_OCR_MODEL?.trim() || "gpt-4o-mini",
       pro: process.env.OPENAI_OCR_MODEL_PRO?.trim() || "gpt-4o",
+      fallback: process.env.OPENAI_OCR_MODEL_PRO?.trim() || "gpt-4o",
     };
   }
   return null;
@@ -525,8 +531,8 @@ export async function extractPassportFromImages(data: PassportOcrInput): Promise
     response_format: { type: "json_object" },
   };
 
-  const buildDirectBody = (visibleText?: string) => ({
-    model: provider.pro,
+  const buildDirectBody = (visibleText?: string, model?: string) => ({
+    model: model ?? provider.pro,
     messages: [
       {
         role: "system",
@@ -571,18 +577,32 @@ export async function extractPassportFromImages(data: PassportOcrInput): Promise
     });
   }
 
-  // No usable OCR text (stage failed or returned nothing) → read the image directly with the pro model.
+  // No usable OCR text (stage failed or returned nothing) → read the image directly,
+  // first with the primary model, then with the second-opinion model.
   if (!rawOcrText.trim()) {
-    const direct = await callGatewayJson(provider, buildDirectBody(), "image_extraction", imageMimes);
-    const parsedDirect = parsePassportText(JSON.stringify(extractJsonObject(messageContentText(direct.json))));
-    if (hasExtractedFields(parsedDirect)) {
-      parsedDirect.raw_ocr_response = stringifyForDebug({ image_extraction: direct.debug.raw_response });
-      parsedDirect.debug = { ...direct.debug, stage: "completed" };
-      passportOcrLog("completed via direct image extraction", { has_fullname: !!parsedDirect.fullname });
-      return parsedDirect;
+    const models = provider.pro === provider.fallback ? [provider.pro] : [provider.pro, provider.fallback];
+    let lastDirect: { json: any; text: string; debug: PassportOcrDebug } | null = null;
+    for (const model of models) {
+      let direct: { json: any; text: string; debug: PassportOcrDebug };
+      try {
+        direct = await callGatewayJson(provider, buildDirectBody(undefined, model), "image_extraction", imageMimes);
+      } catch (error) {
+        passportOcrLog("direct extraction failed", { model, reason: error instanceof Error ? error.message.slice(0, 300) : String(error) });
+        if (model === models[models.length - 1]) throw error;
+        continue;
+      }
+      lastDirect = direct;
+      const parsedDirect = parsePassportText(JSON.stringify(extractJsonObject(messageContentText(direct.json))));
+      if (hasExtractedFields(parsedDirect)) {
+        parsedDirect.raw_ocr_response = stringifyForDebug({ image_extraction: direct.debug.raw_response });
+        parsedDirect.debug = { ...direct.debug, stage: "completed", model };
+        passportOcrLog("completed via direct image extraction", { model, has_fullname: !!parsedDirect.fullname });
+        return parsedDirect;
+      }
+      passportOcrLog("direct extraction returned no fields", { model });
     }
     throw toDebugError(
-      { ...direct.debug, stage: "parsing", reason: "No text detected in image", image_mime_types: imageMimes },
+      { ...(lastDirect?.debug ?? { provider: provider.name, model: provider.pro, stage: "image_extraction" as const }), stage: "parsing", reason: "No text detected in image", image_mime_types: imageMimes },
       OCR_ERROR_MESSAGE,
     );
   }
@@ -601,7 +621,7 @@ export async function extractPassportFromImages(data: PassportOcrInput): Promise
       extraction_log_id: extracted.debug.log_id,
       raw_text_preview: rawOcrText.slice(0, 700),
     });
-    const direct = await callGatewayJson(provider, buildDirectBody(rawOcrText), "image_extraction", imageMimes);
+    const direct = await callGatewayJson(provider, buildDirectBody(rawOcrText, provider.fallback), "image_extraction", imageMimes);
     parsed = parsePassportText(JSON.stringify({ ...extractJsonObject(messageContentText(direct.json)), raw_ocr_text: rawOcrText }));
     parsed.raw_ocr_response = stringifyForDebug({ vision_ocr: ocr?.debug.raw_response, text_extraction: extracted.debug.raw_response, image_extraction: direct.debug.raw_response });
     parsed.debug = { ...direct.debug, stage: hasExtractedFields(parsed) ? "completed" : "parsing", raw_text: rawOcrText };
