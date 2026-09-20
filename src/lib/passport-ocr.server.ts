@@ -531,8 +531,8 @@ export async function extractPassportFromImages(data: PassportOcrInput): Promise
     response_format: { type: "json_object" },
   };
 
-  const buildDirectBody = (visibleText?: string) => ({
-    model: provider.pro,
+  const buildDirectBody = (visibleText?: string, model?: string) => ({
+    model: model ?? provider.pro,
     messages: [
       {
         role: "system",
