@@ -24,7 +24,8 @@ import { useT } from "@/lib/i18n";
 import { usePrefs } from "@/lib/preferences";
 import { useUsdRate, formatWithUsd } from "@/lib/use-usd-rate";
 import { grantProjectAccess, revokeProjectAccess } from "@/lib/access.functions";
-import { createBlock } from "@/lib/blocks.functions";
+import { createBlock, listBlocks, deleteBlock, listFloors, createFloor, deleteFloor } from "@/lib/blocks.functions";
+import { getProject } from "@/lib/projects.functions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { EstimatePanel } from "@/components/estimate-panel";
@@ -128,12 +129,12 @@ function ProjectDetail() {
 
   const { data: project } = useQuery({
     queryKey: ["project", id],
-    queryFn: async () => (await supabase.from("projects").select("*").eq("id", id).single()).data,
+    queryFn: () => getProject({ data: { project_id: id } }),
   });
 
   const { data: floors = [] } = useQuery({
     queryKey: ["floors", id],
-    queryFn: async () => (await supabase.from("floors").select("*, apartments(*)").eq("project_id", id).order("floor_number", { ascending: true })).data ?? [],
+    queryFn: () => listFloors({ data: { project_id: id } }) as Promise<any[]>,
   });
 
 
@@ -547,9 +548,7 @@ function FloorRow({ floor, projectId, canEdit, canAddApt = true, canDelete, aptF
       ? "bg-accent/15 text-accent border-accent/30"
       : "bg-warning/20 text-warning-foreground border-warning/40";
   const delFloor = async () => {
-    await supabase.from("apartments").delete().eq("floor_id", floor.id);
-    const { error } = await supabase.from("floors").delete().eq("id", floor.id);
-    if (error) throw error;
+    await deleteFloor({ data: { floor_id: floor.id } });
   };
   return (
     <div className="rounded-xl border border-border bg-card p-5">
@@ -852,12 +851,7 @@ function ProjectBlocksView({ project, projectId, isOwner }: { project: any; proj
 
   const { data: blocks = [] } = useQuery({
     queryKey: ["project-blocks", projectId],
-    queryFn: async () =>
-      (await (supabase as any)
-        .from("projects")
-        .select("*, apartments(id, status)")
-        .eq("parent_id", projectId)
-        .order("created_at", { ascending: true })).data ?? [],
+    queryFn: () => listBlocks({ data: { project_id: projectId } }) as Promise<any[]>,
   });
 
   const { data: fund } = useQuery({
@@ -903,9 +897,11 @@ function ProjectBlocksView({ project, projectId, isOwner }: { project: any; proj
                     onClick={async (e) => {
                       e.preventDefault(); e.stopPropagation();
                       if (!confirm(`${tr("Удалить проект")} "${b.name}"? ${tr("Все данные будут потеряны.")}`)) return;
-                      const { error } = await supabase.from("projects").delete().eq("id", b.id);
-                      if (error) toast.error(error.message);
-                      else { toast.success(tr("Удалено")); qc.invalidateQueries({ queryKey: ["project-blocks", projectId] }); }
+                      try {
+                        await deleteBlock({ data: { block_id: b.id } });
+                        toast.success(tr("Удалено"));
+                        qc.invalidateQueries({ queryKey: ["project-blocks", projectId] });
+                      } catch (err: any) { toast.error(err?.message || "Хатогӣ"); }
                     }}
                     className="absolute top-2 right-2 h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 hover:bg-destructive/10"
                   >
@@ -997,10 +993,9 @@ function AddFloorButton({ projectId, onAdded }: { projectId: string; onAdded: ()
   const [description, setDescription] = useState("");
   const add = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("floors").insert({
-        project_id: projectId, floor_number: Number(num), status, description: description || null,
-      } as any);
-      if (error) throw error;
+      await createFloor({
+        data: { project_id: projectId, floor_number: Number(num), status, description: description || null },
+      });
     },
     onSuccess: () => { toast.success("OK"); setOpen(false); setNum(""); setDescription(""); setStatus("in_progress"); onAdded(); },
     onError: (e: any) => toast.error(e.message),

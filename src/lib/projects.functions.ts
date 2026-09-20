@@ -129,3 +129,33 @@ export const createProject = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true, project: created };
   });
+
+// Read a single project (root or block) with an admin fallback for company members,
+// so owners are not blocked by project-level access rows.
+export const getProject = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ project_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { userId, supabase } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as any;
+
+    const [profRes, ownedRes] = await Promise.all([
+      admin.from("profiles").select("company_id").eq("id", userId).maybeSingle(),
+      admin.from("companies").select("id").eq("owner_user_id", userId).maybeSingle(),
+    ]);
+    const companyId: string | null =
+      ((profRes.data as any)?.company_id as string | null) ?? ((ownedRes.data as any)?.id ?? null);
+    if (companyId && !(profRes.data as any)?.company_id) {
+      await admin.from("profiles").upsert({ id: userId, company_id: companyId }, { onConflict: "id" });
+    }
+
+    const { data: project } = await admin
+      .from("projects").select("*").eq("id", data.project_id).maybeSingle();
+    if (project && companyId && project.company_id === companyId) return project;
+
+    const { data: visible, error } = await (supabase as any)
+      .from("projects").select("*").eq("id", data.project_id).maybeSingle();
+    if (error) throw new Error(error.message);
+    return visible ?? null;
+  });
