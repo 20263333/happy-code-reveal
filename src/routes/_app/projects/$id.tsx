@@ -950,12 +950,32 @@ function AddBlockButton({ parentId, onAdded }: { parentId: string; onAdded: () =
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<"planning" | "in_progress" | "completed">("in_progress");
+  const [floorCount, setFloorCount] = useState("1");
+  const [apartmentsPerFloor, setApartmentsPerFloor] = useState("1");
   const createFn = useServerFn(createBlock);
   const add = useMutation({
     mutationFn: async () => {
-      await createFn({ data: { parent_id: parentId, name, description: description || null, status } });
+      return await createFn({
+        data: {
+          parent_id: parentId,
+          name,
+          description: description || null,
+          status,
+          floor_count: Number(floorCount),
+          apartments_per_floor: Number(apartmentsPerFloor),
+        },
+      });
     },
-    onSuccess: () => { toast.success("Блок илова шуд"); setOpen(false); setName(""); setDescription(""); setStatus("in_progress"); onAdded(); },
+    onSuccess: (result) => {
+      toast.success(`Блок, ${result.floors_created} ошёна ва ${result.apartments_created} хона илова шуд`);
+      setOpen(false);
+      setName("");
+      setDescription("");
+      setStatus("in_progress");
+      setFloorCount("1");
+      setApartmentsPerFloor("1");
+      onAdded();
+    },
     onError: (e: any) => toast.error(e?.message || "Хатогӣ"),
   });
   return (
@@ -965,6 +985,16 @@ function AddBlockButton({ parentId, onAdded }: { parentId: string; onAdded: () =
         <DialogHeader><DialogTitle>Блоки нав</DialogTitle></DialogHeader>
         <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); add.mutate(); }}>
           <div className="space-y-1.5"><Label>Номи блок</Label><Input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Блоки 1" /></div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Шумораи ошёнаҳо</Label>
+              <Input type="number" min={1} max={200} required value={floorCount} onChange={(e) => setFloorCount(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Хонаҳо дар ҳар ошёна</Label>
+              <Input type="number" min={1} max={200} required value={apartmentsPerFloor} onChange={(e) => setApartmentsPerFloor(e.target.value)} />
+            </div>
+          </div>
           <div className="space-y-1.5">
             <Label>Ҳолат</Label>
             <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
@@ -977,7 +1007,7 @@ function AddBlockButton({ parentId, onAdded }: { parentId: string; onAdded: () =
             </Select>
           </div>
           <div className="space-y-1.5"><Label>Тавсиф</Label><Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="..." /></div>
-          <DialogFooter><Button type="submit" disabled={!name || add.isPending}>Илова кардан</Button></DialogFooter>
+          <DialogFooter><Button type="submit" disabled={!name || !floorCount || !apartmentsPerFloor || Number(floorCount) < 1 || Number(apartmentsPerFloor) < 1 || add.isPending}>Илова кардан</Button></DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
