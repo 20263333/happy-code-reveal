@@ -11,8 +11,7 @@ export const transcribeAudio = createServerFn({ method: "POST" })
     return { base64: x.base64, mime: x.mime || "audio/webm" };
   })
   .handler(async ({ data }) => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("LOVABLE_API_KEY нест");
+    const provider = requireAiProvider();
 
     const bin = Uint8Array.from(atob(data.base64), (c) => c.charCodeAt(0));
     const mime = data.mime;
