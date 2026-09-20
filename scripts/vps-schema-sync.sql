@@ -1651,3 +1651,18 @@ DROP POLICY IF EXISTS "Admin manages subscription payments" ON public.subscripti
 CREATE POLICY "Admin manages subscription payments" ON public.subscription_payments FOR ALL TO authenticated
   USING (private.is_platform_admin(auth.uid()))
   WITH CHECK (private.is_platform_admin(auth.uid()));
+
+-- === Storage bucket барои чекҳои обуна ===
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('subscription-receipts', 'subscription-receipts', false)
+ON CONFLICT (id) DO NOTHING;
+
+DROP POLICY IF EXISTS "receipts_insert_own" ON storage.objects;
+CREATE POLICY "receipts_insert_own" ON storage.objects FOR INSERT TO authenticated
+  WITH CHECK (bucket_id = 'subscription-receipts');
+DROP POLICY IF EXISTS "receipts_read_own" ON storage.objects;
+CREATE POLICY "receipts_read_own" ON storage.objects FOR SELECT TO authenticated
+  USING (bucket_id = 'subscription-receipts');
+DROP POLICY IF EXISTS "receipts_update_own" ON storage.objects;
+CREATE POLICY "receipts_update_own" ON storage.objects FOR UPDATE TO authenticated
+  USING (bucket_id = 'subscription-receipts');
