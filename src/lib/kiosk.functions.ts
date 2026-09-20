@@ -3,7 +3,7 @@ import { useSession } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { extractPassportFromImages, type PassportOcrResult } from "./passport-ocr.server";
+import { assertPassportOcrConfigured, extractPassportFromImages, type PassportOcrResult } from "./passport-ocr.server";
 
 const KIOSK_SESSION_NAME = "kiosk-gate";
 const KIOSK_MAX_AGE = 60 * 60 * 12; // 12h
@@ -211,6 +211,7 @@ export const kioskExtractPassport = createServerFn({ method: "POST" })
   }).parse(d))
   .handler(async ({ data }): Promise<PassportOcrResult> => {
     const s = await requireUnlockedSession();
+    assertPassportOcrConfigured();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await (supabaseAdmin as any).rpc("consume_scan_credit", { _company_id: s.company_id });
     if (error) {

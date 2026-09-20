@@ -43,13 +43,13 @@ function asDataUrl(s: string): string {
   return s.startsWith("data:") ? s : `data:image/jpeg;base64,${s}`;
 }
 
-const RETRYABLE_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
+const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
 const OCR_ERROR_MESSAGE = "Passport could not be recognized. Please take a clearer photo.";
 // Gemini reads ID documents reliably and does not refuse personal documents,
 // so it is the primary OCR model; the OpenAI model stays as a second opinion.
 const FLASH_MODEL = "google/gemini-3.8-flash";
 const PRO_MODEL = "google/gemini-3.8-flash";
-const FALLBACK_MODEL = "openai/gpt-5.4";
+const FALLBACK_MODEL = "google/gemini-3.8-flash";
 type OcrProvider = {
   name: string;
   url: string;
@@ -63,14 +63,14 @@ function resolveOcrProvider(): OcrProvider | null {
   const forced = process.env.AI_PROVIDER?.trim().toLowerCase();
   const openaiKeyPref = process.env.OPENAI_API_KEY?.trim();
   const preferOpenAI = forced === "openai" && !!openaiKeyPref;
-  const lovableKey = process.env.LOVABLE_API_KEY?.trim();
+  const lovableKey = process.env.LOVABLE_API_KEY?.trim() || process.env.LOVABLE_AI_GATEWAY_KEY?.trim();
   if (!preferOpenAI && lovableKey) {
     return {
       name: "Lovable AI Gateway",
       url: "https://ai.gateway.lovable.dev/v1/chat/completions",
       headers: {
         "Lovable-API-Key": lovableKey,
-        Authorization: `Bearer ${lovableKey}`,
+        "X-Lovable-AIG-SDK": "fetch",
       },
       flash: FLASH_MODEL,
       pro: PRO_MODEL,
@@ -78,7 +78,7 @@ function resolveOcrProvider(): OcrProvider | null {
     };
   }
   const openaiKey = process.env.OPENAI_API_KEY?.trim();
-  if (openaiKey) {
+  if (preferOpenAI && openaiKey) {
     return {
       name: "OpenAI",
       url: "https://api.openai.com/v1/chat/completions",
@@ -89,6 +89,17 @@ function resolveOcrProvider(): OcrProvider | null {
     };
   }
   return null;
+}
+
+export function assertPassportOcrConfigured() {
+  if (!resolveOcrProvider()) {
+    throw toDebugError({
+      provider: "Lovable AI Gateway",
+      model: FLASH_MODEL,
+      stage: "configuration",
+      reason: "LOVABLE_API_KEY is empty on this server. A separately hosted VPS does not receive Lovable Cloud secrets automatically.",
+    }, "Сканери AI дар сервер танзим нашудааст: калиди Lovable дар VPS нест.");
+  }
 }
 
 const SUPPORTED_IMAGE_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
@@ -370,6 +381,19 @@ async function postPassportOcr(provider: OcrProvider, body: unknown, attempt: nu
   }
 }
 
+function retryDelayMs(response: Response, attempt: number) {
+  const retryAfter = response.headers.get("Retry-After");
+  if (retryAfter) {
+    const seconds = Number(retryAfter);
+    if (Number.isFinite(seconds) && seconds >= 0) return Math.min(seconds * 1000, 10_000);
+  }
+  return Math.min(750 * 2 ** (attempt - 1) + Math.floor(Math.random() * 250), 10_000);
+}
+
+function wait(ms: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, ms));
+}
+
 async function callGatewayJson(provider: OcrProvider, body: unknown, stage: PassportOcrDebug["stage"], imageMimes: string[]) {
   let lastDebug: PassportOcrDebug | null = null;
   for (let attempt = 1; attempt <= 2; attempt += 1) {
@@ -415,7 +439,17 @@ async function callGatewayJson(provider: OcrProvider, body: unknown, stage: Pass
       image_mime_types: imageMimes,
     };
 
-    if (res.ok) return { json, text, debug };
+    if (res.ok) {
+      const refusal = json?.choices?.[0]?.message?.refusal;
+      const content = messageContentText(json);
+      if (typeof refusal === "string" && refusal.trim()) {
+        throw toDebugError({ ...debug, reason: refusal.trim() });
+      }
+      if (!content.trim()) {
+        throw toDebugError({ ...debug, reason: "AI returned an empty OCR result" });
+      }
+      return { json, text, debug };
+    }
 
     const errorText = typeof json?.error?.message === "string" ? json.error.message : text.slice(0, 500);
     lastDebug = { ...debug, reason: errorText || `HTTP ${res.status}` };
@@ -430,8 +464,10 @@ async function callGatewayJson(provider: OcrProvider, body: unknown, stage: Pass
     });
 
     if (res.status === 402) throw toDebugError({ ...lastDebug, reason: "AI credits exhausted" }, "AI кредитҳо тамом шуданд. Лутфан кредитҳоро пур кунед.");
-    if ((res.status === 401 || res.status === 403) && attempt === 1) continue;
-    if (attempt === 1 && RETRYABLE_STATUSES.has(res.status)) continue;
+    if (attempt === 1 && RETRYABLE_STATUSES.has(res.status)) {
+      await wait(retryDelayMs(res, attempt));
+      continue;
+    }
     throw toDebugError(lastDebug);
   }
   throw toDebugError(lastDebug ?? { provider: provider.name, model: provider.flash, stage, reason: "unknown_gateway_failure", image_mime_types: imageMimes });
@@ -474,7 +510,12 @@ export async function extractPassportFromImages(data: PassportOcrInput): Promise
 
   const provider = resolveOcrProvider();
   if (!provider) {
-    throw toDebugError({ provider: "OCR", model: FLASH_MODEL, stage: "configuration", reason: "LOVABLE_API_KEY / OPENAI_API_KEY is not configured" });
+    throw toDebugError({
+      provider: "Lovable AI Gateway",
+      model: FLASH_MODEL,
+      stage: "configuration",
+      reason: "LOVABLE_API_KEY is empty on this server. A separately hosted VPS does not receive Lovable Cloud secrets automatically.",
+    }, "Сканери AI дар сервер танзим нашудааст: калиди Lovable дар VPS нест.");
   }
 
 
@@ -560,22 +601,14 @@ export async function extractPassportFromImages(data: PassportOcrInput): Promise
     response_format: { type: "json_object" },
   });
 
-  let ocr: { json: any; text: string; debug: PassportOcrDebug } | null = null;
-  let rawOcrText = "";
-  try {
-    ocr = await callGatewayJson(provider, ocrBody, "vision_ocr", imageMimes);
-    rawOcrText = visibleTextFromOcrPayload(ocr.json);
-    passportOcrLog("raw OCR response", {
-      log_id: ocr.debug.log_id,
-      run_id: ocr.debug.run_id,
-      raw_text_chars: rawOcrText.length,
-      raw_text_preview: rawOcrText.slice(0, 700),
-    });
-  } catch (error) {
-    passportOcrLog("vision OCR stage failed; escalating to direct image extraction", {
-      reason: error instanceof Error ? error.message.slice(0, 400) : String(error),
-    });
-  }
+  const ocr = await callGatewayJson(provider, ocrBody, "vision_ocr", imageMimes);
+  const rawOcrText = visibleTextFromOcrPayload(ocr.json);
+  passportOcrLog("raw OCR response", {
+    log_id: ocr.debug.log_id,
+    run_id: ocr.debug.run_id,
+    raw_text_chars: rawOcrText.length,
+    raw_text_preview: rawOcrText.slice(0, 700),
+  });
 
   // No usable OCR text (stage failed or returned nothing) → read the image directly,
   // first with the primary model, then with the second-opinion model.

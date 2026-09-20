@@ -21,7 +21,7 @@ const LOVABLE_MODELS = {
 export function resolveAiProvider(): AiProvider | null {
   const forced = process.env.AI_PROVIDER?.trim().toLowerCase();
   const openaiKey = process.env.OPENAI_API_KEY?.trim();
-  const lovableKey = process.env.LOVABLE_API_KEY?.trim();
+  const lovableKey = process.env.LOVABLE_API_KEY?.trim() || process.env.LOVABLE_AI_GATEWAY_KEY?.trim();
 
   const useOpenAI = forced === "openai" && !!openaiKey;
 
@@ -45,7 +45,7 @@ export function resolveAiProvider(): AiProvider | null {
       isOpenAI: false,
       chatUrl: "https://ai.gateway.lovable.dev/v1/chat/completions",
       sttUrl: "https://ai.gateway.lovable.dev/v1/audio/transcriptions",
-      headers: { Authorization: `Bearer ${lovableKey}`, "Lovable-API-Key": lovableKey },
+      headers: { "Lovable-API-Key": lovableKey, "X-Lovable-AIG-SDK": "fetch" },
       model: (kind) => LOVABLE_MODELS[kind],
     };
   }
