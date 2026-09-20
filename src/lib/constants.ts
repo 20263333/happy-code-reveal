@@ -80,7 +80,9 @@ export const ALL_MODULE_KEYS = APP_MODULES.map((m) => m.key) as AppModuleKey[];
 // Any key not present in APP_MODULES (unknown/legacy) also defaults to true
 // so newly-introduced menus don't disappear for pre-existing companies until
 // a Super Admin explicitly toggles them.
-const ALWAYS_ON = new Set(["notifications", "ai-credits", "my-shares", "support"]);
+// "billing" is always-on: a company owner must always be able to pick a tariff,
+// pay and upload the receipt, even when other modules are disabled or expired.
+const ALWAYS_ON = new Set(["notifications", "ai-credits", "my-shares", "support", "billing"]);
 const KNOWN_KEYS = new Set<string>(APP_MODULES.map((m) => m.key));
 
 export function companyModuleEnabled(
