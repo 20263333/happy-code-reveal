@@ -79,12 +79,40 @@ export const listSubscriptionPaymentsForAdmin = createServerFn({ method: "GET" }
   .handler(async ({ context }) => {
     await requireAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data, error } = await (supabaseAdmin as any)
+    const admin = supabaseAdmin as any;
+    const { data: payments, error } = await admin
       .from("subscription_payments")
-      .select("*, tariff:tariffs(name, duration_days), method:payment_methods(provider, label), company:companies(name)")
+      .select("*")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return data ?? [];
+    if (!payments?.length) return [];
+
+    const tariffIds = [...new Set(payments.map((payment: any) => payment.tariff_id).filter(Boolean))];
+    const methodIds = [...new Set(payments.map((payment: any) => payment.payment_method_id).filter(Boolean))];
+    const companyIds = [...new Set(payments.map((payment: any) => payment.company_id).filter(Boolean))];
+    const [tariffsResult, methodsResult, companiesResult] = await Promise.all([
+      tariffIds.length
+        ? admin.from("tariffs").select("id,name,duration_days").in("id", tariffIds)
+        : Promise.resolve({ data: [], error: null }),
+      methodIds.length
+        ? admin.from("payment_methods").select("id,provider,label").in("id", methodIds)
+        : Promise.resolve({ data: [], error: null }),
+      companyIds.length
+        ? admin.from("companies").select("id,name").in("id", companyIds)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+    const relatedError = tariffsResult.error ?? methodsResult.error ?? companiesResult.error;
+    if (relatedError) throw new Error(relatedError.message);
+
+    const tariffs = new Map((tariffsResult.data ?? []).map((item: any) => [item.id, item]));
+    const methods = new Map((methodsResult.data ?? []).map((item: any) => [item.id, item]));
+    const companies = new Map((companiesResult.data ?? []).map((item: any) => [item.id, item]));
+    return payments.map((payment: any) => ({
+      ...payment,
+      tariff: tariffs.get(payment.tariff_id) ?? null,
+      method: methods.get(payment.payment_method_id) ?? null,
+      company: companies.get(payment.company_id) ?? null,
+    }));
   });
 
 export const approveSubscriptionPayment = createServerFn({ method: "POST" })
