@@ -105,11 +105,21 @@ export const listBlocks = createServerFn({ method: "GET" })
     const client = sameCompany ? admin : (supabase as any);
     const { data: blocks, error } = await client
       .from("projects")
-      .select("*, apartments(id, status)")
+      .select("*")
       .eq("parent_id", data.project_id)
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
-    return blocks ?? [];
+    const blockIds = (blocks ?? []).map((block: any) => block.id as string);
+    if (!blockIds.length) return [];
+    const { data: apartments, error: apartmentsError } = await client
+      .from("apartments")
+      .select("id, status, project_id")
+      .in("project_id", blockIds);
+    if (apartmentsError) throw new Error(apartmentsError.message);
+    return (blocks ?? []).map((block: any) => ({
+      ...block,
+      apartments: (apartments ?? []).filter((apartment: any) => apartment.project_id === block.id),
+    }));
   });
 
 export const deleteBlock = createServerFn({ method: "POST" })
@@ -145,11 +155,21 @@ export const listFloors = createServerFn({ method: "GET" })
     const client = sameCompany ? admin : (supabase as any);
     const { data: floors, error } = await client
       .from("floors")
-      .select("*, apartments(*)")
+      .select("*")
       .eq("project_id", data.project_id)
       .order("floor_number", { ascending: true });
     if (error) throw new Error(error.message);
-    return floors ?? [];
+    const floorIds = (floors ?? []).map((floor: any) => floor.id as string);
+    if (!floorIds.length) return [];
+    const { data: apartments, error: apartmentsError } = await client
+      .from("apartments")
+      .select("*")
+      .in("floor_id", floorIds);
+    if (apartmentsError) throw new Error(apartmentsError.message);
+    return (floors ?? []).map((floor: any) => ({
+      ...floor,
+      apartments: (apartments ?? []).filter((apartment: any) => apartment.floor_id === floor.id),
+    }));
   });
 
 export const createFloor = createServerFn({ method: "POST" })

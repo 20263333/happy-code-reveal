@@ -991,9 +991,10 @@ function AddFloorButton({ projectId, onAdded }: { projectId: string; onAdded: ()
   const [num, setNum] = useState("");
   const [status, setStatus] = useState("in_progress");
   const [description, setDescription] = useState("");
+  const createFloorFn = useServerFn(createFloor);
   const add = useMutation({
     mutationFn: async () => {
-      await createFloor({
+      await createFloorFn({
         data: { project_id: projectId, floor_number: Number(num), status, description: description || null },
       });
     },
@@ -1266,6 +1267,7 @@ function NewClientButton({ projectId, floors, currency, onAdded }: any) {
 
 
       const { data: sale, error: sErr } = await supabase.from("sales").insert({
+        company_id: companyId,
         project_id: projectId,
         apartment_id: selectedApt.id,
         customer_id: customer.id,
