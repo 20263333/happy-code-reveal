@@ -621,7 +621,7 @@ export async function extractPassportFromImages(data: PassportOcrInput): Promise
       extraction_log_id: extracted.debug.log_id,
       raw_text_preview: rawOcrText.slice(0, 700),
     });
-    const direct = await callGatewayJson(provider, buildDirectBody(rawOcrText), "image_extraction", imageMimes);
+    const direct = await callGatewayJson(provider, buildDirectBody(rawOcrText, provider.fallback), "image_extraction", imageMimes);
     parsed = parsePassportText(JSON.stringify({ ...extractJsonObject(messageContentText(direct.json)), raw_ocr_text: rawOcrText }));
     parsed.raw_ocr_response = stringifyForDebug({ vision_ocr: ocr?.debug.raw_response, text_extraction: extracted.debug.raw_response, image_extraction: direct.debug.raw_response });
     parsed.debug = { ...direct.debug, stage: hasExtractedFields(parsed) ? "completed" : "parsing", raw_text: rawOcrText };
