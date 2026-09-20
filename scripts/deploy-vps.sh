@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Binosoz.tj — deploy the app on the VPS (run as root on 187.77.87.133)
+# Binosoz.tj — deploy the app on the VPS (run as root on 31.97.37.138)
 set -euo pipefail
 
 APP_DIR="/var/www/binosoz"

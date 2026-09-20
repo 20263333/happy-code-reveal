@@ -1,6 +1,6 @@
 # Роҳнамои пурраи VPS Deployment — Binosoz.tj
 
-Сервер: `187.77.87.133` | Домен: `binosoz.tj`
+Сервер: `31.97.37.138` | Домен: `binosoz.tj`
 
 ## Қадам 1: Bootstrap сервер (як бор)
 
@@ -91,7 +91,7 @@ git pull  # ё git clone <repo> .
 
 # Роҳи 2: rsync аз компютери шумо
 rsync -avz --exclude node_modules --exclude .git --exclude dist --exclude .output \
-  ./ root@187.77.87.133:/var/www/binosoz/
+  ./ root@31.97.37.138:/var/www/binosoz/
 ```
 
 ## Қадам 4: Сохтори базаи маълумотро созед

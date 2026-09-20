@@ -4,7 +4,7 @@
 # IMPORTANT: you need a PostgreSQL dump from Lovable Cloud to restore.
 set -euo pipefail
 
-SERVER_IP="187.77.87.133"
+SERVER_IP="31.97.37.138"
 SUPA_DIR="/opt/supabase"
 CREDS="/root/supabase-credentials.txt"
 DUMP_FILE="${1:-/root/lovable-cloud-dump.sql}"
