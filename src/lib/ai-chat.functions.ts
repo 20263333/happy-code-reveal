@@ -856,8 +856,7 @@ export const sendAiChatMessage = createServerFn({ method: "POST" })
     currentPath: z.string().max(300).optional().nullable(),
   }).parse(d))
   .handler(async ({ data, context }) => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("LOVABLE_API_KEY нест");
+    const provider = requireAiProvider();
     const { supabase, userId } = context;
     const companyId = await getCompanyId(supabase, userId);
 
