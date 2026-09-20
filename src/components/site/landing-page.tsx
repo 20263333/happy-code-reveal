@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ComponentType, type FormEvent, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowRight,
   BarChart3,
@@ -23,30 +24,59 @@ import {
   Users,
   Wallet,
   X,
+  Bot,
+  BriefcaseBusiness,
+  ClipboardCheck,
+  Landmark,
+  PackageCheck,
 } from "lucide-react";
+import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
 import { useAppLogo } from "@/lib/app-logos";
 import { LanguageToggle } from "@/components/language-toggle";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getStableSession } from "@/lib/auth-session";
+import { submitSitePlanRequest } from "@/lib/site-plan-requests.functions";
 import dashboardShot from "@/assets/product/dashboard.png";
 import warehouseShot from "@/assets/product/warehouse.png";
 
 type Module = { icon: ComponentType<{ className?: string }>; title: string; text: string };
 
-const MODULES: Module[] = [
-  { icon: Building2, title: "Проекты и блоки", text: "Проект → блок → этаж → квартира. Наглядная шахматка со статусами квартир." },
-  { icon: Wallet, title: "Продажи и рассрочка", text: "Договор, первый взнос, график рассрочки на любое число месяцев и контроль оплат." },
-  { icon: Filter, title: "CRM-воронка", text: "Заявки клиентов, этапы сделки и напоминания менеджерам." },
-  { icon: CreditCard, title: "Платежи и должники", text: "Приход денег, просрочки и автоматические напоминания в WhatsApp и СМС." },
-  { icon: Calculator, title: "Смета", text: "Версии сметы, автоматический расчёт и сравнение плана с фактом." },
-  { icon: Boxes, title: "Склад", text: "Приход, расход и остатки материалов; списание прямо на проект." },
-  { icon: Truck, title: "Снабжение", text: "Заявки на материалы от прорабов и контроль закупок." },
-  { icon: Clock3, title: "Табель и посещаемость", text: "Отметка рабочих на объекте через киоск-экран и расчёт смен." },
-  { icon: HardHat, title: "Сотрудники и роли", text: "Владелец, бухгалтер, складчик, прораб — у каждого свой доступ." },
-  { icon: FileSignature, title: "Договоры и разрешения", text: "Шаблоны договоров, сроки разрешительных документов и напоминания." },
-  { icon: BarChart3, title: "Отчёты и налоги", text: "Выручка, расходы, прибыль по проектам и налоговые отчёты." },
-  { icon: MessageCircle, title: "WhatsApp и СМС", text: "Автоматические уведомления клиентам о платежах и напоминания." },
+const CAPABILITY_GROUPS: { title: string; icon: ComponentType<{ className?: string }>; items: Module[] }[] = [
+  { title: "Строительство и продажи", icon: Building2, items: [
+    { icon: Building2, title: "Проекты, блоки, этажи", text: "Структура ЖК с визуальной схемой квартир и статусами: свободна, бронь, продана, занята." },
+    { icon: Filter, title: "Клиенты и воронка", text: "База клиентов, сканирование паспорта, воронка продаж и история обращений." },
+    { icon: FileSignature, title: "Договоры и рассрочка", text: "Автонумерация договоров, график рассрочки, печать договора и чека в двух экземплярах." },
+    { icon: RefreshCw, title: "Переселение и бартер", text: "Отдельный учёт квартир по переселению и бартерных сделок." },
+  ]},
+  { title: "Финансы", icon: Landmark, items: [
+    { icon: CreditCard, title: "Платежи и должники", text: "Приём оплат в сомони и долларах по курсу НБТ, напоминания по СМС и WhatsApp." },
+    { icon: Wallet, title: "Касса", text: "Смены кассира, приход и расход, переводы и Z-отчёт." },
+    { icon: BarChart3, title: "Распределение дохода", text: "Себестоимость, чистая прибыль и автоматическое распределение долей партнёров." },
+    { icon: Calculator, title: "Отчёты и дашборд", text: "Выручка, расходы, прибыль, налоговые отчёты и фильтры по ЖК и блокам." },
+  ]},
+  { title: "Строительная площадка", icon: HardHat, items: [
+    { icon: Boxes, title: "Склад", text: "Приход, расход, остатки, списание на проекты и автоматические долги поставщикам." },
+    { icon: Calculator, title: "Смета и бюджет", text: "Версии смет, сравнение плана и факта, контроль перерасхода." },
+    { icon: Clock3, title: "Табель и зарплата", text: "Учёт рабочих, смены через киоск-экран и выплаты." },
+    { icon: ClipboardCheck, title: "Качество и безопасность", text: "Проверки, инциденты, разрешения и техника." },
+  ]},
+  { title: "Управление", icon: BriefcaseBusiness, items: [
+    { icon: ShieldCheck, title: "Роли и доступ", text: "Владелец, бухгалтер, складчик, прораб, директор. Доступ настраивается по каждому разделу и вкладке." },
+    { icon: Bot, title: "AI-помощник", text: "Помощник владельца: отвечает по данным компании и выполняет действия." },
+    { icon: PackageCheck, title: "Поставщики", text: "Долги, оплаты и печать акта сверки по каждому поставщику." },
+    { icon: Smartphone, title: "Киоск продаж", text: "Экран в офисе продаж с планировками, зумом схемы и статусами квартир." },
+  ]},
+];
+
+type PlanCode = "construction" | "construction_sales" | "premium_unlimited";
+const PLANS: { code: PlanCode; name: string; caption: string; features: string[] }[] = [
+  { code: "construction", name: "СТРОИТЕЛЬСТВО", caption: "Управление проектами, складом и расходами.", features: ["Проекты, блоки, этажи и квартиры (шахматка)", "Склад: приход, расход, остатки", "Смета и график Gantt", "Расходы и бюджет объекта", "Табель и зарплата рабочих", "Техника, качество, безопасность и разрешения"] },
+  { code: "construction_sales", name: "СТРОИТЕЛЬСТВО + ПРОДАЖИ", caption: "Всё из тарифа 1 + CRM, договоры и рассрочка.", features: ["Все модули тарифа СТРОИТЕЛЬСТВО", "CRM и воронка продаж", "Клиенты и скан паспорта (ИНН)", "Договоры и печать документов", "Продажи в рассрочку и должники", "СМС-уведомления (OsonSMS) и режим Kiosk"] },
+  { code: "premium_unlimited", name: "PREMIUM UNLIMITED", caption: "Все модули без ограничений — финансы, аналитика и AI.", features: ["Все модули тарифов 1 и 2", "Платежи, чеки и долларовая валюта", "Касса и смены кассира", "Поставщики, долги и бартер", "Распределение дохода между партнёрами", "Дашборд, отчёты, AI-ассистент и Excel-импорт"] },
 ];
 
 const SCREENS: { id: string; label: string; image?: string; title: string }[] = [
@@ -216,11 +246,31 @@ function ChessMock({ label }: { label: (s: string) => string }) {
 }
 
 export function LandingPage() {
-  const { tr } = useT();
+  const { tr, lang } = useT();
   const logoUrl = useAppLogo("light");
   const [signedIn, setSignedIn] = useState(false);
   const [screen, setScreen] = useState(SCREENS[0]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<PlanCode | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const submitRequest = useServerFn(submitSitePlanRequest);
+  const [requestForm, setRequestForm] = useState({ business_type: "developer", full_name: "", company_name: "", job_title: "", email: "", phone: "" });
+
+  const handleRequest = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedPlan) return;
+    setSubmitting(true);
+    try {
+      await submitRequest({ data: { ...requestForm, business_type: requestForm.business_type as "developer" | "management" | "other", plan_code: selectedPlan, locale: lang } });
+      toast.success(tr("Заявка успешно отправлена"));
+      setSelectedPlan(null);
+      setRequestForm({ business_type: "developer", full_name: "", company_name: "", job_title: "", email: "", phone: "" });
+    } catch {
+      toast.error(tr("Не удалось отправить заявку. Попробуйте ещё раз."));
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const navItems = [
     ["Возможности", "#product"],
@@ -425,21 +475,30 @@ export function LandingPage() {
           <div className="mx-auto max-w-7xl">
             <Reveal className="max-w-3xl">
               <div className="text-xs font-bold uppercase tracking-widest text-primary">{tr("Платформа")}</div>
-              <h2 className="mt-3 font-display text-3xl font-extrabold uppercase md:text-5xl">{tr("Всё, что нужно застройщику")}</h2>
-              <p className="mt-4 text-sm text-muted-foreground md:text-base">{tr("Каждый модуль можно включить по мере роста компании — начните с проектов и продаж.")}</p>
+              <h2 className="mt-3 font-display text-3xl font-extrabold uppercase md:text-5xl">{tr("Возможности платформы")}</h2>
+              <p className="mt-4 text-sm text-muted-foreground md:text-base">{tr("Binosoz.tj охватывает весь цикл застройщика: от первой квартиры до распределения прибыли между партнёрами.")}</p>
             </Reveal>
-            <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {MODULES.map(({ icon: Icon, title, text }) => (
-                <Reveal key={title} className="h-full">
-                  <article className="bino-card h-full rounded-2xl border border-border bg-background p-6">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
-                      <Icon className="h-5 w-5 text-primary" />
-                    </div>
-                    <h3 className="mt-5 font-display text-base font-bold">{tr(title)}</h3>
-                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{tr(text)}</p>
-                  </article>
-                </Reveal>
-              ))}
+            <div className="mt-12 space-y-14">
+              {CAPABILITY_GROUPS.map((group, groupIndex) => {
+                const GroupIcon = group.icon;
+                return <div key={group.title}>
+                  <Reveal direction={groupIndex % 2 === 0 ? "left" : "right"} className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground"><GroupIcon className="h-5 w-5" /></div>
+                    <h3 className="font-display text-xl font-extrabold md:text-2xl">{tr(group.title)}</h3>
+                  </Reveal>
+                  <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {group.items.map(({ icon: Icon, title, text }, itemIndex) => (
+                      <Reveal key={title} direction={(groupIndex + itemIndex) % 2 === 0 ? "left" : "right"} className="h-full">
+                        <article className="bino-card h-full rounded-2xl border border-border bg-background p-6">
+                          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10"><Icon className="h-5 w-5 text-primary" /></div>
+                          <h4 className="mt-5 font-display text-base font-bold">{tr(title)}</h4>
+                          <p className="mt-2 text-sm leading-6 text-muted-foreground">{tr(text)}</p>
+                        </article>
+                      </Reveal>
+                    ))}
+                  </div>
+                </div>;
+              })}
             </div>
           </div>
         </section>
@@ -478,22 +537,24 @@ export function LandingPage() {
         <section id="pricing" className="scroll-mt-20 bg-card px-5 py-20 lg:px-8">
           <div className="mx-auto max-w-7xl">
             <Reveal className="mx-auto max-w-3xl text-center">
-              <div className="text-xs font-bold uppercase tracking-widest text-primary">{tr("Цены")}</div>
-              <h2 className="mt-3 font-display text-3xl font-extrabold uppercase md:text-5xl">{tr("Начните с нужных модулей")}</h2>
-              <p className="mt-4 text-sm leading-7 text-muted-foreground md:text-base">{tr("Стоимость рассчитывается по количеству проектов, сотрудников и подключённых возможностей. Вы платите только за то, чем пользуется ваша компания.")}</p>
+              <div className="text-xs font-bold uppercase tracking-widest text-primary">Premium Unlimited</div>
+              <h2 className="mt-3 font-display text-3xl font-extrabold uppercase md:text-5xl">{tr("Три тарифа для любой строительной компании")}</h2>
+              <p className="mt-4 text-sm leading-7 text-muted-foreground md:text-base">{tr("Цена индивидуальна — мы подбираем тариф под объём вашей компании. Свяжитесь с нами для точного расчёта.")}</p>
             </Reveal>
-            <div className="mt-10 grid gap-5 md:grid-cols-3">
-              {[
-                ["Старт", "Для небольшой команды", "Проекты, квартиры, клиенты и продажи"],
-                ["Бизнес", "Для растущей компании", "Финансы, склад, смета, сотрудники и отчёты"],
-                ["Компания", "Для нескольких проектов", "Все модули, роли, интеграции и сопровождение"],
-              ].map(([name, caption, text], index) => (
-                <Reveal key={name} direction={index === 0 ? "left" : index === 2 ? "right" : "up"} className="h-full">
-                  <article className={`h-full rounded-2xl border p-7 ${index === 1 ? "border-primary bg-background shadow-lg" : "border-border bg-background"}`}>
-                    <h3 className="font-display text-xl font-extrabold">{tr(name)}</h3>
-                    <p className="mt-1 text-xs font-semibold text-primary">{tr(caption)}</p>
-                    <p className="mt-5 text-sm leading-6 text-muted-foreground">{tr(text)}</p>
-                    <Button asChild variant={index === 1 ? "default" : "outline"} className="mt-7 w-full rounded-full"><a href="#contact">{tr("Узнать стоимость")}</a></Button>
+            <div className="mt-12 grid items-stretch gap-5 lg:grid-cols-3">
+              {PLANS.map((plan, index) => (
+                <Reveal key={plan.code} direction={index === 0 ? "left" : index === 2 ? "right" : "up"} className="h-full">
+                  <article className={`relative flex h-full flex-col rounded-3xl border p-7 md:p-8 ${index === 1 ? "border-primary bg-primary text-primary-foreground shadow-xl lg:-my-5 lg:py-13" : "border-border bg-muted/60"}`}>
+                    {index === 1 && <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-success px-4 py-1 text-xs font-bold text-success-foreground">{tr("Популярный")}</span>}
+                    <div className={`text-xs font-bold ${index === 1 ? "text-primary-foreground/70" : "text-primary"}`}>{tr(`Тариф ${index + 1}`)}</div>
+                    <h3 className="mt-2 font-display text-xl font-extrabold">{tr(plan.name)}</h3>
+                    <p className={`mt-2 min-h-12 text-sm ${index === 1 ? "text-primary-foreground/75" : "text-muted-foreground"}`}>{tr(plan.caption)}</p>
+                    <div className="mt-6 font-display text-2xl font-extrabold">{tr("Индивидуальная цена")}</div>
+                    <p className={`mt-1 text-xs ${index === 1 ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{tr("Рассчитывается по объёму вашей компании")}</p>
+                    <Button type="button" variant={index === 1 ? "secondary" : "default"} className="mt-6 h-12 w-full rounded-xl" onClick={() => setSelectedPlan(plan.code)}>{tr("Выбрать тариф")}</Button>
+                    <ul className="mt-7 space-y-3">
+                      {plan.features.map((feature) => <li key={feature} className="flex gap-3 text-sm leading-5"><span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${index === 1 ? "bg-primary-foreground text-primary" : "bg-primary text-primary-foreground"}`}><Check className="h-3 w-3" /></span>{tr(feature)}</li>)}
+                    </ul>
                   </article>
                 </Reveal>
               ))}
@@ -566,6 +627,30 @@ export function LandingPage() {
           </div>
         </div>
       </footer>
+
+      <Dialog open={selectedPlan !== null} onOpenChange={(open) => !open && setSelectedPlan(null)}>
+        <DialogContent className="max-h-[92vh] overflow-y-auto rounded-3xl p-6 sm:p-8">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl font-extrabold">{tr("Заявка на демонстрацию")}</DialogTitle>
+            <DialogDescription className="leading-6">{tr("За 15 минут покажем платформу для вашего сценария и ответим на вопросы.")}</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleRequest} className="mt-2 space-y-4">
+            <div>
+              <Label>{tr("Тип бизнеса")}</Label>
+              <div className="mt-2 grid grid-cols-3 rounded-xl bg-muted p-1">
+                {[["developer", "Строительство"], ["management", "Управление"], ["other", "Другое"]].map(([value, text]) => (
+                  <Button key={value} type="button" variant={requestForm.business_type === value ? "default" : "ghost"} className="h-10 rounded-lg px-2 text-xs sm:text-sm" onClick={() => setRequestForm((current) => ({ ...current, business_type: value }))}>{tr(text)}</Button>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm"><span className="text-muted-foreground">{tr("Выбранный тариф")}:</span> <strong>{tr(PLANS.find((plan) => plan.code === selectedPlan)?.name ?? "")}</strong></div>
+            {[["full_name", "Имя", "text"], ["company_name", "Компания", "text"], ["job_title", "Должность", "text"], ["email", "Email", "email"], ["phone", "Телефон", "tel"]].map(([field, placeholder, type]) => (
+              <Input key={field} type={type} required minLength={field === "phone" ? 7 : 2} className="h-12 rounded-xl" placeholder={tr(placeholder)} value={requestForm[field as keyof typeof requestForm]} onChange={(event) => setRequestForm((current) => ({ ...current, [field]: event.target.value }))} />
+            ))}
+            <Button type="submit" disabled={submitting} className="h-12 w-full rounded-xl">{submitting ? tr("Отправка…") : tr("Отправить заявку")}</Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
