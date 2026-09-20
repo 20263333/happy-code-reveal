@@ -129,12 +129,12 @@ function ProjectDetail() {
 
   const { data: project } = useQuery({
     queryKey: ["project", id],
-    queryFn: async () => (await supabase.from("projects").select("*").eq("id", id).single()).data,
+    queryFn: () => getProject({ data: { project_id: id } }),
   });
 
   const { data: floors = [] } = useQuery({
     queryKey: ["floors", id],
-    queryFn: async () => (await supabase.from("floors").select("*, apartments(*)").eq("project_id", id).order("floor_number", { ascending: true })).data ?? [],
+    queryFn: () => listFloors({ data: { project_id: id } }) as Promise<any[]>,
   });
 
 
