@@ -9,6 +9,8 @@ const CreateBlockSchema = z.object({
   location: z.string().max(255).optional().nullable(),
   description: z.string().max(2000).optional().nullable(),
   status: z.enum(["planning", "in_progress", "completed", "paused"]).default("in_progress"),
+  floor_count: z.number().int().min(1).max(200),
+  apartments_per_floor: z.number().int().min(1).max(200),
 });
 
 const ProjectIdSchema = z.object({ project_id: z.string().uuid() });
@@ -86,7 +88,52 @@ export const createBlock = createServerFn({ method: "POST" })
       })
       .select().single();
     if (error) throw new Error(error.message);
-    return { ok: true, block: created };
+
+    const floorRows = Array.from({ length: data.floor_count }, (_, index) => ({
+      project_id: created.id,
+      floor_number: index + 1,
+      status: "in_progress",
+    }));
+    const { data: floors, error: floorsError } = await admin
+      .from("floors")
+      .insert(floorRows)
+      .select("id, floor_number");
+    if (floorsError || !floors) {
+      await admin.from("projects").delete().eq("id", created.id);
+      throw new Error(`Ошёнаҳо сохта нашуданд: ${floorsError?.message ?? "Хатои номаълум"}`);
+    }
+
+    let apartmentNumber = 1;
+    const apartmentRows = [...floors]
+      .sort((a: any, b: any) => a.floor_number - b.floor_number)
+      .flatMap((floor: any) =>
+        Array.from({ length: data.apartments_per_floor }, () => ({
+          project_id: created.id,
+          floor_id: floor.id,
+          apartment_number: String(apartmentNumber++),
+          area: 0,
+          price: 0,
+          price_per_sqm: 0,
+          status: "empty",
+        })),
+      );
+
+    for (let index = 0; index < apartmentRows.length; index += 500) {
+      const { error: apartmentsError } = await admin
+        .from("apartments")
+        .insert(apartmentRows.slice(index, index + 500));
+      if (apartmentsError) {
+        await admin.from("projects").delete().eq("id", created.id);
+        throw new Error(`Хонаҳо сохта нашуданд: ${apartmentsError.message}`);
+      }
+    }
+
+    return {
+      ok: true,
+      block: created,
+      floors_created: floors.length,
+      apartments_created: apartmentRows.length,
+    };
   });
 
 export const listBlocks = createServerFn({ method: "GET" })
