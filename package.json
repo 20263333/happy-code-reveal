@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "build:vps": "NODE_OPTIONS=--max-old-space-size=6144 vite build",
+    "build:vps": "NODE_OPTIONS=--max-old-space-size=6144 vite build --config vite.config.vps.ts",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "start:vps": "node scripts/node-adapter.mjs",
