@@ -1614,3 +1614,40 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.subscription_payments TO authenti
 GRANT ALL ON public.subscription_payments TO service_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.company_change_requests TO authenticated;
 GRANT ALL ON public.company_change_requests TO service_role;
+
+-- === Сиёсатҳои дурусти тарифҳо ва реквизитҳо ===
+-- Backstop бо хато танҳо ба платформа-админ дастрасӣ дода буд, барои ҳамин
+-- соҳиби ширкат тарифҳоро намедид. Инро ислоҳ мекунем.
+ALTER TABLE public.tariffs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS vps_scope_tariffs ON public.tariffs;
+DROP POLICY IF EXISTS "Admin manages tariffs" ON public.tariffs;
+CREATE POLICY "Admin manages tariffs" ON public.tariffs FOR ALL TO authenticated
+  USING (private.is_platform_admin(auth.uid()))
+  WITH CHECK (private.is_platform_admin(auth.uid()));
+DROP POLICY IF EXISTS "Read active tariffs (auth)" ON public.tariffs;
+CREATE POLICY "Read active tariffs (auth)" ON public.tariffs FOR SELECT TO authenticated
+  USING (is_active = true);
+
+ALTER TABLE public.payment_methods ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS vps_scope_payment_methods ON public.payment_methods;
+DROP POLICY IF EXISTS "Admin manages payment methods" ON public.payment_methods;
+CREATE POLICY "Admin manages payment methods" ON public.payment_methods FOR ALL TO authenticated
+  USING (private.is_platform_admin(auth.uid()))
+  WITH CHECK (private.is_platform_admin(auth.uid()));
+DROP POLICY IF EXISTS "Read active payment methods (auth)" ON public.payment_methods;
+CREATE POLICY "Read active payment methods (auth)" ON public.payment_methods FOR SELECT TO authenticated
+  USING (is_active = true);
+
+-- Ширкат бояд пардохтҳои худро дида тавонад
+ALTER TABLE public.subscription_payments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS vps_scope_subscription_payments ON public.subscription_payments;
+DROP POLICY IF EXISTS "Company reads own subscription payments" ON public.subscription_payments;
+CREATE POLICY "Company reads own subscription payments" ON public.subscription_payments FOR SELECT TO authenticated
+  USING (private.is_platform_admin(auth.uid()) OR company_id = private.user_company_id(auth.uid()));
+DROP POLICY IF EXISTS "Company creates own subscription payments" ON public.subscription_payments;
+CREATE POLICY "Company creates own subscription payments" ON public.subscription_payments FOR INSERT TO authenticated
+  WITH CHECK (company_id = private.user_company_id(auth.uid()) OR private.is_platform_admin(auth.uid()));
+DROP POLICY IF EXISTS "Admin manages subscription payments" ON public.subscription_payments;
+CREATE POLICY "Admin manages subscription payments" ON public.subscription_payments FOR ALL TO authenticated
+  USING (private.is_platform_admin(auth.uid()))
+  WITH CHECK (private.is_platform_admin(auth.uid()));
