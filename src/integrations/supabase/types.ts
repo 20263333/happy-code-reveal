@@ -3999,6 +3999,51 @@ export type Database = {
           },
         ]
       }
+      site_plan_requests: {
+        Row: {
+          business_type: string
+          company_name: string
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          job_title: string
+          locale: string
+          phone: string
+          plan_code: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          business_type: string
+          company_name: string
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          job_title: string
+          locale?: string
+          phone: string
+          plan_code: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          business_type?: string
+          company_name?: string
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          job_title?: string
+          locale?: string
+          phone?: string
+          plan_code?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sms_logs: {
         Row: {
           company_id: string
