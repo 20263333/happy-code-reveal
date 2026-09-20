@@ -58,7 +58,7 @@ type OcrProvider = {
 function resolveOcrProvider(): OcrProvider | null {
   const forced = process.env.AI_PROVIDER?.trim().toLowerCase();
   const openaiKeyPref = process.env.OPENAI_API_KEY?.trim();
-  const preferOpenAI = forced === "openai" ? !!openaiKeyPref : forced === "lovable" ? false : !!openaiKeyPref;
+  const preferOpenAI = forced === "openai" && !!openaiKeyPref;
   const lovableKey = process.env.LOVABLE_API_KEY?.trim();
   if (!preferOpenAI && lovableKey) {
     return {

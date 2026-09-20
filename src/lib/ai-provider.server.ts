@@ -1,6 +1,6 @@
 // Ягона ҷои интихоби провайдери AI.
-// Агар OPENAI_API_KEY гузошта шуда бошад — аккаунти шахсии ChatGPT (OpenAI) истифода мешавад,
-// вагарна Lovable AI Gateway. Бо AI_PROVIDER=lovable|openai маҷбуран интихоб кардан мумкин аст.
+// Пеш аз ҳама LOVABLE_API_KEY (Lovable AI Gateway) истифода мешавад.
+// OpenAI (аккаунти шахсии ChatGPT) танҳо бо AI_PROVIDER=openai фаъол мегардад.
 
 export type AiProvider = {
   name: "OpenAI" | "Lovable AI Gateway";
@@ -23,7 +23,7 @@ export function resolveAiProvider(): AiProvider | null {
   const openaiKey = process.env.OPENAI_API_KEY?.trim();
   const lovableKey = process.env.LOVABLE_API_KEY?.trim();
 
-  const useOpenAI = forced === "openai" ? !!openaiKey : forced === "lovable" ? false : !!openaiKey;
+  const useOpenAI = forced === "openai" && !!openaiKey;
 
   if (useOpenAI && openaiKey) {
     const pro = process.env.OPENAI_CHAT_MODEL?.trim() || process.env.OPENAI_OCR_MODEL_PRO?.trim() || "gpt-4o";
