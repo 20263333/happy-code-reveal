@@ -16,14 +16,16 @@ export const listProjects = createServerFn({ method: "GET" })
     const { userId, supabase } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const [profileResult, ownedResult] = await Promise.all([
+    const [profileResult, ownedResult, roleResult] = await Promise.all([
       (supabaseAdmin as any).from("profiles").select("company_id").eq("id", userId).maybeSingle(),
       (supabaseAdmin as any).from("companies").select("id").eq("owner_user_id", userId).maybeSingle(),
+      (supabaseAdmin as any).from("user_roles").select("role").eq("user_id", userId).eq("role", "owner").maybeSingle(),
     ]);
     const companyId = (profileResult.data as any)?.company_id ?? (ownedResult.data as any)?.id ?? null;
+    const isOwner = !!ownedResult.data || !!roleResult.data;
 
     let roots: any[] = [];
-    if (companyId) {
+    if (companyId && isOwner) {
       const { data, error } = await (supabaseAdmin as any)
         .from("projects")
         .select("id, name, location, status, cover_url, created_at")
