@@ -926,11 +926,11 @@ export const sendAiChatMessage = createServerFn({ method: "POST" })
     const MAX_ITERS = 24;
     for (let iter = 0; iter < MAX_ITERS; iter++) {
       const lastRound = iter === MAX_ITERS - 1;
-      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const res = await fetch(provider.chatUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Lovable-API-Key": apiKey },
+        headers: { ...provider.headers, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "openai/gpt-5.4",
+          model: provider.model("pro"),
           messages,
           ...(lastRound ? {} : { tools: TOOLS }),
           max_tokens: 4000,
