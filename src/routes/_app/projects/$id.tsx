@@ -993,10 +993,9 @@ function AddFloorButton({ projectId, onAdded }: { projectId: string; onAdded: ()
   const [description, setDescription] = useState("");
   const add = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("floors").insert({
-        project_id: projectId, floor_number: Number(num), status, description: description || null,
-      } as any);
-      if (error) throw error;
+      await createFloor({
+        data: { project_id: projectId, floor_number: Number(num), status, description: description || null },
+      });
     },
     onSuccess: () => { toast.success("OK"); setOpen(false); setNum(""); setDescription(""); setStatus("in_progress"); onAdded(); },
     onError: (e: any) => toast.error(e.message),
