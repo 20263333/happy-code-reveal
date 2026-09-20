@@ -548,9 +548,7 @@ function FloorRow({ floor, projectId, canEdit, canAddApt = true, canDelete, aptF
       ? "bg-accent/15 text-accent border-accent/30"
       : "bg-warning/20 text-warning-foreground border-warning/40";
   const delFloor = async () => {
-    await supabase.from("apartments").delete().eq("floor_id", floor.id);
-    const { error } = await supabase.from("floors").delete().eq("id", floor.id);
-    if (error) throw error;
+    await deleteFloor({ data: { floor_id: floor.id } });
   };
   return (
     <div className="rounded-xl border border-border bg-card p-5">
