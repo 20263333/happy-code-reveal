@@ -26,7 +26,7 @@ export const createProject = createServerFn({ method: "POST" })
     ]);
 
     const ownedCompanyId = (ownedRes.data as any)?.id ?? null;
-    const companyId = ((profRes.data as any)?.company_id ?? null) ?? ownedCompanyId;
+    const companyId: string | null = ((profRes.data as any)?.company_id as string | null) ?? ownedCompanyId;
     if (!companyId) throw new Error("Шумо ҳоло ба ягон ширкат тааллуқ надоред");
 
     const isOwner = !!ownedCompanyId || !!roleRes.data;
