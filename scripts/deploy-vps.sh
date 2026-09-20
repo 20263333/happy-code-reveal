@@ -18,6 +18,11 @@ set -a
 source "$ENV_FILE"
 set +a
 
+if [[ -z "${LOVABLE_API_KEY:-}" && -z "${LOVABLE_AI_GATEWAY_KEY:-}" && -z "${OPENAI_API_KEY:-}" ]]; then
+  echo "WARNING: AI scanner is not configured. LOVABLE_API_KEY and OPENAI_API_KEY are empty in $ENV_FILE."
+  echo "         Passport and warehouse scanning will not work until an AI key is configured."
+fi
+
 # The Sales Partner receiver has stable built-in defaults. Export them for PM2
 # when the VPS env file still contains empty values, so background sync starts
 # immediately after deployment without a Super Admin settings screen.

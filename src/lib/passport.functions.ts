@@ -14,6 +14,7 @@ export const extractPassport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => InputSchema.parse(d))
   .handler(async ({ data, context }): Promise<PassportExtractResult> => {
+    const result = await extractPassportFromImages(data);
     const { supabase, userId } = context;
     const { data: prof } = await supabase
       .from("profiles")
@@ -37,7 +38,7 @@ export const extractPassport = createServerFn({ method: "POST" })
       throw new Error(error.message);
     }
 
-    return extractPassportFromImages(data);
+    return result;
   });
 
 export const getPassportScanCredits = createServerFn({ method: "GET" })

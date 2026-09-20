@@ -211,13 +211,14 @@ export const kioskExtractPassport = createServerFn({ method: "POST" })
   }).parse(d))
   .handler(async ({ data }): Promise<PassportOcrResult> => {
     const s = await requireUnlockedSession();
+    const result = await extractPassportFromImages(data);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await (supabaseAdmin as any).rpc("consume_scan_credit", { _company_id: s.company_id });
     if (error) {
       if (error.message?.includes("no_scan_credits")) throw new Error("no_scan_credits");
       throw new Error(error.message);
     }
-    return extractPassportFromImages(data);
+    return result;
   });
 
 // ---------- Kiosk data (unlocked only) ----------
