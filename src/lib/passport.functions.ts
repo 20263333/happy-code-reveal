@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { extractPassportFromImages, type PassportOcrResult } from "./passport-ocr.server";
+import { assertPassportOcrConfigured, extractPassportFromImages, type PassportOcrResult } from "./passport-ocr.server";
 
 const InputSchema = z.object({
   front: z.string().min(10), // data:image/...;base64,... OR raw base64
@@ -14,7 +14,7 @@ export const extractPassport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => InputSchema.parse(d))
   .handler(async ({ data, context }): Promise<PassportExtractResult> => {
-    const result = await extractPassportFromImages(data);
+    assertPassportOcrConfigured();
     const { supabase, userId } = context;
     const { data: prof } = await supabase
       .from("profiles")
@@ -38,7 +38,7 @@ export const extractPassport = createServerFn({ method: "POST" })
       throw new Error(error.message);
     }
 
-    return result;
+    return extractPassportFromImages(data);
   });
 
 export const getPassportScanCredits = createServerFn({ method: "GET" })

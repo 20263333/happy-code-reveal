@@ -91,6 +91,17 @@ function resolveOcrProvider(): OcrProvider | null {
   return null;
 }
 
+export function assertPassportOcrConfigured() {
+  if (!resolveOcrProvider()) {
+    throw toDebugError({
+      provider: "Lovable AI Gateway",
+      model: FLASH_MODEL,
+      stage: "configuration",
+      reason: "LOVABLE_API_KEY is empty on this server. A separately hosted VPS does not receive Lovable Cloud secrets automatically.",
+    }, "Сканери AI дар сервер танзим нашудааст: калиди Lovable дар VPS нест.");
+  }
+}
+
 const SUPPORTED_IMAGE_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
 /** Қоидаҳои махсуси майдонҳо — рақами паспорт, ИНН/РМА ва «Кӣ додаст». */
