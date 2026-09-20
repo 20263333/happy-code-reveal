@@ -1299,7 +1299,102 @@ STABLE
 SECURITY DEFINER
 SET search_path = public, private
 AS $$
-  SELECT company_id FROM public.profiles WHERE id = _user_id
+  SELECT COALESCE(
+    (SELECT company_id FROM public.profiles WHERE id = _user_id),
+    (SELECT id FROM public.companies WHERE owner_user_id = _user_id ORDER BY created_at LIMIT 1)
+  )
+$$;
+
+CREATE OR REPLACE FUNCTION private.has_role(_user_id uuid, _role public.app_role)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles
+    WHERE user_id = _user_id AND role = _role
+  )
+$$;
+
+CREATE OR REPLACE FUNCTION public.has_role(_user_id uuid, _role public.app_role)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, private
+AS $$ SELECT private.has_role(_user_id, _role) $$;
+
+CREATE OR REPLACE FUNCTION public.user_company_id(_user_id uuid)
+RETURNS uuid
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, private
+AS $$ SELECT private.user_company_id(_user_id) $$;
+
+CREATE OR REPLACE FUNCTION public.is_director(_user_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles
+    WHERE user_id = _user_id AND role::text = 'director'
+  )
+$$;
+
+CREATE OR REPLACE FUNCTION private.user_is_project_partner(_user_id uuid, _project_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, private
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.partner_shares ps
+    WHERE ps.director_user_id = _user_id
+      AND ps.project_id = _project_id
+      AND ps.percent > 0
+  )
+$$;
+
+CREATE OR REPLACE FUNCTION public.user_is_project_partner(_user_id uuid, _project_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, private
+AS $$ SELECT private.user_is_project_partner(_user_id, _project_id) $$;
+
+CREATE OR REPLACE FUNCTION private.project_in_user_company(_user_id uuid, _project_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, private
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.projects p
+    WHERE p.id = _project_id AND p.company_id = private.user_company_id(_user_id)
+  )
+$$;
+
+CREATE OR REPLACE FUNCTION private.is_assigned_sales_manager(_user_id uuid, _member_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, private
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.sales_team_members m
+    WHERE m.id = _member_id AND m.kind = 'manager' AND m.is_active
+      AND (m.user_id = _user_id OR lower(m.email) = lower((SELECT u.email FROM auth.users u WHERE u.id = _user_id)))
+  )
 $$;
 
 GRANT EXECUTE ON FUNCTION private.is_platform_admin(uuid) TO authenticated, service_role;
@@ -1359,7 +1454,76 @@ AS $$
     )
 $$;
 
-GRANT EXECUTE ON FUNCTION private.user_can_access_project(uuid, uuid) TO authenticated, service_role;
+CREATE OR REPLACE FUNCTION public.user_can_access_project(_user_id uuid, _project_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, private
+AS $$ SELECT private.user_can_access_project(_user_id, _project_id) $$;
+
+CREATE OR REPLACE FUNCTION private.director_can_read_project(_user_id uuid, _project_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, private
+AS $$
+  SELECT public.is_director(_user_id)
+    AND EXISTS (
+      SELECT 1 FROM public.projects p
+      WHERE p.id = _project_id
+        AND p.company_id = private.user_company_id(_user_id)
+        AND (
+          EXISTS (SELECT 1 FROM public.partner_shares s WHERE s.director_user_id = _user_id AND s.project_id = p.id)
+          OR EXISTS (SELECT 1 FROM public.partner_shares s WHERE s.director_user_id = _user_id AND s.project_id = p.parent_id)
+          OR EXISTS (
+            SELECT 1 FROM public.partner_shares s
+            JOIN public.projects child ON child.id = s.project_id
+            WHERE s.director_user_id = _user_id AND child.parent_id = p.id
+          )
+        )
+    )
+$$;
+
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA private TO authenticated, service_role;
+
+-- The VPS schema is assembled from column metadata, so restore the core keys
+-- and relationships needed by nested project, floor, sale and payment reads.
+DO $$ BEGIN ALTER TABLE public.companies ADD CONSTRAINT companies_pkey PRIMARY KEY (id); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.profiles ADD CONSTRAINT profiles_pkey PRIMARY KEY (id); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.user_roles ADD CONSTRAINT user_roles_pkey PRIMARY KEY (id); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.user_roles ADD CONSTRAINT user_roles_user_id_role_key UNIQUE (user_id, role); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.projects ADD CONSTRAINT projects_pkey PRIMARY KEY (id); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.floors ADD CONSTRAINT floors_pkey PRIMARY KEY (id); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.apartments ADD CONSTRAINT apartments_pkey PRIMARY KEY (id); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.customers ADD CONSTRAINT customers_pkey PRIMARY KEY (id); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.sales ADD CONSTRAINT sales_pkey PRIMARY KEY (id); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.payments ADD CONSTRAINT payments_pkey PRIMARY KEY (id); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.payment_schedule ADD CONSTRAINT payment_schedule_pkey PRIMARY KEY (id); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN ALTER TABLE public.projects ADD CONSTRAINT projects_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.projects ADD CONSTRAINT projects_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.projects(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.floors ADD CONSTRAINT floors_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.floors ADD CONSTRAINT floors_project_id_floor_number_key UNIQUE (project_id, floor_number); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.apartments ADD CONSTRAINT apartments_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.apartments ADD CONSTRAINT apartments_floor_id_fkey FOREIGN KEY (floor_id) REFERENCES public.floors(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.customers ADD CONSTRAINT customers_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.sales ADD CONSTRAINT sales_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.sales ADD CONSTRAINT sales_apartment_id_fkey FOREIGN KEY (apartment_id) REFERENCES public.apartments(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.sales ADD CONSTRAINT sales_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.payments ADD CONSTRAINT payments_sale_id_fkey FOREIGN KEY (sale_id) REFERENCES public.sales(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.payment_schedule ADD CONSTRAINT payment_schedule_sale_id_fkey FOREIGN KEY (sale_id) REFERENCES public.sales(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.floors ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.apartments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.sales ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.payment_schedule ENABLE ROW LEVEL SECURITY;
+
+NOTIFY pgrst, 'reload schema';
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.payment_schedule TO authenticated;
 GRANT ALL ON public.payment_schedule TO service_role;
