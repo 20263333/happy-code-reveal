@@ -45,14 +45,18 @@ function asDataUrl(s: string): string {
 
 const RETRYABLE_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
 const OCR_ERROR_MESSAGE = "Passport could not be recognized. Please take a clearer photo.";
-const FLASH_MODEL = "openai/gpt-5.4-mini";
-const PRO_MODEL = "openai/gpt-5.4";
+// Gemini reads ID documents reliably and does not refuse personal documents,
+// so it is the primary OCR model; the OpenAI model stays as a second opinion.
+const FLASH_MODEL = "google/gemini-3.8-flash";
+const PRO_MODEL = "google/gemini-3.8-flash";
+const FALLBACK_MODEL = "openai/gpt-5.4";
 type OcrProvider = {
   name: string;
   url: string;
   headers: Record<string, string>;
   flash: string;
   pro: string;
+  fallback: string;
 };
 
 function resolveOcrProvider(): OcrProvider | null {
