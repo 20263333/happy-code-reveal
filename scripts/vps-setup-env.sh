@@ -36,6 +36,13 @@ SMS_CRON_SECRET=${SMS_SECRET}
 MARKETPLACE_SYNC_SECRET=${MKT_SECRET}
 LOVABLE_AI_GATEWAY_KEY=
 LOVABLE_API_KEY=
+# Аккаунти шахсии ChatGPT (OpenAI) — сканери паспорт, сканери склад, ёрдамчии AI
+OPENAI_API_KEY=
+OPENAI_OCR_MODEL=gpt-4o-mini
+OPENAI_OCR_MODEL_PRO=gpt-4o
+OPENAI_CHAT_MODEL=gpt-4o
+OPENAI_CHAT_MODEL_MINI=gpt-4o-mini
+OPENAI_STT_MODEL=gpt-4o-mini-transcribe
 EOF
 
 chmod 600 "$ENV_FILE"

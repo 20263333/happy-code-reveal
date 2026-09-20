@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireAiProvider } from "./ai-provider.server";
 
 // Client sends { base64, mime } — we forward as multipart to Lovable AI STT.
 export const transcribeAudio = createServerFn({ method: "POST" })
@@ -10,8 +11,7 @@ export const transcribeAudio = createServerFn({ method: "POST" })
     return { base64: x.base64, mime: x.mime || "audio/webm" };
   })
   .handler(async ({ data }) => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("LOVABLE_API_KEY нест");
+    const provider = requireAiProvider();
 
     const bin = Uint8Array.from(atob(data.base64), (c) => c.charCodeAt(0));
     const mime = data.mime;
@@ -22,12 +22,12 @@ export const transcribeAudio = createServerFn({ method: "POST" })
       mime.includes("ogg") ? "ogg" : "webm";
 
     const fd = new FormData();
-    fd.append("model", "openai/gpt-4o-mini-transcribe");
+    fd.append("model", provider.model("stt"));
     fd.append("file", new Blob([bin], { type: mime }), `recording.${ext}`);
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/audio/transcriptions", {
+    const res = await fetch(provider.sttUrl, {
       method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}` },
+      headers: provider.headers,
       body: fd,
     });
     if (res.status === 429) throw new Error("Лимит зиёд шуд, каме сабр кунед");

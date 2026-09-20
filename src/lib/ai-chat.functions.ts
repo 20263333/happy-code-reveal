@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireAiProvider } from "./ai-provider.server";
 
 const HISTORY_LIMIT = 12;
 const MUTATING_TOOLS = new Set([
@@ -855,8 +856,7 @@ export const sendAiChatMessage = createServerFn({ method: "POST" })
     currentPath: z.string().max(300).optional().nullable(),
   }).parse(d))
   .handler(async ({ data, context }) => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("LOVABLE_API_KEY нест");
+    const provider = requireAiProvider();
     const { supabase, userId } = context;
     const companyId = await getCompanyId(supabase, userId);
 
@@ -926,11 +926,11 @@ export const sendAiChatMessage = createServerFn({ method: "POST" })
     const MAX_ITERS = 24;
     for (let iter = 0; iter < MAX_ITERS; iter++) {
       const lastRound = iter === MAX_ITERS - 1;
-      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const res = await fetch(provider.chatUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Lovable-API-Key": apiKey },
+        headers: { ...provider.headers, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "openai/gpt-5.4",
+          model: provider.model("pro"),
           messages,
           ...(lastRound ? {} : { tools: TOOLS }),
           max_tokens: 4000,

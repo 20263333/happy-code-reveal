@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireAiProvider } from "./ai-provider.server";
 import {
   PASSPORT_FIELDS,
   emptyPassportData,
@@ -45,8 +46,7 @@ export const structurePassport = createServerFn({ method: "POST" })
     } as Input;
   })
   .handler(async ({ data }): Promise<PassportResult> => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("LOVABLE_API_KEY нест");
+    const provider = requireAiProvider();
 
     const linesBlock = data.lines
       .map((l, i) => `${i + 1}. ${l.text}  [conf ${Math.round((l.confidence ?? 0) * 100)}%]`)
@@ -63,11 +63,11 @@ export const structurePassport = createServerFn({ method: "POST" })
       data.text,
     ].join("\n");
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await fetch(provider.chatUrl, {
       method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      headers: { ...provider.headers, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "openai/gpt-5.4-mini",
+        model: provider.model("mini"),
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: SYSTEM },
