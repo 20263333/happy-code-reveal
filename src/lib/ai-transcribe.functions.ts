@@ -22,12 +22,12 @@ export const transcribeAudio = createServerFn({ method: "POST" })
       mime.includes("ogg") ? "ogg" : "webm";
 
     const fd = new FormData();
-    fd.append("model", "openai/gpt-4o-mini-transcribe");
+    fd.append("model", provider.model("stt"));
     fd.append("file", new Blob([bin], { type: mime }), `recording.${ext}`);
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/audio/transcriptions", {
+    const res = await fetch(provider.sttUrl, {
       method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}` },
+      headers: provider.headers,
       body: fd,
     });
     if (res.status === 429) throw new Error("Лимит зиёд шуд, каме сабр кунед");
