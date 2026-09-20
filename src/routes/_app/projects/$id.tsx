@@ -851,12 +851,7 @@ function ProjectBlocksView({ project, projectId, isOwner }: { project: any; proj
 
   const { data: blocks = [] } = useQuery({
     queryKey: ["project-blocks", projectId],
-    queryFn: async () =>
-      (await (supabase as any)
-        .from("projects")
-        .select("*, apartments(id, status)")
-        .eq("parent_id", projectId)
-        .order("created_at", { ascending: true })).data ?? [],
+    queryFn: () => listBlocks({ data: { project_id: projectId } }) as Promise<any[]>,
   });
 
   const { data: fund } = useQuery({
