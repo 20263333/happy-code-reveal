@@ -1,15 +1,24 @@
 #!/usr/bin/env bash
-# ⚠️ Ин скрипт дигар миграцияҳои кӯҳнаро иҷро намекунад (онҳо маълумотро нест мекарданд).
-# Танҳо сохтори базаи VPS-ро бо базаи асосӣ ҳамоҳанг мекунад (бехатар, маълумотро нест намекунад).
+# Сохтор ва сиёсатҳои дастрасии базаи VPS-ро бо базаи асосӣ ҳамоҳанг мекунад.
+# Бехатар аст — маълумотро нест намекунад.
 set -uo pipefail
 
-FILE="$(cd "$(dirname "$0")" && pwd)/vps-schema-sync.sql"
+DIR="$(cd "$(dirname "$0")" && pwd)"
 LOG="/root/cloud-migration/schema-sync.log"
 mkdir -p /root/cloud-migration
+: > "$LOG"
 
-echo "==> Ҳамоҳангсозии сохтори база"
-docker exec -i supabase-db psql -v ON_ERROR_STOP=0 -U postgres -d postgres < "$FILE" > "$LOG" 2>&1
+run_sql() {
+  docker exec -i --user root supabase-db psql -v ON_ERROR_STOP=0 -U supabase_admin -d postgres < "$1" >> "$LOG" 2>&1 \
+    || docker exec -i supabase-db psql -v ON_ERROR_STOP=0 -U postgres -d postgres < "$1" >> "$LOG" 2>&1
+}
 
-echo "==> Хатогиҳо:"
-grep -i '^ERROR' "$LOG" | head -20
+echo "==> 1/2 Ҳамоҳангсозии сохтори база"
+run_sql "$DIR/vps-schema-sync.sql"
+
+echo "==> 2/2 Ҳамоҳангсозии сиёсатҳои дастрасӣ (RLS)"
+run_sql "$DIR/vps-policies-sync.sql"
+
+echo "==> Хатогиҳо (агар бошанд):"
+grep -i '^ERROR' "$LOG" | sort | uniq -c | sort -rn | head -25
 echo "==> Тайёр. Лог: $LOG"
