@@ -577,18 +577,32 @@ export async function extractPassportFromImages(data: PassportOcrInput): Promise
     });
   }
 
-  // No usable OCR text (stage failed or returned nothing) → read the image directly with the pro model.
+  // No usable OCR text (stage failed or returned nothing) → read the image directly,
+  // first with the primary model, then with the second-opinion model.
   if (!rawOcrText.trim()) {
-    const direct = await callGatewayJson(provider, buildDirectBody(), "image_extraction", imageMimes);
-    const parsedDirect = parsePassportText(JSON.stringify(extractJsonObject(messageContentText(direct.json))));
-    if (hasExtractedFields(parsedDirect)) {
-      parsedDirect.raw_ocr_response = stringifyForDebug({ image_extraction: direct.debug.raw_response });
-      parsedDirect.debug = { ...direct.debug, stage: "completed" };
-      passportOcrLog("completed via direct image extraction", { has_fullname: !!parsedDirect.fullname });
-      return parsedDirect;
+    const models = provider.pro === provider.fallback ? [provider.pro] : [provider.pro, provider.fallback];
+    let lastDirect: { json: any; text: string; debug: PassportOcrDebug } | null = null;
+    for (const model of models) {
+      let direct: { json: any; text: string; debug: PassportOcrDebug };
+      try {
+        direct = await callGatewayJson(provider, buildDirectBody(undefined, model), "image_extraction", imageMimes);
+      } catch (error) {
+        passportOcrLog("direct extraction failed", { model, reason: error instanceof Error ? error.message.slice(0, 300) : String(error) });
+        if (model === models[models.length - 1]) throw error;
+        continue;
+      }
+      lastDirect = direct;
+      const parsedDirect = parsePassportText(JSON.stringify(extractJsonObject(messageContentText(direct.json))));
+      if (hasExtractedFields(parsedDirect)) {
+        parsedDirect.raw_ocr_response = stringifyForDebug({ image_extraction: direct.debug.raw_response });
+        parsedDirect.debug = { ...direct.debug, stage: "completed", model };
+        passportOcrLog("completed via direct image extraction", { model, has_fullname: !!parsedDirect.fullname });
+        return parsedDirect;
+      }
+      passportOcrLog("direct extraction returned no fields", { model });
     }
     throw toDebugError(
-      { ...direct.debug, stage: "parsing", reason: "No text detected in image", image_mime_types: imageMimes },
+      { ...(lastDirect?.debug ?? { provider: provider.name, model: provider.pro, stage: "image_extraction" as const }), stage: "parsing", reason: "No text detected in image", image_mime_types: imageMimes },
       OCR_ERROR_MESSAGE,
     );
   }
