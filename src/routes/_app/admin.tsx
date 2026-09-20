@@ -18,6 +18,7 @@ import {
   Infinity,
   RotateCcw,
   Archive,
+  Inbox,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -84,6 +85,7 @@ function AdminPage() {
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="companies">Компании</TabsTrigger>
           <TabsTrigger value="payments">Заявки на оплату</TabsTrigger>
+          <TabsTrigger value="site-requests">Заявки с сайта</TabsTrigger>
           <TabsTrigger value="changes">Изменения данных</TabsTrigger>
           <TabsTrigger value="tariffs">Тарифы</TabsTrigger>
           <TabsTrigger value="methods">Реквизиты</TabsTrigger>
@@ -104,6 +106,9 @@ function AdminPage() {
         </TabsContent>
         <TabsContent value="payments">
           <PaymentRequestsTab />
+        </TabsContent>
+        <TabsContent value="site-requests">
+          <SitePlanRequestsTab />
         </TabsContent>
         <TabsContent value="changes">
           <ChangeRequestsTab />
@@ -142,6 +147,76 @@ function AdminPage() {
           <AppLogosTab />
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+const SITE_PLAN_LABELS: Record<string, string> = {
+  construction: "Строительство",
+  construction_sales: "Строительство + продажи",
+  premium_unlimited: "Premium Unlimited",
+};
+
+const SITE_REQUEST_STATUS: Record<string, string> = {
+  new: "Новая",
+  in_progress: "В работе",
+  completed: "Завершена",
+};
+
+function SitePlanRequestsTab() {
+  const queryClient = useQueryClient();
+  const { data: requests = [], isLoading } = useQuery({
+    queryKey: ["site-plan-requests"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("site_plan_requests").select("*").order("created_at", { ascending: false });
+      if (error) throw new Error(error.message);
+      return data ?? [];
+    },
+    refetchInterval: 30000,
+  });
+  const updateStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await (supabase as any).from("site_plan_requests").update({ status }).eq("id", id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      toast.success("Статус заявки обновлён");
+      queryClient.invalidateQueries({ queryKey: ["site-plan-requests"] });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  if (isLoading) return <div className="py-10 text-center text-muted-foreground">Загрузка…</div>;
+  if (!requests.length) return <EmptyState icon={Inbox} title="Заявок пока нет" description="Заявки с сайта появятся здесь." />;
+
+  return (
+    <div className="grid gap-4 pt-4 lg:grid-cols-2">
+      {requests.map((request: any) => (
+        <article key={request.id} className="rounded-xl border border-border bg-card p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <Badge variant={request.status === "completed" ? "secondary" : request.status === "in_progress" ? "default" : "outline"}>{SITE_REQUEST_STATUS[request.status] ?? request.status}</Badge>
+              <h3 className="mt-3 font-display text-lg font-semibold">{request.full_name}</h3>
+              <p className="text-sm text-muted-foreground">{request.company_name} · {request.job_title}</p>
+            </div>
+            <div className="text-right text-xs text-muted-foreground">
+              <div>{new Date(request.created_at).toLocaleString("ru-RU")}</div>
+              <div className="mt-1 font-semibold text-primary">{SITE_PLAN_LABELS[request.plan_code] ?? request.plan_code}</div>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-2 rounded-lg bg-muted/50 p-4 text-sm sm:grid-cols-2">
+            <a className="text-primary hover:underline" href={`mailto:${request.email}`}>{request.email}</a>
+            <a className="text-primary hover:underline" href={`tel:${request.phone}`}>{request.phone}</a>
+            <span>Тип: {request.business_type}</span>
+            <span>Язык: {String(request.locale).toUpperCase()}</span>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {Object.entries(SITE_REQUEST_STATUS).map(([status, label]) => (
+              <Button key={status} size="sm" variant={request.status === status ? "default" : "outline"} disabled={updateStatus.isPending || request.status === status} onClick={() => updateStatus.mutate({ id: request.id, status })}>{label}</Button>
+            ))}
+          </div>
+        </article>
+      ))}
     </div>
   );
 }
