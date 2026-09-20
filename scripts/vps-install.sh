@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Binosoz.tj — VPS bootstrap (Hostinger KVM 2, Ubuntu 24.04)
-# Server: 187.77.87.133
+# Server: 31.97.37.138
 # Run as root:  bash /root/vps-install.sh
 # Installs: Docker + self-hosted Supabase + Bun + PM2 + Nginx + firewall
 set -euo pipefail
 
-SERVER_IP="187.77.87.133"
+SERVER_IP="31.97.37.138"
 APP_DIR="/var/www/binosoz"
 SUPA_DIR="/opt/supabase"
 APP_PORT="3000"
