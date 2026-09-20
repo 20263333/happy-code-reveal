@@ -1777,3 +1777,59 @@ CREATE POLICY "Company members can update workers" ON public.workers AS PERMISSI
 DROP POLICY IF EXISTS "Company members can view workers" ON public.workers;
 CREATE POLICY "Company members can view workers" ON public.workers AS PERMISSIVE FOR SELECT TO authenticated
   USING (((COALESCE(((auth.jwt() ->> 'is_anonymous'::text))::boolean, false) = false) AND (company_id = private.user_company_id(auth.uid()))));
+DO $backstop$
+DECLARE
+  t record;
+  has_company boolean;
+  has_project boolean;
+  has_user boolean;
+  expr text;
+BEGIN
+  FOR t IN
+    SELECT c.relname AS tbl
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public'
+      AND c.relkind = 'r'
+      AND NOT EXISTS (SELECT 1 FROM pg_policy p WHERE p.polrelid = c.oid)
+  LOOP
+    EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON public.%I TO authenticated', t.tbl);
+    EXECUTE format('GRANT ALL ON public.%I TO service_role', t.tbl);
+    EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', t.tbl);
+
+    SELECT EXISTS (SELECT 1 FROM information_schema.columns
+                    WHERE table_schema='public' AND table_name=t.tbl AND column_name='company_id')
+      INTO has_company;
+    SELECT EXISTS (SELECT 1 FROM information_schema.columns
+                    WHERE table_schema='public' AND table_name=t.tbl AND column_name='project_id')
+      INTO has_project;
+    SELECT EXISTS (SELECT 1 FROM information_schema.columns
+                    WHERE table_schema='public' AND table_name=t.tbl AND column_name='user_id')
+      INTO has_user;
+
+    IF has_company THEN
+      expr := 'private.is_platform_admin(auth.uid()) OR company_id = private.user_company_id(auth.uid())';
+    ELSIF has_project THEN
+      expr := 'private.is_platform_admin(auth.uid()) OR EXISTS (SELECT 1 FROM public.projects pr '
+              || 'WHERE pr.id = project_id AND pr.company_id = private.user_company_id(auth.uid()))';
+    ELSIF has_user THEN
+      expr := 'private.is_platform_admin(auth.uid()) OR user_id = auth.uid()';
+    ELSE
+      expr := 'private.is_platform_admin(auth.uid())';
+    END IF;
+
+    EXECUTE format(
+      'CREATE POLICY %I ON public.%I FOR ALL TO authenticated USING (%s) WITH CHECK (%s)',
+      'vps_scope_' || t.tbl, t.tbl, expr, expr);
+
+    RAISE NOTICE 'Policy added for public.%', t.tbl;
+  END LOOP;
+END
+$backstop$;
+
+-- Grants (Data API)
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated, service_role;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO authenticated, service_role;
