@@ -20,6 +20,7 @@ apt-get install -y \
 
 echo "==> 2/8 Docker & Compose"
 install -m 0755 -d /etc/apt/keyrings
+rm -f /etc/apt/keyrings/docker.gpg
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --batch --yes --dearmor -o /etc/apt/keyrings/docker.gpg
 chmod a+r /etc/apt/keyrings/docker.gpg
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
@@ -93,13 +94,19 @@ Service role key: ${SERVICE_ROLE_KEY}
 EOF
 chmod 600 /root/supabase-credentials.txt
 
-echo "==> 5/8 Bun + PM2"
+echo "==> 5/8 Bun + Node.js + PM2"
 curl -fsSL https://bun.sh/install | bash
 export BUN_INSTALL="/root/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 echo 'export BUN_INSTALL="/root/.bun"' >> /root/.bashrc
 echo 'export PATH="$BUN_INSTALL/bin:$PATH"' >> /root/.bashrc
 bun --version
+
+# Install Node.js 22 (includes npm) — PM2 and the Vite build need it
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+apt-get install -y nodejs
+node --version
+npm --version
 npm install -g pm2
 
 echo "==> 6/8 App directory"
