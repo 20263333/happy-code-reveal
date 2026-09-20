@@ -8,6 +8,13 @@
       "when": 1789887374597,
       "tag": "0000_create_site_plan_requests",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789907710792,
+      "tag": "0001_grant_billing_tables",
+      "breakpoints": true
     }
   ]
 }
