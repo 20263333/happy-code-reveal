@@ -34,6 +34,7 @@ import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
 import { useAppLogo } from "@/lib/app-logos";
 import { LanguageToggle } from "@/components/language-toggle";
+import { SiteClients } from "@/components/site/site-clients";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -275,6 +276,7 @@ export function LandingPage() {
   const navItems = [
     ["Возможности", "#product"],
     ["Модули", "#modules"],
+    ["Клиенты", "#clients"],
     ["Цены", "#pricing"],
     ["Для строителей", "#builders"],
     ["Для руководителей", "#leaders"],
@@ -534,7 +536,9 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section id="pricing" className="scroll-mt-20 bg-card px-5 py-20 lg:px-8">
+        <SiteClients />
+
+        <section id="pricing" className="scroll-mt-20 px-5 py-20 lg:px-8">
           <div className="mx-auto max-w-7xl">
             <Reveal className="mx-auto max-w-3xl text-center">
               <div className="text-xs font-bold uppercase tracking-widest text-primary">Premium Unlimited</div>
