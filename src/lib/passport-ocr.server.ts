@@ -74,6 +74,7 @@ function resolveOcrProvider(): OcrProvider | null {
       },
       flash: FLASH_MODEL,
       pro: PRO_MODEL,
+      fallback: FALLBACK_MODEL,
     };
   }
   const openaiKey = process.env.OPENAI_API_KEY?.trim();
@@ -84,6 +85,7 @@ function resolveOcrProvider(): OcrProvider | null {
       headers: { Authorization: `Bearer ${openaiKey}` },
       flash: process.env.OPENAI_OCR_MODEL?.trim() || "gpt-4o-mini",
       pro: process.env.OPENAI_OCR_MODEL_PRO?.trim() || "gpt-4o",
+      fallback: process.env.OPENAI_OCR_MODEL_PRO?.trim() || "gpt-4o",
     };
   }
   return null;
