@@ -955,7 +955,7 @@ function AddBlockButton({ parentId, onAdded }: { parentId: string; onAdded: () =
   const createFn = useServerFn(createBlock);
   const add = useMutation({
     mutationFn: async () => {
-      await createFn({
+      return await createFn({
         data: {
           parent_id: parentId,
           name,
