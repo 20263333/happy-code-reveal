@@ -534,7 +534,9 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section id="pricing" className="scroll-mt-20 bg-card px-5 py-20 lg:px-8">
+        <SiteClients />
+
+        <section id="pricing" className="scroll-mt-20 px-5 py-20 lg:px-8">
           <div className="mx-auto max-w-7xl">
             <Reveal className="mx-auto max-w-3xl text-center">
               <div className="text-xs font-bold uppercase tracking-widest text-primary">Premium Unlimited</div>
