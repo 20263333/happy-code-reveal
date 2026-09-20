@@ -16,8 +16,12 @@ type OcrProvider = {
 
 // Дар Lovable Cloud — AI Gateway; дар сервери худӣ (VPS) — калиди OpenAI.
 function resolveProvider(): OcrProvider {
+  const forced = process.env.AI_PROVIDER?.trim().toLowerCase();
+  const openaiKey = process.env.OPENAI_API_KEY?.trim();
   const lovableKey = process.env.LOVABLE_API_KEY?.trim();
-  if (lovableKey) {
+  const preferOpenAI = forced === "openai" ? !!openaiKey : forced === "lovable" ? false : !!openaiKey;
+
+  if (!preferOpenAI && lovableKey) {
     return {
       name: "Lovable AI Gateway",
       url: "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -28,7 +32,6 @@ function resolveProvider(): OcrProvider {
       models: ["openai/gpt-5.5", "openai/gpt-5.4", "google/gemini-3.6-flash"],
     };
   }
-  const openaiKey = process.env.OPENAI_API_KEY?.trim();
   if (openaiKey) {
     const flash = process.env.OPENAI_OCR_MODEL?.trim() || "gpt-4o-mini";
     const pro = process.env.OPENAI_OCR_MODEL_PRO?.trim() || "gpt-4o";
