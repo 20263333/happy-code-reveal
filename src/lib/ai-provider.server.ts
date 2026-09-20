@@ -23,7 +23,7 @@ export function resolveAiProvider(): AiProvider | null {
   const openaiKey = process.env.OPENAI_API_KEY?.trim();
   const lovableKey = process.env.LOVABLE_API_KEY?.trim();
 
-  const useOpenAI = forced === "openai" ? !!openaiKey : forced === "lovable" ? false : !!openaiKey;
+  const useOpenAI = forced === "openai" && !!openaiKey;
 
   if (useOpenAI && openaiKey) {
     const pro = process.env.OPENAI_CHAT_MODEL?.trim() || process.env.OPENAI_OCR_MODEL_PRO?.trim() || "gpt-4o";
