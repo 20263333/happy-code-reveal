@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireAiProvider } from "./ai-provider.server";
 import {
   PASSPORT_FIELDS,
   emptyPassportData,
