@@ -78,7 +78,7 @@ function resolveOcrProvider(): OcrProvider | null {
     };
   }
   const openaiKey = process.env.OPENAI_API_KEY?.trim();
-  if (openaiKey) {
+  if (preferOpenAI && openaiKey) {
     return {
       name: "OpenAI",
       url: "https://api.openai.com/v1/chat/completions",
@@ -499,7 +499,12 @@ export async function extractPassportFromImages(data: PassportOcrInput): Promise
 
   const provider = resolveOcrProvider();
   if (!provider) {
-    throw toDebugError({ provider: "OCR", model: FLASH_MODEL, stage: "configuration", reason: "LOVABLE_API_KEY / OPENAI_API_KEY is not configured" });
+    throw toDebugError({
+      provider: "Lovable AI Gateway",
+      model: FLASH_MODEL,
+      stage: "configuration",
+      reason: "LOVABLE_API_KEY is empty on this server. A separately hosted VPS does not receive Lovable Cloud secrets automatically.",
+    }, "Сканери AI дар сервер танзим нашудааст: калиди Lovable дар VPS нест.");
   }
 
 
