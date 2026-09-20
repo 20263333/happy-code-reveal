@@ -276,6 +276,7 @@ export function LandingPage() {
   const navItems = [
     ["Возможности", "#product"],
     ["Модули", "#modules"],
+    ["Клиенты", "#clients"],
     ["Цены", "#pricing"],
     ["Для строителей", "#builders"],
     ["Для руководителей", "#leaders"],
