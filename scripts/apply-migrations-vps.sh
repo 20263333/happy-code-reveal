@@ -13,11 +13,15 @@ run_sql() {
     || docker exec -i supabase-db psql -v ON_ERROR_STOP=0 -U postgres -d postgres < "$1" >> "$LOG" 2>&1
 }
 
-echo "==> 1/2 Ҳамоҳангсозии сохтори база"
+echo "==> 1/3 Ҳамоҳангсозии сохтори база"
 run_sql "$DIR/vps-schema-sync.sql"
 
-echo "==> 2/2 Ҳамоҳангсозии сиёсатҳои дастрасӣ (RLS)"
+echo "==> 2/3 Ҳамоҳангсозии сиёсатҳои дастрасӣ (RLS)"
 run_sql "$DIR/vps-policies-sync.sql"
+
+echo "==> 3/3 Ҳамоҳангсозии захирагоҳи файлҳо (buckets)"
+run_sql "$DIR/vps-storage-sync.sql"
+
 
 echo "==> Хатогиҳо (агар бошанд):"
 grep -i '^ERROR' "$LOG" | sort | uniq -c | sort -rn | head -25
