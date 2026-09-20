@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { createProject } from "@/lib/projects.functions";
+import { createProject, listProjects } from "@/lib/projects.functions";
 import { Plus, Building2, MapPin, Trash2, ImagePlus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyState } from "@/components/page-header";
@@ -29,6 +29,7 @@ function ProjectsList() {
   const { isOwner, isDirector } = useAuth();
   const { t, tr } = useT();
   const qc = useQueryClient();
+  const listProjectsFn = useServerFn(listProjects);
   const [open, setOpen] = useState(false);
   const canModify = isOwner && !isDirector;
 
@@ -36,12 +37,7 @@ function ProjectsList() {
     queryKey: ["projects"],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("projects")
-        .select("id, name, location, status, cover_url, created_at, children:projects!parent_id(id, apartments(status))")
-        .is("parent_id", null)
-        .order("created_at", { ascending: true });
-      if (error) throw error;
+      const data = await listProjectsFn();
       const paths = (data ?? [])
         .map((p: any) => p.cover_url)
         .filter((u: any): u is string => !!u && !u.startsWith("http"));
