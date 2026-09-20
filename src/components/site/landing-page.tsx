@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ComponentType, type FormEvent, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowRight,
   BarChart3,
@@ -23,30 +24,59 @@ import {
   Users,
   Wallet,
   X,
+  Bot,
+  BriefcaseBusiness,
+  ClipboardCheck,
+  Landmark,
+  PackageCheck,
 } from "lucide-react";
+import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
 import { useAppLogo } from "@/lib/app-logos";
 import { LanguageToggle } from "@/components/language-toggle";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getStableSession } from "@/lib/auth-session";
+import { submitSitePlanRequest } from "@/lib/site-plan-requests.functions";
 import dashboardShot from "@/assets/product/dashboard.png";
 import warehouseShot from "@/assets/product/warehouse.png";
 
 type Module = { icon: ComponentType<{ className?: string }>; title: string; text: string };
 
-const MODULES: Module[] = [
-  { icon: Building2, title: "Проекты и блоки", text: "Проект → блок → этаж → квартира. Наглядная шахматка со статусами квартир." },
-  { icon: Wallet, title: "Продажи и рассрочка", text: "Договор, первый взнос, график рассрочки на любое число месяцев и контроль оплат." },
-  { icon: Filter, title: "CRM-воронка", text: "Заявки клиентов, этапы сделки и напоминания менеджерам." },
-  { icon: CreditCard, title: "Платежи и должники", text: "Приход денег, просрочки и автоматические напоминания в WhatsApp и СМС." },
-  { icon: Calculator, title: "Смета", text: "Версии сметы, автоматический расчёт и сравнение плана с фактом." },
-  { icon: Boxes, title: "Склад", text: "Приход, расход и остатки материалов; списание прямо на проект." },
-  { icon: Truck, title: "Снабжение", text: "Заявки на материалы от прорабов и контроль закупок." },
-  { icon: Clock3, title: "Табель и посещаемость", text: "Отметка рабочих на объекте через киоск-экран и расчёт смен." },
-  { icon: HardHat, title: "Сотрудники и роли", text: "Владелец, бухгалтер, складчик, прораб — у каждого свой доступ." },
-  { icon: FileSignature, title: "Договоры и разрешения", text: "Шаблоны договоров, сроки разрешительных документов и напоминания." },
-  { icon: BarChart3, title: "Отчёты и налоги", text: "Выручка, расходы, прибыль по проектам и налоговые отчёты." },
-  { icon: MessageCircle, title: "WhatsApp и СМС", text: "Автоматические уведомления клиентам о платежах и напоминания." },
+const CAPABILITY_GROUPS: { title: string; icon: ComponentType<{ className?: string }>; items: Module[] }[] = [
+  { title: "Строительство и продажи", icon: Building2, items: [
+    { icon: Building2, title: "Проекты, блоки, этажи", text: "Структура ЖК с визуальной схемой квартир и статусами: свободна, бронь, продана, занята." },
+    { icon: Filter, title: "Клиенты и воронка", text: "База клиентов, сканирование паспорта, воронка продаж и история обращений." },
+    { icon: FileSignature, title: "Договоры и рассрочка", text: "Автонумерация договоров, график рассрочки, печать договора и чека в двух экземплярах." },
+    { icon: RefreshCw, title: "Переселение и бартер", text: "Отдельный учёт квартир по переселению и бартерных сделок." },
+  ]},
+  { title: "Финансы", icon: Landmark, items: [
+    { icon: CreditCard, title: "Платежи и должники", text: "Приём оплат в сомони и долларах по курсу НБТ, напоминания по СМС и WhatsApp." },
+    { icon: Wallet, title: "Касса", text: "Смены кассира, приход и расход, переводы и Z-отчёт." },
+    { icon: BarChart3, title: "Распределение дохода", text: "Себестоимость, чистая прибыль и автоматическое распределение долей партнёров." },
+    { icon: Calculator, title: "Отчёты и дашборд", text: "Выручка, расходы, прибыль, налоговые отчёты и фильтры по ЖК и блокам." },
+  ]},
+  { title: "Строительная площадка", icon: HardHat, items: [
+    { icon: Boxes, title: "Склад", text: "Приход, расход, остатки, списание на проекты и автоматические долги поставщикам." },
+    { icon: Calculator, title: "Смета и бюджет", text: "Версии смет, сравнение плана и факта, контроль перерасхода." },
+    { icon: Clock3, title: "Табель и зарплата", text: "Учёт рабочих, смены через киоск-экран и выплаты." },
+    { icon: ClipboardCheck, title: "Качество и безопасность", text: "Проверки, инциденты, разрешения и техника." },
+  ]},
+  { title: "Управление", icon: BriefcaseBusiness, items: [
+    { icon: ShieldCheck, title: "Роли и доступ", text: "Владелец, бухгалтер, складчик, прораб, директор. Доступ настраивается по каждому разделу и вкладке." },
+    { icon: Bot, title: "AI-помощник", text: "Помощник владельца: отвечает по данным компании и выполняет действия." },
+    { icon: PackageCheck, title: "Поставщики", text: "Долги, оплаты и печать акта сверки по каждому поставщику." },
+    { icon: Smartphone, title: "Киоск продаж", text: "Экран в офисе продаж с планировками, зумом схемы и статусами квартир." },
+  ]},
+];
+
+type PlanCode = "construction" | "construction_sales" | "premium_unlimited";
+const PLANS: { code: PlanCode; name: string; caption: string; features: string[] }[] = [
+  { code: "construction", name: "СТРОИТЕЛЬСТВО", caption: "Управление проектами, складом и расходами.", features: ["Проекты, блоки, этажи и квартиры (шахматка)", "Склад: приход, расход, остатки", "Смета и график Gantt", "Расходы и бюджет объекта", "Табель и зарплата рабочих", "Техника, качество, безопасность и разрешения"] },
+  { code: "construction_sales", name: "СТРОИТЕЛЬСТВО + ПРОДАЖИ", caption: "Всё из тарифа 1 + CRM, договоры и рассрочка.", features: ["Все модули тарифа СТРОИТЕЛЬСТВО", "CRM и воронка продаж", "Клиенты и скан паспорта (ИНН)", "Договоры и печать документов", "Продажи в рассрочку и должники", "СМС-уведомления (OsonSMS) и режим Kiosk"] },
+  { code: "premium_unlimited", name: "PREMIUM UNLIMITED", caption: "Все модули без ограничений — финансы, аналитика и AI.", features: ["Все модули тарифов 1 и 2", "Платежи, чеки и долларовая валюта", "Касса и смены кассира", "Поставщики, долги и бартер", "Распределение дохода между партнёрами", "Дашборд, отчёты, AI-ассистент и Excel-импорт"] },
 ];
 
 const SCREENS: { id: string; label: string; image?: string; title: string }[] = [
@@ -216,11 +246,31 @@ function ChessMock({ label }: { label: (s: string) => string }) {
 }
 
 export function LandingPage() {
-  const { tr } = useT();
+  const { tr, lang } = useT();
   const logoUrl = useAppLogo("light");
   const [signedIn, setSignedIn] = useState(false);
   const [screen, setScreen] = useState(SCREENS[0]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<PlanCode | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const submitRequest = useServerFn(submitSitePlanRequest);
+  const [requestForm, setRequestForm] = useState({ business_type: "developer", full_name: "", company_name: "", job_title: "", email: "", phone: "" });
+
+  const handleRequest = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedPlan) return;
+    setSubmitting(true);
+    try {
+      await submitRequest({ data: { ...requestForm, business_type: requestForm.business_type as "developer" | "management" | "other", plan_code: selectedPlan, locale: lang } });
+      toast.success(tr("Заявка успешно отправлена"));
+      setSelectedPlan(null);
+      setRequestForm({ business_type: "developer", full_name: "", company_name: "", job_title: "", email: "", phone: "" });
+    } catch {
+      toast.error(tr("Не удалось отправить заявку. Попробуйте ещё раз."));
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const navItems = [
     ["Возможности", "#product"],
