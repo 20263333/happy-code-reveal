@@ -57,7 +57,7 @@ export const createProject = createServerFn({ method: "POST" })
         description: data.description ?? null,
         status: data.status,
         cover_url: data.cover_url ?? null,
-        company_id: prof.company_id,
+        company_id: companyId,
         parent_id: null,
       })
       .select().single();
