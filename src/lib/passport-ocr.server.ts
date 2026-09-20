@@ -77,8 +77,9 @@ function resolveOcrProvider(): OcrProvider | null {
       fallback: FALLBACK_MODEL,
     };
   }
+  // Агар калиди Lovable набошад (масалан дар сервери худамон), худкор ба OpenAI мегузарем.
   const openaiKey = process.env.OPENAI_API_KEY?.trim();
-  if (preferOpenAI && openaiKey) {
+  if (openaiKey) {
     return {
       name: "OpenAI",
       url: "https://api.openai.com/v1/chat/completions",
