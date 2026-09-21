@@ -64,8 +64,28 @@ export const listProjects = createServerFn({ method: "GET" })
       apartments = data ?? [];
     }
 
+    // Sign cover images on the server so the list paints in a single round-trip
+    // and storage policies can never hide the photos from the browser.
+    const coverPaths = roots
+      .map((project: any) => project.cover_url as string | null)
+      .filter((url): url is string => !!url && !url.startsWith("http"));
+    const coverMap: Record<string, string> = {};
+    if (coverPaths.length) {
+      const { data: signed } = await (supabaseAdmin as any).storage
+        .from("project-covers")
+        .createSignedUrls(coverPaths, 60 * 60 * 6);
+      for (const item of (signed ?? []) as any[]) {
+        if (item?.path && item?.signedUrl) coverMap[item.path] = item.signedUrl;
+      }
+    }
+
     return roots.map((project) => ({
       ...project,
+      cover_signed_url: project.cover_url
+        ? project.cover_url.startsWith("http")
+          ? project.cover_url
+          : (coverMap[project.cover_url] ?? null)
+        : null,
       children: (children ?? [])
         .filter((child: any) => child.parent_id === project.id)
         .map((child: any) => ({
