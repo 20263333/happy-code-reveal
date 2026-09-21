@@ -66,25 +66,29 @@ function PayablesPage() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const { data: projects = [] } = useQuery({
-    queryKey: ["projects-min"],
-    queryFn: async () => (await supabase.from("projects").select("id, name").order("name")).data ?? [],
+    queryKey: ["projects-min", companyId],
+    queryFn: async () => companyId ? (await supabase.from("projects").select("id, name").eq("company_id", companyId).order("name")).data ?? [] : [],
+    enabled: !!companyId,
   });
 
   const { data: suppliers = [] } = useQuery({
-    queryKey: ["suppliers"],
+    queryKey: ["suppliers", companyId],
     queryFn: async () => {
+      if (!companyId) return [];
       const { data, error } = await (supabase as any)
-        .from("suppliers").select("*").order("name");
+        .from("suppliers").select("*").eq("company_id", companyId).order("name");
       if (error) throw error;
       return data ?? [];
     },
+    enabled: !!companyId,
   });
 
   const { data: payables = [], isLoading } = useQuery({
-    queryKey: ["payables"],
+    queryKey: ["payables", companyId],
     queryFn: async () => {
+      if (!companyId) return [];
       const { data, error } = await (supabase as any)
-        .from("payables").select("*").order("due_date", { ascending: true });
+        .from("payables").select("*").eq("company_id", companyId).order("due_date", { ascending: true });
       if (error) throw error;
       const ids = Array.from(new Set((data ?? []).map((p: any) => p.project_id).filter(Boolean)));
       let projMap: Record<string, { id: string; name: string }> = {};
@@ -94,6 +98,7 @@ function PayablesPage() {
       }
       return (data ?? []).map((p: any) => ({ ...p, project: projMap[p.project_id] ?? null }));
     },
+    enabled: !!companyId,
   });
 
   const delSupplier = useMutation({

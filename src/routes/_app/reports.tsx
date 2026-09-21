@@ -18,6 +18,7 @@ import { computeOpu, inRange, presetRange, type RangePreset } from "@/lib/financ
 import { useCompanyHeader, openPrintWindow, esc } from "@/lib/print";
 import { getStableSession, hasSavedSessionData } from "@/lib/auth-session";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_app/reports")({
   head: () => ({ meta: [{ title: "Отчёт ОПУ — Binosoz.tj" }] }),
@@ -56,6 +57,7 @@ function toInput(d: Date) {
 
 
 function ReportsPage() {
+  const { companyId } = useAuth();
   const { formatMoney } = usePrefs();
   const { t, tr } = useT();
   const catLabel = (value: string) => {
@@ -78,14 +80,24 @@ function ReportsPage() {
   };
 
   const { data, isLoading } = useQuery({
-    queryKey: ["opu-data"],
+    queryKey: ["opu-data", companyId],
     queryFn: async () => {
-      const [sales, expenses, payments, payables, wages] = await Promise.all([
-        supabase.from("sales").select("full_price, remaining_amount, created_at"),
-        supabase.from("expenses").select("amount, category, created_at, expense_date"),
-        supabase.from("payments").select("amount, payment_date, status").eq("status", "confirmed"),
-        (supabase as any).from("payables").select("total_amount, paid_amount, category, created_at, due_date").eq("archived", false),
-        (supabase as any).from("worker_payments").select("paid_amount, paid_date, period_to, created_at"),
+      if (!companyId) return { sales: [], expenses: [], payments: [], payables: [], wages: [] };
+      const [{ data: projects }, sales, payables, wages] = await Promise.all([
+        supabase.from("projects").select("id").eq("company_id", companyId),
+        supabase.from("sales").select("id, full_price, remaining_amount, created_at").eq("company_id", companyId),
+        (supabase as any).from("payables").select("total_amount, paid_amount, category, created_at, due_date").eq("company_id", companyId).eq("archived", false),
+        (supabase as any).from("worker_payments").select("paid_amount, paid_date, period_to, created_at").eq("company_id", companyId),
+      ]);
+      const projectIds = (projects ?? []).map((project) => project.id);
+      const saleIds = (sales.data ?? []).map((sale: any) => sale.id);
+      const [expenses, payments] = await Promise.all([
+        projectIds.length
+          ? supabase.from("expenses").select("amount, category, created_at, expense_date").in("project_id", projectIds)
+          : Promise.resolve({ data: [] }),
+        saleIds.length
+          ? supabase.from("payments").select("amount, payment_date, status").in("sale_id", saleIds).eq("status", "confirmed")
+          : Promise.resolve({ data: [] }),
       ]);
       return {
         sales: sales.data ?? [],
@@ -95,6 +107,7 @@ function ReportsPage() {
         wages: wages.data ?? [],
       };
     },
+    enabled: !!companyId,
   });
 
   const fromDate = useMemo(() => { const d = new Date(from); d.setHours(0, 0, 0, 0); return d; }, [from]);

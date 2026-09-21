@@ -14,6 +14,7 @@ import { inRange } from "@/lib/finance";
 import { useCompanyHeader, openPrintWindow, esc } from "@/lib/print";
 import { ZhkBlockFilter, useZhkBlockFilter } from "@/components/zhk-block-filter";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_app/debtors")({
   head: () => ({ meta: [{ title: "Должники — Binosoz.tj" }] }),
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/_app/debtors")({
 });
 
 function DebtorsPage() {
+  const { companyId } = useAuth();
   const { tr } = useT();
   const { formatMoney } = usePrefs();
   const period = usePeriodFilter("all");
@@ -28,20 +30,24 @@ function DebtorsPage() {
   const [zhk, setZhk] = useState({ zhkId: "", blockId: "" });
 
   const { data: projects = [] } = useQuery({
-    queryKey: ["debtors-projects"],
-    queryFn: async () => (await supabase.from("projects").select("id, name, parent_id").order("name")).data ?? [],
+    queryKey: ["debtors-projects", companyId],
+    queryFn: async () => companyId ? (await supabase.from("projects").select("id, name, parent_id").eq("company_id", companyId).order("name")).data ?? [] : [],
+    enabled: !!companyId,
   });
   const allowedIds = useZhkBlockFilter(projects as any, zhk);
 
   const { data: customers = [] } = useQuery({
-    queryKey: ["debtors-customers"],
+    queryKey: ["debtors-customers", companyId],
     queryFn: async () => {
+      if (!companyId) return [];
       const { data } = await supabase
         .from("customers")
         .select("id, fullname, phone, created_at, sales(id, full_price, paid_amount, remaining_amount, apartment:apartments(apartment_number, project_id, project:projects(id, name)))")
+        .eq("company_id", companyId)
         .order("created_at", { ascending: false });
       return data ?? [];
     },
+    enabled: !!companyId,
   });
 
   const debtors = useMemo(() => {

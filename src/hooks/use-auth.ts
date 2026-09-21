@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { consumeIntentionalSignOut, getStableSession, rememberSession, safeSignOut } from "@/lib/auth-session";
+import { clearQueryPersistence, switchQueryPersistenceUser } from "@/lib/query-persist";
 
 export type AppRole = "owner" | "manager" | "accountant" | "warehouse" | "director";
 export type Department = "sales" | "legal" | "accounting" | "construction" | "hr";
@@ -147,6 +148,7 @@ function startAuthController() {
 
     if (event === "SIGNED_OUT") {
       if (consumeIntentionalSignOut()) {
+        clearQueryPersistence();
         profileLoadSeq += 1;
         clearAuthState();
         return;
@@ -159,6 +161,7 @@ function startAuthController() {
     }
 
     const sameUser = authState.user?.id === s?.user?.id;
+    if (s?.user?.id && !sameUser) switchQueryPersistenceUser(s.user.id);
     emitAuthState({
       session: s,
       user: s?.user ?? null,
