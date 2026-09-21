@@ -82,6 +82,16 @@ const USER_FIELDS = new Set([
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// Сутунҳои GENERATED ALWAYS — гузоштан мумкин нест, ҳазф мешаванд.
+const GENERATED_COLS: Record<string, Set<string>> = {
+  sales: new Set(["remaining_amount"]),
+  warehouse_receipts: new Set(["total"]),
+  barter_deals: new Set(["remaining"]),
+  resettlements: new Set(["total_payable"]),
+  subcontract_works: new Set(["contract_amount"]),
+  material_acceptance_acts: new Set(["variance", "variance_pct", "loss_amount"]),
+};
+
 const ImportSchema = z.object({
   payload: z.object({
     _meta: z.object({ company: z.string().max(200).optional() }).passthrough().optional(),
