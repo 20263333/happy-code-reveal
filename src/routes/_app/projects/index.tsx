@@ -63,7 +63,7 @@ function ProjectsList() {
             const blockCount = blocks.length;
             const total = blocks.reduce((s: number, b: any) => s + (b.apartments?.length ?? 0), 0);
             const sold = blocks.reduce((s: number, b: any) => s + (b.apartments?.filter((a: any) => a.status === "sold").length ?? 0), 0);
-            const cover = resolveCover(p.cover_url);
+            const cover = p.cover_signed_url ?? null;
             return (
               <div key={p.id} className="group relative overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-card)] transition hover:border-accent hover:shadow-[var(--shadow-elegant)]">
                 {canModify && (
