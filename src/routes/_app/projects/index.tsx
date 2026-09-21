@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_app/projects/")({
 });
 
 function ProjectsList() {
-  const { isOwner, isDirector } = useAuth();
+  const { isOwner, isDirector, companyId } = useAuth();
   const { t, tr } = useT();
   const qc = useQueryClient();
   const listProjectsFn = useServerFn(listProjects);
@@ -34,9 +34,10 @@ function ProjectsList() {
   const canModify = isOwner && !isDirector;
 
   const projectsQuery = useQuery({
-    queryKey: ["projects"],
+    queryKey: ["projects", companyId],
     staleTime: 5 * 60 * 1000,
-    queryFn: async () => (await listProjectsFn()) ?? [],
+    queryFn: async () => companyId ? (await listProjectsFn()) ?? [] : [],
+    enabled: !!companyId,
   });
   const projects = Array.isArray(projectsQuery.data) ? projectsQuery.data : [];
 

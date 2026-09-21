@@ -1722,6 +1722,7 @@ function ReceiptLink({ path }: { path: string | null }) {
 
 function AccessPanel({ projectId }: { projectId: string }) {
   const { t } = useT();
+  const { companyId } = useAuth();
   const qc = useQueryClient();
   const grantFn = useServerFn(grantProjectAccess);
   const revokeFn = useServerFn(revokeProjectAccess);
@@ -1732,8 +1733,9 @@ function AccessPanel({ projectId }: { projectId: string }) {
   const [extraProjectIds, setExtraProjectIds] = useState<string[]>([]);
 
   const { data: allProjects = [] } = useQuery({
-    queryKey: ["projects-min"],
-    queryFn: async () => (await supabase.from("projects").select("id, name").order("name")).data ?? [],
+    queryKey: ["projects-min", companyId],
+    queryFn: async () => companyId ? (await supabase.from("projects").select("id, name").eq("company_id", companyId).order("name")).data ?? [] : [],
+    enabled: !!companyId,
   });
 
   const { data: staff = [] } = useQuery({
