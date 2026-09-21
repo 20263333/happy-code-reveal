@@ -10,22 +10,40 @@ const CreateProjectSchema = z.object({
   cover_url: z.string().max(500).optional().nullable(),
 });
 
+// Resolve the company the signed-in user belongs to. Every listing is scoped
+// to it, so one company never sees another company's data.
+async function resolveCompanyId(userId: string): Promise<string | null> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const admin = supabaseAdmin as any;
+  const [profRes, ownedRes] = await Promise.all([
+    admin.from("profiles").select("company_id").eq("id", userId).maybeSingle(),
+    admin.from("companies").select("id").eq("owner_user_id", userId).maybeSingle(),
+  ]);
+  return ((profRes.data as any)?.company_id as string | null) ?? ((ownedRes.data as any)?.id ?? null);
+}
+
 export const listProjects = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { userId, supabase } = context;
+    const companyId = await resolveCompanyId(userId);
     // Read as the signed-in user. This keeps the owner page independent from
     // the privileged server key and lets the database policies enforce access.
-    const { data: rootsData, error: rootsError } = await supabase
+    let rootsQuery = supabase
       .from("projects")
-      .select("id, name, location, status, cover_url, created_at")
+      .select("id, name, location, status, cover_url, created_at, company_id")
       .is("parent_id", null)
       .order("created_at", { ascending: true });
+    // Hard company scope: platform admins or stale access rows must never leak
+    // another company's projects into this page.
+    if (companyId) rootsQuery = rootsQuery.eq("company_id", companyId);
+    const { data: rootsData, error: rootsError } = await rootsQuery;
     if (rootsError) throw new Error(rootsError.message);
-    const roots = rootsData ?? [];
+    const roots = (rootsData ?? []).filter((p: any) => !companyId || p.company_id === companyId);
 
     const rootIds = roots.map((project) => project.id as string);
     if (!rootIds.length) return [];
+
 
     const { data: children, error: childrenError } = await supabase
       .from("projects")
