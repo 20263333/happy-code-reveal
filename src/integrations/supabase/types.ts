@@ -5711,6 +5711,7 @@ export type Database = {
           provider: string
         }[]
       }
+      list_public_columns: { Args: never; Returns: Json }
       next_lead_manager: { Args: { _company_id: string }; Returns: string }
       notification_view_counts: {
         Args: never

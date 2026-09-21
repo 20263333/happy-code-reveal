@@ -36,6 +36,9 @@ SMS_CRON_SECRET=${SMS_SECRET}
 MARKETPLACE_SYNC_SECRET=${MKT_SECRET}
 LOVABLE_AI_GATEWAY_KEY=
 LOVABLE_API_KEY=
+# AI Proxy — сканер/AI тавассути нусхаи нашршудаи Lovable
+AI_PROXY_URL=https://project--05063add-15a4-464f-a615-3736bcb0d125.lovable.app/api/public/ai-proxy
+AI_PROXY_SECRET=
 # Аккаунти шахсии ChatGPT (OpenAI) — сканери паспорт, сканери склад, ёрдамчии AI
 OPENAI_API_KEY=
 OPENAI_OCR_MODEL=gpt-4o-mini

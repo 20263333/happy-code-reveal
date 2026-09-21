@@ -61,6 +61,7 @@ import { Route as AppKioskIndexRouteImport } from './routes/_app/kiosk/index'
 import { Route as AppKioskProjectIdRouteImport } from './routes/_app/kiosk/$projectId'
 import { Route as AppProjectsIndexRouteImport } from './routes/_app/projects/index'
 import { Route as AppProjectsIdRouteImport } from './routes/_app/projects/$id'
+import { Route as ApiPublicAiProxyRouteImport } from './routes/api/public/ai-proxy'
 import { Route as ApiPublicExportDatabaseRouteImport } from './routes/api/public/export/database'
 import { Route as ApiPublicExportStorageRouteImport } from './routes/api/public/export/storage'
 import { Route as ApiPublicHooksApartmentSyncRouteImport } from './routes/api/public/hooks/apartment-sync'
@@ -329,6 +330,11 @@ const AppProjectsIdRoute = AppProjectsIdRouteImport.update({
   path: '/projects/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiPublicAiProxyRoute = ApiPublicAiProxyRouteImport.update({
+  id: '/api/public/ai-proxy',
+  path: '/api/public/ai-proxy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicExportDatabaseRoute = ApiPublicExportDatabaseRouteImport.update({
   id: '/api/public/export/database',
   path: '/api/public/export/database',
@@ -425,6 +431,7 @@ export interface FileRoutesByFullPath {
   '/tabel-screen/$token': typeof TabelScreenTokenRoute
   '/kiosk/$projectId': typeof AppKioskProjectIdRoute
   '/projects/$id': typeof AppProjectsIdRoute
+  '/api/public/ai-proxy': typeof ApiPublicAiProxyRoute
   '/kiosk/': typeof AppKioskIndexRoute
   '/projects/': typeof AppProjectsIndexRoute
   '/api/public/export/database': typeof ApiPublicExportDatabaseRoute
@@ -485,6 +492,7 @@ export interface FileRoutesByTo {
   '/tabel-screen/$token': typeof TabelScreenTokenRoute
   '/kiosk/$projectId': typeof AppKioskProjectIdRoute
   '/projects/$id': typeof AppProjectsIdRoute
+  '/api/public/ai-proxy': typeof ApiPublicAiProxyRoute
   '/kiosk': typeof AppKioskIndexRoute
   '/projects': typeof AppProjectsIndexRoute
   '/api/public/export/database': typeof ApiPublicExportDatabaseRoute
@@ -548,6 +556,7 @@ export interface FileRoutesById {
   '/tabel-screen/$token': typeof TabelScreenTokenRoute
   '/_app/kiosk/$projectId': typeof AppKioskProjectIdRoute
   '/_app/projects/$id': typeof AppProjectsIdRoute
+  '/api/public/ai-proxy': typeof ApiPublicAiProxyRoute
   '/_app/kiosk/': typeof AppKioskIndexRoute
   '/_app/projects/': typeof AppProjectsIndexRoute
   '/api/public/export/database': typeof ApiPublicExportDatabaseRoute
@@ -611,6 +620,7 @@ export interface FileRouteTypes {
     | '/tabel-screen/$token'
     | '/kiosk/$projectId'
     | '/projects/$id'
+    | '/api/public/ai-proxy'
     | '/kiosk/'
     | '/projects/'
     | '/api/public/export/database'
@@ -671,6 +681,7 @@ export interface FileRouteTypes {
     | '/tabel-screen/$token'
     | '/kiosk/$projectId'
     | '/projects/$id'
+    | '/api/public/ai-proxy'
     | '/kiosk'
     | '/projects'
     | '/api/public/export/database'
@@ -733,6 +744,7 @@ export interface FileRouteTypes {
     | '/tabel-screen/$token'
     | '/_app/kiosk/$projectId'
     | '/_app/projects/$id'
+    | '/api/public/ai-proxy'
     | '/_app/kiosk/'
     | '/_app/projects/'
     | '/api/public/export/database'
@@ -761,6 +773,7 @@ export interface RootRouteChildren {
   KioskScreenTokenRoute: typeof KioskScreenTokenRoute
   PIdRoute: typeof PIdRoute
   TabelScreenTokenRoute: typeof TabelScreenTokenRoute
+  ApiPublicAiProxyRoute: typeof ApiPublicAiProxyRoute
   ApiPublicExportDatabaseRoute: typeof ApiPublicExportDatabaseRoute
   ApiPublicExportStorageRoute: typeof ApiPublicExportStorageRoute
   ApiPublicHooksApartmentSyncRoute: typeof ApiPublicHooksApartmentSyncRoute
@@ -1137,6 +1150,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProjectsIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/public/ai-proxy': {
+      id: '/api/public/ai-proxy'
+      path: '/api/public/ai-proxy'
+      fullPath: '/api/public/ai-proxy'
+      preLoaderRoute: typeof ApiPublicAiProxyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/export/database': {
       id: '/api/public/export/database'
       path: '/api/public/export/database'
@@ -1304,6 +1324,7 @@ const rootRouteChildren: RootRouteChildren = {
   KioskScreenTokenRoute: KioskScreenTokenRoute,
   PIdRoute: PIdRoute,
   TabelScreenTokenRoute: TabelScreenTokenRoute,
+  ApiPublicAiProxyRoute: ApiPublicAiProxyRoute,
   ApiPublicExportDatabaseRoute: ApiPublicExportDatabaseRoute,
   ApiPublicExportStorageRoute: ApiPublicExportStorageRoute,
   ApiPublicHooksApartmentSyncRoute: ApiPublicHooksApartmentSyncRoute,

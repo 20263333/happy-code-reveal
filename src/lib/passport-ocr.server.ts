@@ -89,7 +89,27 @@ function resolveOcrProvider(): OcrProvider | null {
       fallback: process.env.OPENAI_OCR_MODEL_PRO?.trim() || "gpt-4o",
     };
   }
+  // Варианти сеюм: проксии AI дар хостинги Lovable (барои VPS бе калид).
+  const proxy = resolveAiProxy();
+  if (proxy) {
+    return {
+      name: "Lovable AI Proxy",
+      url: proxy.url,
+      headers: { "X-AI-Proxy-Secret": proxy.secret },
+      flash: FLASH_MODEL,
+      pro: PRO_MODEL,
+      fallback: FALLBACK_MODEL,
+    };
+  }
   return null;
+}
+
+/** Проксии AI барои серверҳои беруна (VPS), ки калиди Lovable надоранд. */
+export function resolveAiProxy(): { url: string; secret: string } | null {
+  const url = process.env.AI_PROXY_URL?.trim();
+  const secret = process.env.AI_PROXY_SECRET?.trim();
+  if (!url || !secret) return null;
+  return { url, secret };
 }
 
 export function assertPassportOcrConfigured() {
