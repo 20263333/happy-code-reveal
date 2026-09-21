@@ -222,7 +222,12 @@ export const importCompanyExport = createServerFn({ method: "POST" })
       for (const table of TABLE_ORDER) {
         const rows = src[table];
         if (!Array.isArray(rows) || rows.length === 0) continue;
-        let list = (rows as Record<string, any>[]).map(remapRow);
+        const genCols = GENERATED_COLS[table];
+        let list = (rows as Record<string, any>[]).map((r) => {
+          const mapped = remapRow(r);
+          if (genCols) for (const c of genCols) delete mapped[c];
+          return mapped;
+        });
         // projects: аввал падарҳо (parent_id = null).
         if (table === "projects") {
           list = [...list].sort((a, b) => Number(a.parent_id != null) - Number(b.parent_id != null));
