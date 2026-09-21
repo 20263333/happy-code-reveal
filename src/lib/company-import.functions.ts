@@ -218,10 +218,7 @@ export const importCompanyExport = createServerFn({ method: "POST" })
       };
 
       // 5) Сутунҳои ҳақиқии ҳар ҷадвал — сутунҳои кӯҳнаи файл ҳазф мешаванд.
-      const { data: colRows, error: colErr } = await admin
-        .from("information_schema.columns" as any)
-        .select("table_name, column_name")
-        .eq("table_schema", "public");
+      const { data: colRows, error: colErr } = await admin.rpc("list_public_columns");
       if (colErr) throw new Error(colErr.message);
       const tableCols = new Map<string, Set<string>>();
       for (const r of (colRows ?? []) as { table_name: string; column_name: string }[]) {
