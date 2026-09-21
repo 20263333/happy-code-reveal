@@ -143,17 +143,24 @@ function NewReportDialog({ companyId, onSaved }: any) {
   const [preview, setPreview] = useState<{ revenue: number; expenses: number; profit: number; tax: number } | null>(null);
 
   const compute = async () => {
-    if (!f.period_start || !f.period_end) return toast.error("Давра лозим");
+    if (!companyId || !f.period_start || !f.period_end) return toast.error("Давра лозим");
     setComputing(true);
+    const [{ data: projects }, { data: companyWages }] = await Promise.all([
+      supabase.from("projects").select("id").eq("company_id", companyId),
+      (supabase as any).from("worker_payments").select("paid_amount, paid_date").eq("company_id", companyId)
+        .gte("paid_date", f.period_start).lte("paid_date", f.period_end),
+    ]);
+    const projectIds = (projects ?? []).map((project) => project.id);
+    const { data: companySales } = await supabase.from("sales").select("id").eq("company_id", companyId);
+    const saleIds = (companySales ?? []).map((sale) => sale.id);
     // Даромад = пардохтҳои тасдиқшуда дар давра
-    const { data: pays } = await supabase.from("payments").select("amount, payment_date, status")
-      .eq("status", "confirmed").gte("payment_date", f.period_start).lte("payment_date", f.period_end);
+    const pays = saleIds.length ? (await supabase.from("payments").select("amount, payment_date, status")
+      .in("sale_id", saleIds).eq("status", "confirmed").gte("payment_date", f.period_start).lte("payment_date", f.period_end)).data : [];
     // Хароҷот = ҳамаи хароҷот дар давра
-    const { data: exps } = await supabase.from("expenses").select("amount, expense_date")
-      .gte("expense_date", f.period_start).lte("expense_date", f.period_end);
+    const exps = projectIds.length ? (await supabase.from("expenses").select("amount, expense_date")
+      .in("project_id", projectIds).gte("expense_date", f.period_start).lte("expense_date", f.period_end)).data : [];
     // Маош = пардохти коргарон дар давра (заминаи СИН ва як қисми хароҷоти умумӣ)
-    const { data: wages } = await (supabase as any).from("worker_payments").select("paid_amount, paid_date")
-      .gte("paid_date", f.period_start).lte("paid_date", f.period_end);
+    const wages = companyWages ?? [];
     const revenue = (pays ?? []).reduce((s, p: any) => s + Number(p.amount || 0), 0);
     const expensesOnly = (exps ?? []).reduce((s, e: any) => s + Number(e.amount || 0), 0);
     const wagesTotal = (wages ?? []).reduce((s: number, w: any) => s + Number(w.paid_amount || 0), 0);

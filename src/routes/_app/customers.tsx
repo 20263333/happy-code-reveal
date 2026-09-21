@@ -86,11 +86,13 @@ function CustomersPage() {
   });
 
   const { data: customers = [] } = useQuery({
-    queryKey: ["customers"],
+    queryKey: ["customers", companyId],
     queryFn: async () => {
+      if (!companyId) return [];
       const { data, error } = await supabase
         .from("customers")
         .select("*, sales(id, sale_number, full_price, paid_amount, remaining_amount, payment_deadline, installment_months, sales_manager_id, created_at, apartment:apartments(apartment_number, area, rooms, plan_image_path, floor:floors(floor_number), project:projects(id, name, parent_id)))")
+        .eq("company_id", companyId)
         .order("created_at", { ascending: false });
       if (error) { console.error("customers query error", error); return []; }
       const parentIds = Array.from(new Set(
@@ -114,6 +116,7 @@ function CustomersPage() {
         (c: any) => c.source !== "whatsapp" || (c.sales ?? []).length > 0,
       );
     },
+    enabled: !!companyId,
   });
 
 
