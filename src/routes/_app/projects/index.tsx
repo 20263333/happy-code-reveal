@@ -33,33 +33,11 @@ function ProjectsList() {
   const [open, setOpen] = useState(false);
   const canModify = isOwner && !isDirector;
 
-  const { data: projectsData } = useQuery({
+  const { data: projects = [] } = useQuery({
     queryKey: ["projects"],
     staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const data = await listProjectsFn();
-      const paths = (data ?? [])
-        .map((p: any) => p.cover_url)
-        .filter((u: any): u is string => !!u && !u.startsWith("http"));
-      const coverMap: Record<string, string> = {};
-      if (paths.length) {
-        const { data: signed } = await supabase.storage
-          .from("project-covers")
-          .createSignedUrls(paths, 60 * 60);
-        for (const s of signed ?? []) if (s.path && s.signedUrl) coverMap[s.path] = s.signedUrl;
-      }
-      return { projects: data ?? [], coverMap };
-    },
+    queryFn: async () => (await listProjectsFn()) ?? [],
   });
-
-  const projects = projectsData?.projects ?? [];
-  const coverMap = projectsData?.coverMap ?? {};
-
-  const resolveCover = (u?: string | null) => {
-    if (!u) return null;
-    if (u.startsWith("http")) return u;
-    return coverMap[u] ?? null;
-  };
 
   return (
     <div className="space-y-8">
