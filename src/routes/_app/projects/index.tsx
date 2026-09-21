@@ -39,6 +39,22 @@ function ProjectsList() {
     queryFn: async () => (await listProjectsFn()) ?? [],
   });
 
+  // Fallback: sign covers in the browser when the server could not do it.
+  const missingCovers = (projects as any[])
+    .filter((p) => !p.cover_signed_url && p.cover_url && !String(p.cover_url).startsWith("http"))
+    .map((p) => p.cover_url as string);
+  const { data: fallbackCovers = {} } = useQuery({
+    queryKey: ["project-covers", missingCovers.join(",")],
+    enabled: missingCovers.length > 0,
+    staleTime: 30 * 60 * 1000,
+    queryFn: async () => {
+      const map: Record<string, string> = {};
+      const { data } = await supabase.storage.from("project-covers").createSignedUrls(missingCovers, 60 * 60);
+      for (const s of data ?? []) if (s.path && s.signedUrl) map[s.path] = s.signedUrl;
+      return map;
+    },
+  });
+
   return (
     <div className="space-y-8">
       <PageHeader
