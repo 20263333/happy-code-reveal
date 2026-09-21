@@ -1830,3 +1830,14 @@ CREATE POLICY "receipts_read_own" ON storage.objects FOR SELECT TO authenticated
 DROP POLICY IF EXISTS "receipts_update_own" ON storage.objects;
 CREATE POLICY "receipts_update_own" ON storage.objects FOR UPDATE TO authenticated
   USING (bucket_id = 'subscription-receipts');
+
+-- Воридкунии ширкат аз файли экспорт: рӯйхати сутунҳои ҷадвалҳо
+create or replace function public.list_public_columns()
+returns table(table_name text, column_name text)
+language sql stable security definer set search_path = public
+as $$
+  select c.table_name::text, c.column_name::text
+  from information_schema.columns c
+  where c.table_schema = 'public'
+$$;
+grant execute on function public.list_public_columns() to authenticated, service_role;
