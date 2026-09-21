@@ -51,6 +51,20 @@ export function resolveAiProvider(): AiProvider | null {
     };
   }
 
+  // Варианти сеюм: проксии AI дар хостинги Lovable (барои VPS бе калид).
+  const proxyUrl = process.env.AI_PROXY_URL?.trim();
+  const proxySecret = process.env.AI_PROXY_SECRET?.trim();
+  if (proxyUrl && proxySecret) {
+    return {
+      name: "Lovable AI Gateway",
+      isOpenAI: false,
+      chatUrl: proxyUrl,
+      sttUrl: proxyUrl,
+      headers: { "X-AI-Proxy-Secret": proxySecret },
+      model: (kind) => LOVABLE_MODELS[kind],
+    };
+  }
+
   return null;
 }
 
