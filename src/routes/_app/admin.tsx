@@ -64,6 +64,7 @@ import { AiPurchasesTab } from "@/components/admin-ai-purchases-tab";
 import { ScanPurchasesTab } from "@/components/admin-scan-purchases-tab";
 import { ShowcaseTab } from "@/components/admin/showcase-tab";
 import { AppLogosTab } from "@/components/admin/app-logos-tab";
+import { CompanyImportTab } from "@/components/admin/company-import-tab";
 
 
 
@@ -99,6 +100,8 @@ function AdminPage() {
           <TabsTrigger value="social">Соцсети</TabsTrigger>
           <TabsTrigger value="showcase">Витрина</TabsTrigger>
           <TabsTrigger value="logos">Логотипҳо</TabsTrigger>
+          <TabsTrigger value="import">Импорт</TabsTrigger>
+          
           
           
         </TabsList>
@@ -146,6 +149,9 @@ function AdminPage() {
         </TabsContent>
         <TabsContent value="logos">
           <AppLogosTab />
+        </TabsContent>
+        <TabsContent value="import">
+          <CompanyImportTab />
         </TabsContent>
       </Tabs>
     </div>
