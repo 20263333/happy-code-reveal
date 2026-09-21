@@ -33,11 +33,12 @@ function ProjectsList() {
   const [open, setOpen] = useState(false);
   const canModify = isOwner && !isDirector;
 
-  const { data: projects = [] } = useQuery({
+  const projectsQuery = useQuery({
     queryKey: ["projects"],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => (await listProjectsFn()) ?? [],
   });
+  const projects = Array.isArray(projectsQuery.data) ? projectsQuery.data : [];
 
   // Fallback: sign covers in the browser when the server could not do it.
   const missingCovers = (projects as any[])
@@ -70,7 +71,13 @@ function ProjectsList() {
         )}
       />
 
-      {projects.length === 0 ? (
+      {projectsQuery.isError ? (
+        <div className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-lg border border-border bg-card px-4 text-center">
+          <Building2 className="h-10 w-10 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">{tr("Не удалось загрузить проекты")}</p>
+          <Button variant="outline" onClick={() => projectsQuery.refetch()}>{tr("Повторить")}</Button>
+        </div>
+      ) : projects.length === 0 ? (
         <EmptyState icon={Building2} title={tr("Проектов пока нет")} description={tr("Создайте первый проект, чтобы начать работу.")} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
