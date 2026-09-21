@@ -1832,12 +1832,17 @@ CREATE POLICY "receipts_update_own" ON storage.objects FOR UPDATE TO authenticat
   USING (bucket_id = 'subscription-receipts');
 
 -- Воридкунии ширкат аз файли экспорт: рӯйхати сутунҳои ҷадвалҳо
-create or replace function public.list_public_columns()
-returns table(table_name text, column_name text)
+drop function if exists public.list_public_columns();
+create function public.list_public_columns()
+returns jsonb
 language sql stable security definer set search_path = public
 as $$
-  select c.table_name::text, c.column_name::text
-  from information_schema.columns c
-  where c.table_schema = 'public'
+  select jsonb_object_agg(t.table_name, t.cols)
+  from (
+    select c.table_name, jsonb_agg(c.column_name) as cols
+    from information_schema.columns c
+    where c.table_schema = 'public'
+    group by c.table_name
+  ) t
 $$;
 grant execute on function public.list_public_columns() to authenticated, service_role;
