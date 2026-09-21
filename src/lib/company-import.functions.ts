@@ -239,6 +239,13 @@ export const importCompanyExport = createServerFn({ method: "POST" })
           if (allowed) for (const k of Object.keys(mapped)) if (!allowed.has(k)) delete mapped[k];
           return mapped;
         });
+        // apartments: рақами хона ҳатмӣ аст — агар холӣ бошад, рақами автоматӣ.
+        if (table === "apartments") {
+          list = list.map((r, i) => ({
+            ...r,
+            apartment_number: r.apartment_number ?? String(i + 1),
+          }));
+        }
         // projects: аввал падарҳо (parent_id = null).
         if (table === "projects") {
           list = [...list].sort((a, b) => Number(a.parent_id != null) - Number(b.parent_id != null));
