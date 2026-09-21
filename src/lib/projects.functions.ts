@@ -71,11 +71,15 @@ export const listProjects = createServerFn({ method: "GET" })
       .filter((url): url is string => !!url && !url.startsWith("http"));
     const coverMap: Record<string, string> = {};
     if (coverPaths.length) {
-      const { data: signed } = await (supabaseAdmin as any).storage
-        .from("project-covers")
-        .createSignedUrls(coverPaths, 60 * 60 * 6);
-      for (const item of (signed ?? []) as any[]) {
-        if (item?.path && item?.signedUrl) coverMap[item.path] = item.signedUrl;
+      try {
+        const { data: signed } = await (supabaseAdmin as any).storage
+          .from("project-covers")
+          .createSignedUrls(coverPaths, 60 * 60 * 6);
+        for (const item of (signed ?? []) as any[]) {
+          if (item?.path && item?.signedUrl) coverMap[item.path] = item.signedUrl;
+        }
+      } catch {
+        // storage unavailable — the client signs the covers itself as a fallback
       }
     }
 

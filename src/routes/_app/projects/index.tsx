@@ -39,6 +39,22 @@ function ProjectsList() {
     queryFn: async () => (await listProjectsFn()) ?? [],
   });
 
+  // Fallback: sign covers in the browser when the server could not do it.
+  const missingCovers = (projects as any[])
+    .filter((p) => !p.cover_signed_url && p.cover_url && !String(p.cover_url).startsWith("http"))
+    .map((p) => p.cover_url as string);
+  const { data: fallbackCovers = {} } = useQuery({
+    queryKey: ["project-covers", missingCovers.join(",")],
+    enabled: missingCovers.length > 0,
+    staleTime: 30 * 60 * 1000,
+    queryFn: async () => {
+      const map: Record<string, string> = {};
+      const { data } = await supabase.storage.from("project-covers").createSignedUrls(missingCovers, 60 * 60);
+      for (const s of data ?? []) if (s.path && s.signedUrl) map[s.path] = s.signedUrl;
+      return map;
+    },
+  });
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -63,7 +79,7 @@ function ProjectsList() {
             const blockCount = blocks.length;
             const total = blocks.reduce((s: number, b: any) => s + (b.apartments?.length ?? 0), 0);
             const sold = blocks.reduce((s: number, b: any) => s + (b.apartments?.filter((a: any) => a.status === "sold").length ?? 0), 0);
-            const cover = p.cover_signed_url ?? null;
+            const cover = p.cover_signed_url ?? (p.cover_url ? ((fallbackCovers as any)[p.cover_url] ?? null) : null);
             return (
               <div key={p.id} className="group relative overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-card)] transition hover:border-accent hover:shadow-[var(--shadow-elegant)]">
                 {canModify && (
