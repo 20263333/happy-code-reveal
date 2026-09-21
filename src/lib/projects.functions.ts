@@ -175,9 +175,12 @@ export const getProject = createServerFn({ method: "GET" })
     const { data: project } = await admin
       .from("projects").select("*").eq("id", data.project_id).maybeSingle();
     if (project && companyId && project.company_id === companyId) return project;
+    // Belongs to another company — never open it, even for platform admins.
+    if (project && companyId && project.company_id !== companyId) return null;
 
     const { data: visible, error } = await (supabase as any)
       .from("projects").select("*").eq("id", data.project_id).maybeSingle();
     if (error) throw new Error(error.message);
     return visible ?? null;
+
   });
