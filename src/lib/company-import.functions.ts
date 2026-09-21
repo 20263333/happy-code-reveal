@@ -218,12 +218,11 @@ export const importCompanyExport = createServerFn({ method: "POST" })
       };
 
       // 5) Сутунҳои ҳақиқии ҳар ҷадвал — сутунҳои кӯҳнаи файл ҳазф мешаванд.
-      const { data: colRows, error: colErr } = await admin.rpc("list_public_columns");
+      const { data: colMap, error: colErr } = await admin.rpc("list_public_columns");
       if (colErr) throw new Error(colErr.message);
       const tableCols = new Map<string, Set<string>>();
-      for (const r of (colRows ?? []) as { table_name: string; column_name: string }[]) {
-        if (!tableCols.has(r.table_name)) tableCols.set(r.table_name, new Set());
-        tableCols.get(r.table_name)!.add(r.column_name);
+      for (const [t, cols] of Object.entries((colMap ?? {}) as Record<string, string[]>)) {
+        tableCols.set(t, new Set(cols));
       }
 
       // 6) Гузоштан ба тартиб, дастаҳои 200-та.
@@ -250,7 +249,6 @@ export const importCompanyExport = createServerFn({ method: "POST" })
         if (table === "projects") {
           list = [...list].sort((a, b) => Number(a.parent_id != null) - Number(b.parent_id != null));
         }
-        if (table === "suppliers") console.log("IMPORT-DEBUG suppliers:", JSON.stringify(list), "ALLOWED:", JSON.stringify([...(tableCols.get("suppliers") ?? [])]), "colErr:", colErr?.message, "colRows:", (colRows ?? []).length);
         for (let i = 0; i < list.length; i += 200) {
           const chunk = list.slice(i, i + 200);
           const { error } = await admin.from(table).insert(chunk);
