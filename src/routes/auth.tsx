@@ -33,7 +33,18 @@ export const Route = createFileRoute("/auth")({
     // Keep the user on /auth until MFA is completed.
     const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
     if (aal?.nextLevel === "aal2" && aal.currentLevel !== "aal2") return;
-    throw redirect({ to: "/" });
+    // Signed-in users go straight into the app, not back to the landing page.
+    const userId = session.user?.id;
+    if (userId) {
+      const { data: pa } = await (supabase as any)
+        .from("platform_admins").select("user_id").eq("user_id", userId).maybeSingle();
+      if (pa) throw redirect({ to: "/admin" as any });
+      const { data: roles } = await (supabase as any)
+        .from("user_roles").select("role").eq("user_id", userId);
+      const isDirector = ((roles as { role: string }[] | null) ?? []).some((r) => r.role === "director");
+      throw redirect({ to: (isDirector ? "/dashboard" : "/projects") as any });
+    }
+    throw redirect({ to: "/projects" as any });
   },
   component: AuthPage,
 });
