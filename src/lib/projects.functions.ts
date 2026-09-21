@@ -14,40 +14,20 @@ export const listProjects = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { userId, supabase } = context;
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    const [profileResult, ownedResult, roleResult] = await Promise.all([
-      (supabaseAdmin as any).from("profiles").select("company_id").eq("id", userId).maybeSingle(),
-      (supabaseAdmin as any).from("companies").select("id").eq("owner_user_id", userId).maybeSingle(),
-      (supabaseAdmin as any).from("user_roles").select("role").eq("user_id", userId).eq("role", "owner").maybeSingle(),
-    ]);
-    const companyId = (profileResult.data as any)?.company_id ?? (ownedResult.data as any)?.id ?? null;
-    const isOwner = !!ownedResult.data || !!roleResult.data;
-
-    let roots: any[] = [];
-    if (companyId && isOwner) {
-      const { data, error } = await (supabaseAdmin as any)
-        .from("projects")
-        .select("id, name, location, status, cover_url, created_at")
-        .eq("company_id", companyId)
-        .is("parent_id", null)
-        .order("created_at", { ascending: true });
-      if (error) throw new Error(error.message);
-      roots = data ?? [];
-    } else {
-      const { data, error } = await supabase
-        .from("projects")
-        .select("id, name, location, status, cover_url, created_at")
-        .is("parent_id", null)
-        .order("created_at", { ascending: true });
-      if (error) throw new Error(error.message);
-      roots = data ?? [];
-    }
+    // Read as the signed-in user. This keeps the owner page independent from
+    // the privileged server key and lets the database policies enforce access.
+    const { data: rootsData, error: rootsError } = await supabase
+      .from("projects")
+      .select("id, name, location, status, cover_url, created_at")
+      .is("parent_id", null)
+      .order("created_at", { ascending: true });
+    if (rootsError) throw new Error(rootsError.message);
+    const roots = rootsData ?? [];
 
     const rootIds = roots.map((project) => project.id as string);
     if (!rootIds.length) return [];
 
-    const { data: children, error: childrenError } = await (supabaseAdmin as any)
+    const { data: children, error: childrenError } = await supabase
       .from("projects")
       .select("id, parent_id")
       .in("parent_id", rootIds);
@@ -56,7 +36,7 @@ export const listProjects = createServerFn({ method: "GET" })
     const childIds = (children ?? []).map((project: any) => project.id as string);
     let apartments: any[] = [];
     if (childIds.length) {
-      const { data, error } = await (supabaseAdmin as any)
+      const { data, error } = await supabase
         .from("apartments")
         .select("project_id, status")
         .in("project_id", childIds);
@@ -64,15 +44,15 @@ export const listProjects = createServerFn({ method: "GET" })
       apartments = data ?? [];
     }
 
-    // Sign cover images on the server so the list paints in a single round-trip
-    // and storage policies can never hide the photos from the browser.
+    // Sign covers with the current user's storage access. A failed photo must
+    // never prevent the owner from opening the projects page.
     const coverPaths = roots
       .map((project: any) => project.cover_url as string | null)
       .filter((url): url is string => !!url && !url.startsWith("http"));
     const coverMap: Record<string, string> = {};
     if (coverPaths.length) {
       try {
-        const { data: signed } = await (supabaseAdmin as any).storage
+        const { data: signed } = await supabase.storage
           .from("project-covers")
           .createSignedUrls(coverPaths, 60 * 60 * 6);
         for (const item of (signed ?? []) as any[]) {
@@ -85,7 +65,7 @@ export const listProjects = createServerFn({ method: "GET" })
 
     return roots.map((project) => ({
       ...project,
-      cover_signed_url: project.cover_url
+      cover_signed_url: typeof project.cover_url === "string" && project.cover_url
         ? project.cover_url.startsWith("http")
           ? project.cover_url
           : (coverMap[project.cover_url] ?? null)
