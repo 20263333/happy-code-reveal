@@ -128,6 +128,13 @@ export const importCompanyExport = createServerFn({ method: "POST" })
     );
     if (found) {
       ownerId = found.id;
+      const [{ data: linkedProfile }, { data: ownedCompany }] = await Promise.all([
+        admin.from("profiles").select("company_id").eq("id", ownerId).maybeSingle(),
+        admin.from("companies").select("id").eq("owner_user_id", ownerId).maybeSingle(),
+      ]);
+      if (linkedProfile?.company_id || ownedCompany?.id) {
+        throw new Error("Ин email аллакай ба ширкати дигар пайваст аст. Барои ширкати нав email-и дигар истифода баред.");
+      }
     } else {
       const { data: created, error: cErr } = await admin.auth.admin.createUser({
         email: data.owner_email,
