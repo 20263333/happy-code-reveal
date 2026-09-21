@@ -217,7 +217,19 @@ export const importCompanyExport = createServerFn({ method: "POST" })
         return out;
       };
 
-      // 5) Гузоштан ба тартиб, дастаҳои 200-та.
+      // 5) Сутунҳои ҳақиқии ҳар ҷадвал — сутунҳои кӯҳнаи файл ҳазф мешаванд.
+      const { data: colRows, error: colErr } = await admin
+        .from("information_schema.columns" as any)
+        .select("table_name, column_name")
+        .eq("table_schema", "public");
+      if (colErr) throw new Error(colErr.message);
+      const tableCols = new Map<string, Set<string>>();
+      for (const r of (colRows ?? []) as { table_name: string; column_name: string }[]) {
+        if (!tableCols.has(r.table_name)) tableCols.set(r.table_name, new Set());
+        tableCols.get(r.table_name)!.add(r.column_name);
+      }
+
+      // 6) Гузоштан ба тартиб, дастаҳои 200-та.
       const inserted: Record<string, number> = {};
       for (const table of TABLE_ORDER) {
         const rows = src[table];
@@ -226,6 +238,8 @@ export const importCompanyExport = createServerFn({ method: "POST" })
         let list = (rows as Record<string, any>[]).map((r) => {
           const mapped = remapRow(r);
           if (genCols) for (const c of genCols) delete mapped[c];
+          const allowed = tableCols.get(table);
+          if (allowed) for (const k of Object.keys(mapped)) if (!allowed.has(k)) delete mapped[k];
           return mapped;
         });
         // projects: аввал падарҳо (parent_id = null).
