@@ -355,24 +355,17 @@ CREATE POLICY photos_select_company ON public.construction_photos AS PERMISSIVE 
   USING (((company_id = user_company_id(auth.uid())) OR is_platform_admin(auth.uid())));
 DROP POLICY IF EXISTS contract_documents_company_delete ON public.contract_documents;
 CREATE POLICY contract_documents_company_delete ON public.contract_documents AS PERMISSIVE FOR DELETE TO authenticated
-  USING ((company_id IN ( SELECT profiles.company_id
-   FROM profiles
-  WHERE (profiles.id = auth.uid()))));
+  USING (company_id = private.user_company_id(auth.uid()));
 DROP POLICY IF EXISTS contract_documents_company_read ON public.contract_documents;
 CREATE POLICY contract_documents_company_read ON public.contract_documents AS PERMISSIVE FOR SELECT TO authenticated
-  USING ((company_id IN ( SELECT profiles.company_id
-   FROM profiles
-  WHERE (profiles.id = auth.uid()))));
+  USING (company_id = private.user_company_id(auth.uid()));
 DROP POLICY IF EXISTS contract_documents_company_update ON public.contract_documents;
 CREATE POLICY contract_documents_company_update ON public.contract_documents AS PERMISSIVE FOR UPDATE TO authenticated
-  USING ((company_id IN ( SELECT profiles.company_id
-   FROM profiles
-  WHERE (profiles.id = auth.uid()))));
+  USING (company_id = private.user_company_id(auth.uid()))
+  WITH CHECK (company_id = private.user_company_id(auth.uid()));
 DROP POLICY IF EXISTS contract_documents_company_write ON public.contract_documents;
 CREATE POLICY contract_documents_company_write ON public.contract_documents AS PERMISSIVE FOR INSERT TO authenticated
-  WITH CHECK ((company_id IN ( SELECT profiles.company_id
-   FROM profiles
-  WHERE (profiles.id = auth.uid()))));
+  WITH CHECK (company_id = private.user_company_id(auth.uid()));
 DROP POLICY IF EXISTS "Company members read contract template" ON public.contract_templates;
 CREATE POLICY "Company members read contract template" ON public.contract_templates AS PERMISSIVE FOR SELECT TO authenticated
   USING ((company_id = private.user_company_id(auth.uid())));

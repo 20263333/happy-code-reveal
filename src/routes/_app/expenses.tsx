@@ -57,7 +57,7 @@ const FUNDING_SOURCES = [
 function ExpensesPage() {
   const { t, tr } = useT();
   const { formatMoney } = usePrefs();
-  const { isOwner, isPlatformAdmin, isDirector, user } = useAuth();
+  const { isOwner, isPlatformAdmin, isDirector, user, companyId } = useAuth();
   const tabOk = useTabGate();
   // Right to create/delete an expense: owners/platform admins always,
   // any other staff member only when the sub-page key is granted.
@@ -70,11 +70,16 @@ function ExpensesPage() {
   const [open, setOpen] = useState(false);
 
   const { data: expenses = [] } = useQuery({
-    queryKey: ["all-expenses"],
+    queryKey: ["all-expenses", companyId],
     queryFn: async () => {
+      if (!companyId) return [];
+      const { data: companyProjects } = await supabase.from("projects").select("id").eq("company_id", companyId);
+      const companyProjectIds = (companyProjects ?? []).map((project) => project.id);
+      if (!companyProjectIds.length) return [];
       const { data, error } = await supabase
         .from("expenses")
         .select("id, amount, category, description, employee_name, expense_date, currency, project_id, created_at, funding_source")
+        .in("project_id", companyProjectIds)
         .order("expense_date", { ascending: false })
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -99,6 +104,7 @@ function ExpensesPage() {
         return { ...e, project: proj ? { ...proj, fullName } : null };
       });
     },
+    enabled: !!companyId,
   });
 
   const [delTarget, setDelTarget] = useState<any | null>(null);
@@ -129,8 +135,9 @@ function ExpensesPage() {
 
 
   const { data: projects = [] } = useQuery({
-    queryKey: ["projects-min-with-parent"],
-    queryFn: async () => (await supabase.from("projects").select("id, name, parent_id").order("name")).data ?? [],
+    queryKey: ["projects-min-with-parent", companyId],
+    queryFn: async () => companyId ? (await supabase.from("projects").select("id, name, parent_id").eq("company_id", companyId).order("name")).data ?? [] : [],
+    enabled: !!companyId,
   });
 
   const [search, setSearch] = useState("");

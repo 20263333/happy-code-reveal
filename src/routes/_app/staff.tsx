@@ -41,13 +41,15 @@ function StaffPage() {
   const [empOpen, setEmpOpen] = useState(false);
 
   const { data: allProjects = [] } = useQuery({
-    queryKey: ["projects-min"],
-    queryFn: async () => (await supabase.from("projects").select("id, name").order("name")).data ?? [],
+    queryKey: ["projects-min", companyId],
+    queryFn: async () => companyId ? (await supabase.from("projects").select("id, name").eq("company_id", companyId).order("name")).data ?? [] : [],
+    enabled: !!companyId,
   });
 
   const { data: projectsTree = [] } = useQuery({
-    queryKey: ["projects-min-with-parent"],
-    queryFn: async () => (await supabase.from("projects").select("id, name, parent_id").order("name")).data ?? [],
+    queryKey: ["projects-min-with-parent", companyId],
+    queryFn: async () => companyId ? (await supabase.from("projects").select("id, name, parent_id").eq("company_id", companyId).order("name")).data ?? [] : [],
+    enabled: !!companyId,
   });
 
 
@@ -66,13 +68,14 @@ function StaffPage() {
 
 
   const { data: staff = [] } = useQuery({
-    queryKey: ["staff-full"],
+    queryKey: ["staff-full", companyId],
     queryFn: async () => {
+      if (!companyId) return [];
       const [{ data: profiles }, { data: roles }, { data: ps }, { data: projects }] = await Promise.all([
-        supabase.from("profiles").select("*"),
+        supabase.from("profiles").select("*").eq("company_id", companyId),
         supabase.from("user_roles").select("user_id, role"),
         supabase.from("project_staff").select("user_id, project_id"),
-        supabase.from("projects").select("id, name"),
+        supabase.from("projects").select("id, name").eq("company_id", companyId),
       ]);
       const projById = new Map((projects ?? []).map((p) => [p.id, p]));
       return (profiles ?? []).map((p) => ({
@@ -81,6 +84,7 @@ function StaffPage() {
         projects: (ps ?? []).filter((x) => x.user_id === p.id).map((x) => projById.get(x.project_id)).filter(Boolean),
       }));
     },
+    enabled: !!companyId,
   });
 
   const setRole = useMutation({
@@ -548,6 +552,7 @@ const DEPARTMENTS: { value: Department; label: string; role: "manager" | "accoun
 
 function CreateEmployeeForm({ onClose }: { onClose: () => void }) {
   const { tr } = useT();
+  const { companyId } = useAuth();
   const createFn = useServerFn(createEmployee);
   const [fullname, setFullname] = useState("");
   const [email, setEmail] = useState("");
@@ -581,9 +586,10 @@ function CreateEmployeeForm({ onClose }: { onClose: () => void }) {
 
   // Only top-level projects (ЖК) — blocks are granted automatically with their parent.
   const { data: topProjects = [] } = useQuery({
-    queryKey: ["projects-top"],
+    queryKey: ["projects-top", companyId],
     queryFn: async () =>
-      (await supabase.from("projects").select("id, name").is("parent_id", null).order("name")).data ?? [],
+      companyId ? (await supabase.from("projects").select("id, name").eq("company_id", companyId).is("parent_id", null).order("name")).data ?? [] : [],
+    enabled: !!companyId,
   });
 
   // Managers see only assigned projects, so for them a project must be chosen.
