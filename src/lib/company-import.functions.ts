@@ -250,7 +250,7 @@ export const importCompanyExport = createServerFn({ method: "POST" })
         if (table === "projects") {
           list = [...list].sort((a, b) => Number(a.parent_id != null) - Number(b.parent_id != null));
         }
-        if (table === "suppliers") console.log("IMPORT-DEBUG suppliers:", JSON.stringify(list));
+        if (table === "suppliers") console.log("IMPORT-DEBUG suppliers:", JSON.stringify(list), "ALLOWED:", JSON.stringify([...(tableCols.get("suppliers") ?? [])]), "colErr:", colErr?.message, "colRows:", (colRows ?? []).length);
         for (let i = 0; i < list.length; i += 200) {
           const chunk = list.slice(i, i + 200);
           const { error } = await admin.from(table).insert(chunk);
