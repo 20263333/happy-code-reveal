@@ -1846,3 +1846,10 @@ as $$
   ) t
 $$;
 grant execute on function public.list_public_columns() to authenticated, service_role;
+
+-- Витринаи ширкатҳо барои вебсайт (намои умумӣ)
+CREATE OR REPLACE VIEW public.showcase_companies_public AS
+  SELECT id, company_name, logo_url, website, sort_order
+  FROM public.showcase_companies
+  WHERE is_active = true;
+GRANT SELECT ON public.showcase_companies_public TO anon, authenticated;
