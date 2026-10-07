@@ -11,6 +11,9 @@ const CreateBlockSchema = z.object({
   status: z.enum(["planning", "in_progress", "completed", "paused"]).default("in_progress"),
   floor_count: z.number().int().min(1).max(200),
   apartments_per_floor: z.number().int().min(1).max(200),
+  start_floor: z.number().int().min(-5).max(1).default(1),
+  commercial_floors: z.number().int().min(0).max(50).default(0),
+  shops_per_floor: z.number().int().min(1).max(200).default(1),
 });
 
 const ProjectIdSchema = z.object({ project_id: z.string().uuid() });
@@ -91,8 +94,9 @@ export const createBlock = createServerFn({ method: "POST" })
 
     const floorRows = Array.from({ length: data.floor_count }, (_, index) => ({
       project_id: created.id,
-      floor_number: index + 1,
+      floor_number: data.start_floor + index,
       status: "in_progress",
+      description: index < data.commercial_floors ? "Магоза" : null,
     }));
     const { data: floors, error: floorsError } = await admin
       .from("floors")
@@ -104,19 +108,22 @@ export const createBlock = createServerFn({ method: "POST" })
     }
 
     let apartmentNumber = 1;
+    let shopNumber = 1;
+    const commercialMax = data.start_floor + data.commercial_floors - 1;
     const apartmentRows = [...floors]
       .sort((a: any, b: any) => a.floor_number - b.floor_number)
-      .flatMap((floor: any) =>
-        Array.from({ length: data.apartments_per_floor }, () => ({
+      .flatMap((floor: any) => {
+        const isShop = floor.floor_number <= commercialMax;
+        return Array.from({ length: isShop ? data.shops_per_floor : data.apartments_per_floor }, () => ({
           project_id: created.id,
           floor_id: floor.id,
-          apartment_number: String(apartmentNumber++),
+          apartment_number: isShop ? `М-${shopNumber++}` : String(apartmentNumber++),
           area: 0,
           price: 0,
           price_per_sqm: 0,
           status: "empty",
-        })),
-      );
+        }));
+      });
 
     for (let index = 0; index < apartmentRows.length; index += 500) {
       const { error: apartmentsError } = await admin
