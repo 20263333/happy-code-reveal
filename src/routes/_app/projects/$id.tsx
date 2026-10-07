@@ -952,6 +952,9 @@ function AddBlockButton({ parentId, onAdded }: { parentId: string; onAdded: () =
   const [status, setStatus] = useState<"planning" | "in_progress" | "completed">("in_progress");
   const [floorCount, setFloorCount] = useState("1");
   const [apartmentsPerFloor, setApartmentsPerFloor] = useState("1");
+  const [startFloor, setStartFloor] = useState("1");
+  const [commercialFloors, setCommercialFloors] = useState("0");
+  const [shopsPerFloor, setShopsPerFloor] = useState("1");
   const createFn = useServerFn(createBlock);
   const add = useMutation({
     mutationFn: async () => {
@@ -963,6 +966,9 @@ function AddBlockButton({ parentId, onAdded }: { parentId: string; onAdded: () =
           status,
           floor_count: Number(floorCount),
           apartments_per_floor: Number(apartmentsPerFloor),
+          start_floor: Number(startFloor),
+          commercial_floors: Math.min(Number(commercialFloors) || 0, Number(floorCount)),
+          shops_per_floor: Math.max(1, Number(shopsPerFloor) || 1),
         },
       });
     },
@@ -974,6 +980,9 @@ function AddBlockButton({ parentId, onAdded }: { parentId: string; onAdded: () =
       setStatus("in_progress");
       setFloorCount("1");
       setApartmentsPerFloor("1");
+      setStartFloor("1");
+      setCommercialFloors("0");
+      setShopsPerFloor("1");
       onAdded();
     },
     onError: (e: any) => toast.error(e?.message || "Хатогӣ"),
@@ -994,6 +1003,34 @@ function AddBlockButton({ parentId, onAdded }: { parentId: string; onAdded: () =
               <Label>Хонаҳо дар ҳар ошёна</Label>
               <Input type="number" min={1} max={200} required value={apartmentsPerFloor} onChange={(e) => setApartmentsPerFloor(e.target.value)} />
             </div>
+          </div>
+          <div className="rounded-md border border-border p-3 space-y-2">
+            <div className="text-sm font-medium">Магозаҳо (ошёнаҳои тиҷоратӣ)</div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label>Ошёнаи аввал</Label>
+                <Select value={startFloor} onValueChange={setStartFloor}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">0 (цокол)</SelectItem>
+                    <SelectItem value="1">1</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Шумораи ошёнаҳои магоза</Label>
+                <Input type="number" min={0} max={50} value={commercialFloors} onChange={(e) => setCommercialFloors(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Магоза дар ҳар ошёна</Label>
+                <Input type="number" min={1} max={200} value={shopsPerFloor} onChange={(e) => setShopsPerFloor(e.target.value)} />
+              </div>
+            </div>
+            {Number(commercialFloors) > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Ошёнаҳои {startFloor}–{Number(startFloor) + Math.min(Number(commercialFloors), Number(floorCount)) - 1} магоза мешаванд (М-1, М-2…), боқимонда — хонаҳои истиқоматӣ.
+              </p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label>Ҳолат</Label>
