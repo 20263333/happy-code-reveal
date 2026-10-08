@@ -63,5 +63,5 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
-  component: LandingPage,
+  component: () => (<><GoogleReturn /><LandingPage /></>),
 });
