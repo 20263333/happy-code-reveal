@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import platformLogo from "@/assets/platform-logo.png.asset.json";
+import platformLogo from "@/assets/platform-logo.png";
 
 export type LogoSlot = "light" | "dark" | "kiosk";
 export type AppLogos = Partial<Record<LogoSlot, { path: string; url: string }>>;
 
 export const LOGO_FALLBACK: Record<LogoSlot, string> = {
-  light: platformLogo.url,
-  dark: platformLogo.url,
-  kiosk: platformLogo.url,
+  light: platformLogo,
+  dark: platformLogo,
+  kiosk: platformLogo,
 };
 
 let cache: AppLogos | null = null;
