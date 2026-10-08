@@ -41,12 +41,12 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getStableSession } from "@/lib/auth-session";
 import { submitSitePlanRequest } from "@/lib/site-plan-requests.functions";
-import dashboardRu from "@/assets/product/dashboard-demo-ru.png.asset.json";
-import dashboardTg from "@/assets/product/dashboard-demo-tg.png.asset.json";
-import dashboardEn from "@/assets/product/dashboard-demo-en.png.asset.json";
-import warehouseRu from "@/assets/product/warehouse-demo-ru.png.asset.json";
-import warehouseTg from "@/assets/product/warehouse-demo-tg.png.asset.json";
-import warehouseEn from "@/assets/product/warehouse-demo-en.png.asset.json";
+import dashboardRu from "@/assets/product/dashboard-app-ru.png.asset.json";
+import dashboardTg from "@/assets/product/dashboard-app-tg.png.asset.json";
+import dashboardEn from "@/assets/product/dashboard-app-en.png.asset.json";
+import warehouseRu from "@/assets/product/warehouse-app-ru.png.asset.json";
+import warehouseTg from "@/assets/product/warehouse-app-tg.png.asset.json";
+import warehouseEn from "@/assets/product/warehouse-app-en.png.asset.json";
 
 const dashboardShots: Record<Lang, string> = { ru: dashboardRu.url, tg: dashboardTg.url, en: dashboardEn.url };
 const warehouseShots: Record<Lang, string> = { ru: warehouseRu.url, tg: warehouseTg.url, en: warehouseEn.url };
