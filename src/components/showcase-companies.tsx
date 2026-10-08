@@ -1,3 +1,4 @@
+import { fixStorageUrl } from "@/lib/storage-url";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Building2, Globe, ChevronLeft, ChevronRight } from "lucide-react";
@@ -56,7 +57,7 @@ function CompanyCard({ item, label }: { item: Item; label: string }) {
       <div className="relative aspect-square w-full overflow-hidden bg-muted">
         {item.logo_url ? (
           <img
-            src={item.logo_url}
+            src={fixStorageUrl(item.logo_url) ?? undefined}
             alt={item.company_name}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
           />

@@ -1,3 +1,4 @@
+import { fixStorageUrl } from "@/lib/storage-url";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import platformLogo from "@/assets/platform-logo.png";
@@ -42,7 +43,7 @@ export function useAppLogo(slot: LogoSlot): string {
     loadAppLogos().then((v) => {
       if (!alive) return;
       const custom = v[slot]?.url;
-      if (custom) setUrl(custom);
+      if (custom) setUrl(fixStorageUrl(custom));
     });
     return () => {
       alive = false;
