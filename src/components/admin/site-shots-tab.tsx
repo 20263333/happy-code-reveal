@@ -5,17 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Upload, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { fetchSiteShots, SITE_SHOTS_KEY, type ShotKey, type ShotLang, type SiteShots } from "@/lib/site-shots";
-import dashboardRu from "@/assets/product/dashboard-app-ru.png.asset.json";
-import dashboardTg from "@/assets/product/dashboard-app-tg.png.asset.json";
-import dashboardEn from "@/assets/product/dashboard-app-en.png.asset.json";
-import warehouseRu from "@/assets/product/warehouse-app-ru.png.asset.json";
-import warehouseTg from "@/assets/product/warehouse-app-tg.png.asset.json";
-import warehouseEn from "@/assets/product/warehouse-app-en.png.asset.json";
+import dashboardRu from "@/assets/product/dashboard-app-ru.png";
+import dashboardTg from "@/assets/product/dashboard-app-tg.png";
+import dashboardEn from "@/assets/product/dashboard-app-en.png";
+import warehouseRu from "@/assets/product/warehouse-app-ru.png";
+import warehouseTg from "@/assets/product/warehouse-app-tg.png";
+import warehouseEn from "@/assets/product/warehouse-app-en.png";
 
 const TEN_YEARS = 60 * 60 * 24 * 365 * 10;
 const FALLBACK: Record<ShotKey, Record<ShotLang, string>> = {
-  dashboard: { ru: dashboardRu.url, tg: dashboardTg.url, en: dashboardEn.url },
-  warehouse: { ru: warehouseRu.url, tg: warehouseTg.url, en: warehouseEn.url },
+  dashboard: { ru: dashboardRu, tg: dashboardTg, en: dashboardEn },
+  warehouse: { ru: warehouseRu, tg: warehouseTg, en: warehouseEn },
 };
 const KEYS: { key: ShotKey; label: string }[] = [
   { key: "dashboard", label: "Дашборд" },
