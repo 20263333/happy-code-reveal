@@ -72,9 +72,9 @@ function AuthPage() {
   }
 
   async function googleSignIn() {
+    try { sessionStorage.setItem("binosoz_google_signup", "1"); } catch {}
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: `${window.location.origin}/pending`,
-      extraParams: { prompt: "select_account" },
+      redirect_uri: window.location.origin,
     });
     if (result.error) { toast.error(result.error.message); return; }
     if (result.redirected) return;

@@ -1,5 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { LandingPage } from "@/components/site/landing-page";
+
+function GoogleReturn() {
+  useEffect(() => {
+    let flag: string | null = null;
+    try { flag = sessionStorage.getItem("binosoz_google_signup"); } catch {}
+    if (!flag) return;
+    const go = () => { try { sessionStorage.removeItem("binosoz_google_signup"); } catch {} window.location.replace("/pending"); };
+    supabase.auth.getSession().then(({ data }) => { if (data.session) go(); });
+    const { data: sub } = supabase.auth.onAuthStateChange((e, s) => { if (e === "SIGNED_IN" && s) go(); });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+  return null;
+}
 
 export const Route = createFileRoute("/")({
   head: () => ({
