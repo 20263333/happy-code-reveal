@@ -48,6 +48,7 @@ import warehouseRu from "@/assets/product/warehouse-app-ru.png.asset.json";
 import warehouseTg from "@/assets/product/warehouse-app-tg.png.asset.json";
 import warehouseEn from "@/assets/product/warehouse-app-en.png.asset.json";
 
+import { useSiteShots } from "@/lib/site-shots";
 const dashboardShots: Record<Lang, string> = { ru: dashboardRu.url, tg: dashboardTg.url, en: dashboardEn.url };
 const warehouseShots: Record<Lang, string> = { ru: warehouseRu.url, tg: warehouseTg.url, en: warehouseEn.url };
 
@@ -255,8 +256,9 @@ function ChessMock({ label }: { label: (s: string) => string }) {
 
 export function LandingPage() {
   const { tr, lang } = useT();
-  const dashboardShot = dashboardShots[lang];
-  const warehouseShot = warehouseShots[lang];
+  const siteShots = useSiteShots();
+  const dashboardShot = siteShots.dashboard?.[lang]?.url ?? dashboardShots[lang];
+  const warehouseShot = siteShots.warehouse?.[lang]?.url ?? warehouseShots[lang];
   const logoUrl = useAppLogo("light");
   const [signedIn, setSignedIn] = useState(false);
   const [screen, setScreen] = useState(SCREENS[0]);
@@ -437,7 +439,7 @@ export function LandingPage() {
               <div className="mt-6">
                 <BrowserFrame imageKey={screen.id}>
                   {screen.image
-                    ? <img src={screen.image[lang]} alt={tr(screen.label)} className="w-full" loading="lazy" />
+                    ? <img src={(siteShots as any)[screen.id]?.[lang]?.url ?? screen.image[lang]} alt={tr(screen.label)} className="w-full" loading="lazy" />
                     : <ChessMock label={tr} />}
                 </BrowserFrame>
               </div>
