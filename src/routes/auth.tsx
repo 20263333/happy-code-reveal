@@ -78,6 +78,7 @@ function AuthPage() {
     });
     if (result.error) { toast.error(result.error.message); return; }
     if (result.redirected) return;
+    try { sessionStorage.removeItem("binosoz_google_signup"); } catch {}
     navigate({ to: "/pending" as any, replace: true });
   }
 
