@@ -1,3 +1,4 @@
+import { fixStorageUrl } from "@/lib/storage-url";
 import { useEffect, useState } from "react";
 import { Building2, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,7 +53,7 @@ export function SiteClients() {
               <div className="relative aspect-square w-full overflow-hidden bg-muted">
                 {item.logo_url ? (
                   <img
-                    src={item.logo_url}
+                    src={fixStorageUrl(item.logo_url) ?? undefined}
                     alt={item.company_name}
                     loading="lazy"
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"

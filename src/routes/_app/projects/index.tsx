@@ -1,3 +1,4 @@
+import { fixStorageUrl } from "@/lib/storage-url";
 import { uuid } from "@/lib/uuid";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -87,7 +88,7 @@ function ProjectsList() {
             const blockCount = blocks.length;
             const total = blocks.reduce((s: number, b: any) => s + (b.apartments?.length ?? 0), 0);
             const sold = blocks.reduce((s: number, b: any) => s + (b.apartments?.filter((a: any) => a.status === "sold").length ?? 0), 0);
-            const cover = p.cover_signed_url ?? (p.cover_url ? ((fallbackCovers as any)[p.cover_url] ?? null) : null);
+            const cover = fixStorageUrl(p.cover_signed_url ?? (p.cover_url ? ((fallbackCovers as any)[p.cover_url] ?? null) : null));
             return (
               <div key={p.id} className="group relative overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-card)] transition hover:border-accent hover:shadow-[var(--shadow-elegant)]">
                 {canModify && (
