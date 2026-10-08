@@ -1049,7 +1049,7 @@ CREATE POLICY "platform_settings admin write" ON public.platform_settings AS PER
   WITH CHECK (private.is_platform_admin(auth.uid()));
 DROP POLICY IF EXISTS "platform_settings public keys read" ON public.platform_settings;
 CREATE POLICY "platform_settings public keys read" ON public.platform_settings AS PERMISSIVE FOR SELECT TO anon, authenticated
-  USING ((key = ANY (ARRAY['demo_enabled'::text, 'social_links'::text, 'app_logos'::text])));
+  USING ((key = ANY (ARRAY['demo_enabled'::text, 'social_links'::text, 'app_logos'::text, 'site_shots'::text])));
 DROP POLICY IF EXISTS "Delete profile (owner/admin)" ON public.profiles;
 CREATE POLICY "Delete profile (owner/admin)" ON public.profiles AS PERMISSIVE FOR DELETE TO authenticated
   USING ((private.is_platform_admin(auth.uid()) OR (private.has_role(auth.uid(), 'owner'::app_role) AND (company_id = private.user_company_id(auth.uid())))));
