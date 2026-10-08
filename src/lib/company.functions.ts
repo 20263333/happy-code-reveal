@@ -8,7 +8,7 @@ const RequestSchema = z.object({
   company_name: z.string().min(2).max(150),
   fullname: z.string().min(2).max(120),
   phone: z.string().max(40).optional().nullable(),
-  password: z.string().min(6).max(72),
+  password: z.string().min(6).max(72).optional().nullable(),
 });
 
 export const submitCompanyRequest = createServerFn({ method: "POST" })
@@ -35,7 +35,7 @@ export const submitCompanyRequest = createServerFn({ method: "POST" })
     if (existingProfile?.company_id) throw new Error("Шумо аллакай ба ширкат пайваст ҳастед");
 
     const { error: passwordErr } = await (supabaseAdmin as any).auth.admin.updateUserById(userId, {
-      password: data.password,
+      ...(data.password ? { password: data.password } : {}),
       user_metadata: {
         ...(user.user_metadata ?? {}),
         fullname: data.fullname,
@@ -69,6 +69,47 @@ export const submitCompanyRequest = createServerFn({ method: "POST" })
     });
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+// Self-service 14-day free trial: turns the user's own pending request into a
+// company with subscription_expires_at = now + 14 days. Only once per user.
+export const TRIAL_DAYS = 14;
+export const activateFreeTrial = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as any;
+    const userId = context.userId;
+
+    const { data: prof } = await admin.from("profiles").select("company_id").eq("id", userId).maybeSingle();
+    if (prof?.company_id) return { ok: true, company_id: prof.company_id, already: true };
+    const { data: owned } = await admin.from("companies").select("id").eq("owner_user_id", userId).maybeSingle();
+    if (owned) throw new Error("Давраи озмоишӣ аллакай истифода шудааст");
+
+    const { data: req, error: rErr } = await admin.from("company_requests")
+      .select("*").eq("user_id", userId).eq("status", "pending")
+      .order("created_at", { ascending: false }).limit(1).maybeSingle();
+    if (rErr) throw new Error(rErr.message);
+    if (!req) throw new Error("Дархост ёфт нашуд");
+
+    const expires = new Date(Date.now() + TRIAL_DAYS * 86400_000).toISOString();
+    const { data: company, error: cErr } = await admin.from("companies").insert({
+      name: req.company_name,
+      owner_user_id: userId,
+      phone: req.phone,
+      enabled_modules: ALL_MODULE_KEYS,
+      subscription_expires_at: expires,
+      status: "active",
+    }).select().single();
+    if (cErr) throw new Error(cErr.message);
+
+    await admin.from("profiles").update({ company_id: company.id }).eq("id", userId);
+    await admin.from("user_roles").delete().eq("user_id", userId);
+    const { error: roleErr } = await admin.from("user_roles").insert({ user_id: userId, role: "owner" });
+    if (roleErr) throw new Error(roleErr.message);
+    await admin.from("company_requests")
+      .update({ status: "approved", reviewed_at: new Date().toISOString() }).eq("id", req.id);
+    return { ok: true, company_id: company.id, expires_at: expires };
   });
 
 // Super Admin creates company owner directly with email + password.

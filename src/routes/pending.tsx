@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { submitCompanyRequest } from "@/lib/company.functions";
+import { submitCompanyRequest, activateFreeTrial } from "@/lib/company.functions";
 import { getStableSession, hasSavedSessionData, safeSignOut } from "@/lib/auth-session";
 import { Building, Clock, XCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -26,6 +26,21 @@ function PendingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const submit = useServerFn(submitCompanyRequest);
+  const activate = useServerFn(activateFreeTrial);
+  const [trialIn, setTrialIn] = useState<number | null>(null);
+  const isGoogle = useState(false);
+
+  useEffect(() => {
+    if (trialIn === null) return;
+    if (trialIn <= 0) {
+      activate().then(() => { toast.success("14 рӯзи ройгон фаъол шуд!"); window.location.href = "/projects"; })
+        .catch((err: any) => { toast.error(err.message); setTrialIn(null); });
+      return;
+    }
+    const t = setTimeout(() => setTrialIn((c) => (c ?? 1) - 1), 1000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trialIn]);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -41,6 +56,7 @@ function PendingPage() {
       return;
     }
     setEmail(session.user.email ?? "");
+    isGoogle[1](session.user.app_metadata?.provider === "google");
     const meta: any = session.user.user_metadata ?? {};
     const metaName = meta.fullname || meta.full_name || meta.name || (session.user.email ?? "").split("@")[0] || "";
     const metaPhone = meta.phone || "";
@@ -67,16 +83,16 @@ function PendingPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await submit({ data: { email, company_name: companyName, fullname, phone: phone || null, password } });
+      await submit({ data: { email, company_name: companyName, fullname, phone: phone || null, password: password || null } });
       toast.success("Дархост фиристода шуд");
-      setCooldown(60);
       setStatus("pending");
+      setTrialIn(5);
     } catch (err: any) {
       toast.error(err.message);
     } finally { setSubmitting(false); }
   }
 
-  const showForm = status === "none" || status === "rejected" || cooldown > 0;
+  const showForm = status === "none" || status === "rejected";
   const formLocked = submitting || cooldown > 0;
 
   return (
@@ -93,7 +109,8 @@ function PendingPage() {
             {status === "none" && "Дархости ширкат фиристед"}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            {status === "pending" && "Super Admin дархости шуморо дида мебарояд."}
+            {status === "pending" && trialIn !== null && `14 рӯзи ройгон баъд аз ${trialIn} сония кушода мешавад...`}
+            {status === "pending" && trialIn === null && "Super Admin дархости шуморо дида мебарояд."}
             {status === "rejected" && (reason || "Мутаассифона, дархост рад карда шуд. Метавонед аз нав фиристед.")}
             {status === "none" && "Барои дастрасӣ ба система маълумоти ширкатро ворид кунед."}
           </p>
@@ -121,12 +138,12 @@ function PendingPage() {
               <Label>Пароль</Label>
               <Input
                 type="password"
-                required
+                required={!isGoogle[0]}
                 minLength={6}
                 value={password}
                 disabled={formLocked}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Минимум 6 символов"
+                placeholder={isGoogle[0] ? "Ихтиёрӣ (вуруд бо Google)" : "Минимум 6 символов"}
               />
             </div>
             <Button type="submit" className="w-full" disabled={submitting || cooldown > 0}>
