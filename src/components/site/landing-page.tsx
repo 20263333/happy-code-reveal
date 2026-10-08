@@ -31,7 +31,7 @@ import {
   PackageCheck,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useT } from "@/lib/i18n";
+import { useT, type Lang } from "@/lib/i18n";
 import { useAppLogo } from "@/lib/app-logos";
 import { LanguageToggle } from "@/components/language-toggle";
 import { SiteClients } from "@/components/site/site-clients";
@@ -41,8 +41,15 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getStableSession } from "@/lib/auth-session";
 import { submitSitePlanRequest } from "@/lib/site-plan-requests.functions";
-import dashboardShot from "@/assets/product/dashboard.png";
-import warehouseShot from "@/assets/product/warehouse.png";
+import dashboardRu from "@/assets/product/dashboard-demo-ru.png.asset.json";
+import dashboardTg from "@/assets/product/dashboard-demo-tg.png.asset.json";
+import dashboardEn from "@/assets/product/dashboard-demo-en.png.asset.json";
+import warehouseRu from "@/assets/product/warehouse-demo-ru.png.asset.json";
+import warehouseTg from "@/assets/product/warehouse-demo-tg.png.asset.json";
+import warehouseEn from "@/assets/product/warehouse-demo-en.png.asset.json";
+
+const dashboardShots: Record<Lang, string> = { ru: dashboardRu.url, tg: dashboardTg.url, en: dashboardEn.url };
+const warehouseShots: Record<Lang, string> = { ru: warehouseRu.url, tg: warehouseTg.url, en: warehouseEn.url };
 
 type Module = { icon: ComponentType<{ className?: string }>; title: string; text: string };
 
@@ -80,10 +87,10 @@ const PLANS: { code: PlanCode; name: string; caption: string; features: string[]
   { code: "premium_unlimited", name: "PREMIUM UNLIMITED", caption: "Все модули без ограничений — финансы, аналитика и AI.", features: ["Все модули тарифов 1 и 2", "Платежи, чеки и долларовая валюта", "Касса и смены кассира", "Поставщики, долги и бартер", "Распределение дохода между партнёрами", "Дашборд, отчёты, AI-ассистент и Excel-импорт"] },
 ];
 
-const SCREENS: { id: string; label: string; image?: string; title: string }[] = [
-  { id: "dashboard", label: "Дашборд директора", image: dashboardShot, title: "Ключевые цифры компании на одном экране в реальном времени." },
+const SCREENS: { id: string; label: string; image?: Record<Lang, string>; title: string }[] = [
+  { id: "dashboard", label: "Дашборд директора", image: dashboardShots, title: "Ключевые цифры компании на одном экране в реальном времени." },
   { id: "chess", label: "Шахматка квартир", title: "Проект → блок → этаж → квартира. Наглядная шахматка со статусами квартир." },
-  { id: "warehouse", label: "Склад", image: warehouseShot, title: "Приход, расход и остатки материалов; списание прямо на проект." },
+  { id: "warehouse", label: "Склад", image: warehouseShots, title: "Приход, расход и остатки материалов; списание прямо на проект." },
 ];
 
 
@@ -248,6 +255,8 @@ function ChessMock({ label }: { label: (s: string) => string }) {
 
 export function LandingPage() {
   const { tr, lang } = useT();
+  const dashboardShot = dashboardShots[lang];
+  const warehouseShot = warehouseShots[lang];
   const logoUrl = useAppLogo("light");
   const [signedIn, setSignedIn] = useState(false);
   const [screen, setScreen] = useState(SCREENS[0]);
@@ -428,7 +437,7 @@ export function LandingPage() {
               <div className="mt-6">
                 <BrowserFrame imageKey={screen.id}>
                   {screen.image
-                    ? <img src={screen.image} alt={tr(screen.label)} className="w-full" loading="lazy" />
+                    ? <img src={screen.image[lang]} alt={tr(screen.label)} className="w-full" loading="lazy" />
                     : <ChessMock label={tr} />}
                 </BrowserFrame>
               </div>
