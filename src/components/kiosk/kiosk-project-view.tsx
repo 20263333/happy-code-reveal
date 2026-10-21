@@ -84,6 +84,9 @@ export function KioskProjectView({ projectId, onBack }: { projectId: string; onB
             <button onClick={() => setView("3d")} className={cn("px-3 py-1.5 text-xs font-medium inline-flex items-center gap-1", view === "3d" ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted")}>
               <Box className="h-3.5 w-3.5" /> 3D фасад
             </button>
+            <button onClick={() => setView("scheme")} className={cn("px-3 py-1.5 text-xs font-medium inline-flex items-center gap-1", view === "scheme" ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted")}>
+              <Map className="h-3.5 w-3.5" /> Схема
+            </button>
           </div>
           <div className="flex items-center gap-2 text-xs">
             <Legend color="bg-red-500" label="Холӣ" />
@@ -126,6 +129,20 @@ export function KioskProjectView({ projectId, onBack }: { projectId: string; onB
                   })}
                 onApartmentClick={(a: any) => setSelectedApt(a)}
               />
+            </div>
+          ) : view === "scheme" ? (
+            <div className="h-full min-h-[500px] rounded-xl border border-border bg-muted/30 overflow-hidden">
+              {schemeLoading ? (
+                <div className="h-full flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : signedScheme?.url ? (
+                <ZoomableImage src={signedScheme.url} alt="Схемаи лоиҳа" />
+              ) : (
+                <div className="h-full flex items-center justify-center text-muted-foreground text-lg">
+                  Схема бор карда нашудааст
+                </div>
+              )}
             </div>
           ) : floors.length === 0 ? (
             <div className="h-full flex items-center justify-center text-muted-foreground text-lg">
