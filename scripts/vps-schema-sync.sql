@@ -1853,3 +1853,6 @@ CREATE OR REPLACE VIEW public.showcase_companies_public AS
   FROM public.showcase_companies
   WHERE is_active = true;
 GRANT SELECT ON public.showcase_companies_public TO anon, authenticated;
+
+-- Схемаи лоиҳа (расми нақша) барои нишон додан ба муштариён дар киоск
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS scheme_image_path text;

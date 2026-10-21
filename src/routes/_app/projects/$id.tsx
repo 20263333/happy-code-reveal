@@ -43,41 +43,72 @@ import { ExcelImportApartments } from "@/components/excel-import-apartments";
 
 import { Facade3dUpload } from "@/components/3d/facade-upload";
 import { Facade3dTab } from "@/components/3d/facade-3d-tab";
-import { getProject3dSignedUrl } from "@/lib/facade-3d.functions";
+import { SchemeUpload } from "@/components/3d/scheme-upload";
+import { ZoomableImage } from "@/components/kiosk/zoomable-image";
+import { getProject3dSignedUrl, getProjectSchemeSignedUrl } from "@/lib/facade-3d.functions";
 
 function Facade3dSection({
   projectId,
   companyId,
   modelPath,
+  schemePath,
   canEdit,
   apartments,
 }: {
   projectId: string;
   companyId: string;
   modelPath: string | null;
+  schemePath: string | null;
   canEdit: boolean;
   apartments: any[];
 }) {
   const qc = useQueryClient();
   const signFn = useServerFn(getProject3dSignedUrl);
+  const schemeSignFn = useServerFn(getProjectSchemeSignedUrl);
   const { data } = useQuery({
     queryKey: ["facade-3d-view", projectId, modelPath],
     queryFn: () => signFn({ data: { project_id: projectId } }),
     enabled: !!modelPath,
   });
+  const { data: schemeSigned } = useQuery({
+    queryKey: ["scheme-view", projectId, schemePath],
+    queryFn: () => schemeSignFn({ data: { project_id: projectId } }),
+    enabled: !!schemePath,
+  });
   if (canEdit) {
     return (
-      <Facade3dUpload
-        projectId={projectId}
-        companyId={companyId}
-        currentPath={modelPath}
-        onUpdated={() => qc.invalidateQueries({ queryKey: ["project", projectId] })}
-      />
+      <div className="space-y-6">
+        <Facade3dUpload
+          projectId={projectId}
+          companyId={companyId}
+          currentPath={modelPath}
+          onUpdated={() => qc.invalidateQueries({ queryKey: ["project", projectId] })}
+        />
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold">Схемаи лоиҳа (барои муштариён дар киоск)</h3>
+          <SchemeUpload
+            projectId={projectId}
+            companyId={companyId}
+            currentPath={schemePath}
+            onUpdated={() => qc.invalidateQueries({ queryKey: ["project", projectId] })}
+          />
+        </div>
+      </div>
     );
   }
   return (
-    <div className="h-[520px] overflow-hidden rounded-xl border border-border">
-      <Facade3dTab modelUrl={data?.url ?? null} apartments={apartments} />
+    <div className="space-y-6">
+      <div className="h-[520px] overflow-hidden rounded-xl border border-border">
+        <Facade3dTab modelUrl={data?.url ?? null} apartments={apartments} />
+      </div>
+      {schemePath && schemeSigned?.url && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold">Схемаи лоиҳа</h3>
+          <div className="h-[520px] overflow-hidden rounded-xl border border-border bg-muted/30">
+            <ZoomableImage src={schemeSigned.url} alt="Схемаи лоиҳа" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -474,6 +505,7 @@ function ProjectDetail() {
             projectId={id}
             companyId={(project as any).company_id}
             modelPath={(project as any).model_3d_path}
+            schemePath={(project as any).scheme_image_path ?? null}
             canEdit={isOwner && canModify}
             apartments={allApts.map((a: any) => {
               const f = orderedFloors.find((fl: any) => fl.id === a.floor_id);

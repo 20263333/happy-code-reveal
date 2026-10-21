@@ -90,3 +90,71 @@ export const getPublic3dSignedUrl = createServerFn({ method: "GET" })
       .createSignedUrl(project.model_3d_path, 60 * 60 * 24);
     return { url: signed?.signedUrl ?? null };
   });
+
+// Owner sets or clears the scheme (plan) image path for a project/block.
+export const setProjectSchemeImage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      project_id: z.string().uuid(),
+      path: z.string().max(500).nullable(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    const { data: project } = await supabase
+      .from("projects")
+      .select("id, company_id")
+      .eq("id", data.project_id)
+      .maybeSingle();
+    if (!project?.company_id) throw new Error("Лоиҳа ёфт нашуд");
+
+    const { data: company } = await supabase
+      .from("companies")
+      .select("owner_user_id")
+      .eq("id", project.company_id)
+      .maybeSingle();
+    if (!company || company.owner_user_id !== userId) {
+      throw new Error("Танҳо соҳиби ширкат метавонад");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as any;
+
+    const { data: current } = await admin
+      .from("projects")
+      .select("scheme_image_path")
+      .eq("id", data.project_id)
+      .maybeSingle();
+    if (current?.scheme_image_path && current.scheme_image_path !== data.path) {
+      await admin.storage.from(BUCKET).remove([current.scheme_image_path]);
+    }
+
+    const { error } = await admin
+      .from("projects")
+      .update({ scheme_image_path: data.path })
+      .eq("id", data.project_id);
+    if (error) throw new Error(error.message);
+
+    return { ok: true };
+  });
+
+// Returns a short-lived signed URL for the project's scheme image (authenticated).
+export const getProjectSchemeSignedUrl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ project_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: project } = await (supabase as any)
+      .from("projects")
+      .select("scheme_image_path")
+      .eq("id", data.project_id)
+      .maybeSingle();
+    if (!project?.scheme_image_path) return { url: null as string | null };
+
+    const { data: signed } = await supabase.storage
+      .from(BUCKET)
+      .createSignedUrl(project.scheme_image_path, 60 * 60 * 24);
+    return { url: signed?.signedUrl ?? null };
+  });
