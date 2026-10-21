@@ -5,6 +5,7 @@ import { Upload, Trash2, Loader2, Map } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { setProjectSchemeImage, getProjectSchemeSignedUrl } from "@/lib/facade-3d.functions";
 import { ZoomableImage } from "@/components/kiosk/zoomable-image";
+import { fixStorageUrl } from "@/lib/storage-url";
 import { toast } from "sonner";
 
 const BUCKET = "project-3d-models";
@@ -118,7 +119,7 @@ export function SchemeUpload({
               <Loader2 className="h-6 w-6 animate-spin" />
             </div>
           ) : signed?.url ? (
-            <ZoomableImage src={signed.url} alt="Схемаи лоиҳа" />
+            <ZoomableImage src={fixStorageUrl(signed.url)!} alt="Схемаи лоиҳа" />
           ) : null}
         </div>
       )}

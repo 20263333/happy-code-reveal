@@ -8,6 +8,7 @@ import { ApartmentModal } from "@/components/kiosk/apartment-modal";
 import { Facade3dTab } from "@/components/3d/facade-3d-tab";
 import { ZoomableImage } from "@/components/kiosk/zoomable-image";
 import { cn } from "@/lib/utils";
+import { fixStorageUrl } from "@/lib/storage-url";
 
 const STATUS_COLOR: Record<string, string> = {
   empty: "bg-emerald-500 hover:bg-emerald-600",
@@ -120,7 +121,7 @@ export function KioskProjectView({ projectId, onBack }: { projectId: string; onB
           {view === "3d" ? (
             <div className="h-full min-h-[500px]">
               <Facade3dTab
-                modelUrl={signed3d?.url ?? null}
+                modelUrl={fixStorageUrl(signed3d?.url) ?? null}
                 apartments={(data.apartments ?? [])
                   .filter((a: any) => (data.floors ?? []).find((f: any) => f.id === a.floor_id && f.project_id === activeBlockId))
                   .map((a: any) => {
@@ -137,7 +138,7 @@ export function KioskProjectView({ projectId, onBack }: { projectId: string; onB
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : signedScheme?.url ? (
-                <ZoomableImage src={signedScheme.url} alt="Схемаи лоиҳа" />
+                <ZoomableImage src={fixStorageUrl(signedScheme.url)!} alt="Схемаи лоиҳа" />
               ) : (
                 <div className="h-full flex items-center justify-center text-muted-foreground text-lg">
                   Схема бор карда нашудааст
