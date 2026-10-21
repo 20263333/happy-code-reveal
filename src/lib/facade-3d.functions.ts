@@ -146,7 +146,7 @@ export const getProjectSchemeSignedUrl = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ project_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { data: project } = await supabase
+    const { data: project } = await (supabase as any)
       .from("projects")
       .select("scheme_image_path")
       .eq("id", data.project_id)
