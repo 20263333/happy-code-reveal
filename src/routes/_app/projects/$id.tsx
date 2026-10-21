@@ -1,4 +1,5 @@
 import { uuid } from "@/lib/uuid";
+import { fixStorageUrl } from "@/lib/storage-url";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -114,7 +115,14 @@ function Facade3dSection({
 }
 
 export const Route = createFileRoute("/_app/projects/$id")({
-  head: () => ({ meta: [{ title: "Проект — Binosoz.tj" }] }),
+  head: () => ({ meta: [
+    { title: "Проект — Binosoz.tj" },
+    { name: "description", content: "Лоиҳаи сохтмонӣ: блокҳо, хонаҳо, схемаҳо, фурӯш ва пардохтҳо дар Binosoz.tj." },
+    { property: "og:title", content: "Проект — Binosoz.tj" },
+    { property: "og:description", content: "Маълумоти лоиҳаи сохтмонӣ, схемаҳои хонаҳо ва идоракунии фурӯш." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary_large_image" },
+  ] }),
   validateSearch: (s: Record<string, unknown>): { tab?: string } =>
     typeof s.tab === "string" ? { tab: s.tab } : {},
   component: ProjectDetail,
@@ -739,7 +747,7 @@ function ApartmentDetailDialog({ apt, canEdit, onClose }: any) {
   const [tourPaths, setTourPaths] = useState<string[]>(apt.tour_media_paths ?? []);
   const totalPrice = Math.round(Number(area || 0) * Number(pricePerSqm || 0) * 100) / 100;
 
-  const { data: planUrl } = useQuery({
+  const { data: signedPlanUrl } = useQuery({
     queryKey: ["apt-plan-url", apt.id, apt.plan_image_path],
     queryFn: async () => {
       if (!apt.plan_image_path) return null;
@@ -748,6 +756,7 @@ function ApartmentDetailDialog({ apt, canEdit, onClose }: any) {
     },
     enabled: !!apt.plan_image_path,
   });
+  const planUrl = fixStorageUrl(signedPlanUrl);
 
   const save = useMutation({
     mutationFn: async () => {
