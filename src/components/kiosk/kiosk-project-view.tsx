@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Loader2, Box, LayoutGrid } from "lucide-react";
+import { ArrowLeft, Loader2, Box, LayoutGrid, Map } from "lucide-react";
 import { kioskGetProject } from "@/lib/kiosk.functions";
-import { getProject3dSignedUrl } from "@/lib/facade-3d.functions";
+import { getProject3dSignedUrl, getProjectSchemeSignedUrl } from "@/lib/facade-3d.functions";
 import { ApartmentModal } from "@/components/kiosk/apartment-modal";
 import { Facade3dTab } from "@/components/3d/facade-3d-tab";
+import { ZoomableImage } from "@/components/kiosk/zoomable-image";
 import { cn } from "@/lib/utils";
 
 const STATUS_COLOR: Record<string, string> = {
@@ -26,7 +27,7 @@ export function KioskProjectView({ projectId, onBack }: { projectId: string; onB
 
   const [blockId, setBlockId] = useState<string | null>(null);
   const [selectedApt, setSelectedApt] = useState<any>(null);
-  const [view, setView] = useState<"floors" | "3d">("floors");
+  const [view, setView] = useState<"floors" | "3d" | "scheme">("floors");
 
   const activeBlockId = blockId ?? data?.blocks?.[0]?.id ?? null;
 
@@ -34,6 +35,12 @@ export function KioskProjectView({ projectId, onBack }: { projectId: string; onB
     queryKey: ["kiosk-3d", activeBlockId],
     queryFn: () => signFn({ data: { project_id: activeBlockId! } }),
     enabled: !!activeBlockId && view === "3d",
+  });
+  const schemeSignFn = useServerFn(getProjectSchemeSignedUrl);
+  const { data: signedScheme, isFetching: schemeLoading } = useQuery({
+    queryKey: ["kiosk-scheme", activeBlockId],
+    queryFn: () => schemeSignFn({ data: { project_id: activeBlockId! } }),
+    enabled: !!activeBlockId && view === "scheme",
   });
   const floors = useMemo(
     () => (data?.floors ?? [])
