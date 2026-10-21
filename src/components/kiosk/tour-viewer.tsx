@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2 } from "lucide-react";
 import { kioskSignedUrl } from "@/lib/kiosk.functions";
+import { fixStorageUrl } from "@/lib/storage-url";
 
 type Props = {
   tourUrl?: string | null;
@@ -22,11 +23,12 @@ export function TourViewer({ tourUrl, tourMediaPaths }: Props) {
   const signFn = useServerFn(kioskSignedUrl);
   const firstPath = tourMediaPaths?.[0] ?? null;
 
-  const { data: signed, isLoading } = useQuery({
+  const { data: signedUrl, isLoading } = useQuery({
     queryKey: ["kiosk-tour-signed", firstPath],
     queryFn: async () => firstPath ? (await signFn({ data: { bucket: "apartment-tours", path: firstPath } })).url : null,
     enabled: !!firstPath,
   });
+  const signed = fixStorageUrl(signedUrl);
 
   if (firstPath) {
     if (isLoading) {

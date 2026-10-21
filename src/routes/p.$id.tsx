@@ -6,6 +6,7 @@ import { Home, MapPin, Phone, Building2, CheckCircle2, X, Box, LayoutGrid } from
 import { getPublicShowcase } from "@/lib/showcase.functions";
 import { getPublic3dSignedUrl } from "@/lib/facade-3d.functions";
 import { Facade3dTab } from "@/components/3d/facade-3d-tab";
+import { fixStorageUrl } from "@/lib/storage-url";
 
 export const Route = createFileRoute("/p/$id")({
   head: ({ params }) => ({
@@ -274,7 +275,7 @@ function PublicShowcase() {
             </div>
             <div className="bg-muted/30">
               {selectedApt.plan_url ? (
-                <img src={selectedApt.plan_url} alt={`Схема планировки квартиры № ${selectedApt.apartment_number}`} className="max-h-[70vh] w-full object-contain" />
+                <img src={fixStorageUrl(selectedApt.plan_url)} alt={`Схема планировки квартиры № ${selectedApt.apartment_number}`} className="max-h-[70vh] w-full object-contain" />
               ) : (
                 <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
                   Схема нест
