@@ -3296,6 +3296,7 @@ export type Database = {
           name: string
           parent_id: string | null
           public_showcase: boolean
+          scheme_image_path: string | null
           show_prices: boolean
           status: Database["public"]["Enums"]["project_status"]
           updated_at: string
@@ -3313,6 +3314,7 @@ export type Database = {
           name: string
           parent_id?: string | null
           public_showcase?: boolean
+          scheme_image_path?: string | null
           show_prices?: boolean
           status?: Database["public"]["Enums"]["project_status"]
           updated_at?: string
@@ -3330,6 +3332,7 @@ export type Database = {
           name?: string
           parent_id?: string | null
           public_showcase?: boolean
+          scheme_image_path?: string | null
           show_prices?: boolean
           status?: Database["public"]["Enums"]["project_status"]
           updated_at?: string
