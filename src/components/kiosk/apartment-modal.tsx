@@ -13,6 +13,7 @@ import { KioskSaleFlow } from "./kiosk-sale-flow";
 import { usePrefs } from "@/lib/preferences";
 import { openPrintWindow, esc } from "@/lib/print";
 import { amountToTajikWords } from "@/lib/num-to-words";
+import { fixStorageUrl } from "@/lib/storage-url";
 
 type View = "overview" | "tour" | "sale" | "contract";
 
@@ -40,13 +41,15 @@ export function ApartmentModal({
   const getTemplateFn = useServerFn(kioskGetContractTemplate);
   const { formatMoney } = usePrefs();
 
-  const { data: planUrl } = useQuery({
+  const { data: signedPlanUrl } = useQuery({
     queryKey: ["kiosk-plan-url", apartment.plan_image_path],
     queryFn: async () => apartment.plan_image_path
       ? (await signFn({ data: { bucket: "apartment-plans", path: apartment.plan_image_path } })).url
       : null,
     enabled: !!apartment.plan_image_path,
   });
+  // Normalize at render time too, including URLs already held in the query cache.
+  const planUrl = fixStorageUrl(signedPlanUrl);
 
   const isSold = apartment.status === "sold" || apartment.status === "installment";
   const { data: saleData } = useQuery({
