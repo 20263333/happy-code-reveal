@@ -304,6 +304,15 @@ ALTER TABLE public.company_kiosk_secrets ADD COLUMN IF NOT EXISTS kiosk_pin_hash
 ALTER TABLE public.company_kiosk_secrets ADD COLUMN IF NOT EXISTS kiosk_token uuid DEFAULT gen_random_uuid();
 ALTER TABLE public.company_kiosk_secrets ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 ALTER TABLE public.company_kiosk_secrets ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'company_kiosk_secrets_pkey') THEN
+    ALTER TABLE public.company_kiosk_secrets ADD CONSTRAINT company_kiosk_secrets_pkey PRIMARY KEY (company_id);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'company_kiosk_access_company_id_user_id_key') THEN
+    ALTER TABLE public.company_kiosk_access ADD CONSTRAINT company_kiosk_access_company_id_user_id_key UNIQUE (company_id, user_id);
+  END IF;
+END $$;
 ALTER TABLE public.company_requests ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid();
 ALTER TABLE public.company_requests ADD COLUMN IF NOT EXISTS user_id uuid;
 ALTER TABLE public.company_requests ADD COLUMN IF NOT EXISTS email text;
