@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Loader2, Box, LayoutGrid, Map } from "lucide-react";
+import { ArrowLeft, Loader2, Box, LayoutGrid, Map as MapIcon } from "lucide-react";
 import { kioskGetProject } from "@/lib/kiosk.functions";
 import { getProject3dSignedUrl, getProjectSchemeSignedUrl } from "@/lib/facade-3d.functions";
 import { ApartmentModal } from "@/components/kiosk/apartment-modal";
@@ -85,7 +85,7 @@ export function KioskProjectView({ projectId, onBack }: { projectId: string; onB
               <Box className="h-3.5 w-3.5" /> 3D фасад
             </button>
             <button onClick={() => setView("scheme")} className={cn("px-3 py-1.5 text-xs font-medium inline-flex items-center gap-1", view === "scheme" ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted")}>
-              <Map className="h-3.5 w-3.5" /> Схема
+              <MapIcon className="h-3.5 w-3.5" /> Схема
             </button>
           </div>
           <div className="flex items-center gap-2 text-xs">
