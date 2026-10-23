@@ -39,6 +39,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { useAppLogo } from "@/lib/app-logos";
+import { cn } from "@/lib/utils";
 import {
   Sidebar,
   SidebarContent,
