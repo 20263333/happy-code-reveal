@@ -24,6 +24,8 @@ export const Route = createFileRoute("/auth")({
       { property: "og:title", content: "Вход в Binosoz.tj" },
       { property: "og:description", content: "Доступ для владельцев строительных компаний и сотрудников: Google-вход и заявка на регистрацию." },
       { property: "og:url", content: "https://binosoz.tj/auth" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [{ rel: "canonical", href: "https://binosoz.tj/auth" }],
   }),
@@ -122,7 +124,7 @@ function AuthPage() {
       </div>
       <div className="relative hidden bg-sidebar p-12 text-sidebar-foreground lg:flex lg:flex-col lg:justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white overflow-hidden">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-transparent">
             <img src={logoUrl} alt="Binosoz.tj" className="h-full w-full object-contain" />
           </div>
           <span className="font-display text-lg font-semibold">Binosoz.tj</span>
