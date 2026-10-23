@@ -39,6 +39,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { useAppLogo } from "@/lib/app-logos";
+import { cn } from "@/lib/utils";
 import {
   Sidebar,
   SidebarContent,
@@ -439,7 +440,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border px-3 py-4">
         <Link to="/" onClick={closeMobile} className="flex items-center gap-3 min-w-0">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white overflow-hidden">
+          <div className={cn("flex shrink-0 items-center justify-center overflow-hidden rounded-md bg-sidebar", collapsed ? "h-8 w-8" : "h-20 w-20")}>
             <img src={faviconUrl} alt="Binosoz.tj" className="h-full w-full object-contain" />
           </div>
           {!collapsed && (

@@ -1,15 +1,15 @@
 import { fixStorageUrl } from "@/lib/storage-url";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import platformLogo from "@/assets/platform-logo.png";
+import platformLogo from "@/assets/binosoz-logo.png.asset.json";
 
 export type LogoSlot = "light" | "dark" | "kiosk";
 export type AppLogos = Partial<Record<LogoSlot, { path: string; url: string }>>;
 
 export const LOGO_FALLBACK: Record<LogoSlot, string> = {
-  light: platformLogo,
-  dark: platformLogo,
-  kiosk: platformLogo,
+  light: platformLogo.url,
+  dark: platformLogo.url,
+  kiosk: platformLogo.url,
 };
 
 let cache: AppLogos | null = null;
