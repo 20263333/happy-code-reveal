@@ -134,6 +134,11 @@ function Reveal({ children, className = "", direction = "up" }: { children: Reac
     if (!node) return;
     const show = () => { node.dataset.visible = "true"; };
     if (typeof IntersectionObserver === "undefined") { show(); return; }
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || node.getBoundingClientRect().top < window.innerHeight) {
+      show();
+      return;
+    }
+    node.dataset.visible = "false";
     const observer = new IntersectionObserver(([entry]) => {
       if (entry?.isIntersecting) {
         show();
