@@ -132,14 +132,18 @@ function Reveal({ children, className = "", direction = "up" }: { children: Reac
   useEffect(() => {
     const node = ref.current;
     if (!node) return;
+    const show = () => { node.dataset.visible = "true"; };
+    if (typeof IntersectionObserver === "undefined") { show(); return; }
     const observer = new IntersectionObserver(([entry]) => {
       if (entry?.isIntersecting) {
-        node.dataset.visible = "true";
+        show();
         observer.disconnect();
       }
     }, { threshold: 0.12 });
     observer.observe(node);
-    return () => observer.disconnect();
+    // Fallback: never leave content hidden if the observer never fires.
+    const timer = window.setTimeout(show, 2500);
+    return () => { observer.disconnect(); window.clearTimeout(timer); };
   }, []);
   return <div ref={ref} data-direction={direction} className={`bp-reveal ${className}`}>{children}</div>;
 }
