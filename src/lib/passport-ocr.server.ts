@@ -62,7 +62,9 @@ type OcrProvider = {
 function resolveOcrProvider(): OcrProvider | null {
   const forced = process.env.AI_PROVIDER?.trim().toLowerCase();
   const openaiKeyPref = process.env.OPENAI_API_KEY?.trim();
-  const preferOpenAI = forced === "openai" && !!openaiKeyPref;
+  // Passport scanning uses the saved OpenAI key by default, even when a
+  // managed Lovable key is also present. Explicit provider overrides remain.
+  const preferOpenAI = !!openaiKeyPref && (!forced || forced === "openai");
   const lovableKey = process.env.LOVABLE_API_KEY?.trim() || process.env.LOVABLE_AI_GATEWAY_KEY?.trim();
   if (!preferOpenAI && lovableKey) {
     return {
@@ -118,8 +120,8 @@ export function assertPassportOcrConfigured() {
       provider: "Lovable AI Gateway",
       model: FLASH_MODEL,
       stage: "configuration",
-      reason: "LOVABLE_API_KEY is empty on this server. A separately hosted VPS does not receive Lovable Cloud secrets automatically.",
-    }, "Сканери AI дар сервер танзим нашудааст: калиди Lovable дар VPS нест.");
+      reason: "No OCR provider configured. Separately hosted servers do not receive Cloud secrets automatically.",
+    }, "Сканери паспорт танзим нашудааст. Калиди OpenAI-ро дар танзимоти махфии сервер сабт кунед.");
   }
 }
 
@@ -535,8 +537,8 @@ export async function extractPassportFromImages(data: PassportOcrInput): Promise
       provider: "Lovable AI Gateway",
       model: FLASH_MODEL,
       stage: "configuration",
-      reason: "LOVABLE_API_KEY is empty on this server. A separately hosted VPS does not receive Lovable Cloud secrets automatically.",
-    }, "Сканери AI дар сервер танзим нашудааст: калиди Lovable дар VPS нест.");
+      reason: "No OCR provider configured. Separately hosted servers do not receive Cloud secrets automatically.",
+    }, "Сканери паспорт танзим нашудааст. Калиди OpenAI-ро дар танзимоти махфии сервер сабт кунед.");
   }
 
 
