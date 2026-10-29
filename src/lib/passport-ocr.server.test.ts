@@ -1,4 +1,5 @@
-import { afterEach, expect, test } from "bun:test";
+import { afterEach, test } from "node:test";
+import assert from "node:assert/strict";
 import { extractPassportFromImages } from "./passport-ocr.server";
 
 const savedEnv = { ...process.env };
@@ -29,11 +30,11 @@ test("passport OCR uses OpenAI when both provider credentials are configured", a
   }) as typeof fetch;
 
   const result = await extractPassportFromImages({ front: "data:image/png;base64,dGVzdA==" });
-  expect(calls).toEqual([
+  assert.deepEqual(calls, [
     { url: "https://api.openai.com/v1/chat/completions", model: "gpt-4o-mini" },
     { url: "https://api.openai.com/v1/chat/completions", model: "gpt-4o" },
   ]);
-  expect(result.first_name).toBe("Намуна");
-  expect(result.passport_series).toBe("A");
-  expect(result.passport_number).toBe("01234567");
+  assert.equal(result.first_name, "Намуна");
+  assert.equal(result.passport_series, "A");
+  assert.equal(result.passport_number, "01234567");
 });
