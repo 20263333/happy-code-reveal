@@ -157,7 +157,9 @@ export function PassportCapture({ onExtracted, compact, mode = "auth" }: Props) 
                     ? "Хизматрасонии OCR ҳоло танзим нашудааст."
                     : reason
                       ? `${PASSPORT_RECOGNITION_ERROR} (${reason.slice(0, 160)})`
-                      : PASSPORT_RECOGNITION_ERROR;
+                      : msg && !msg.includes("OCR_DEBUG:") && msg !== PASSPORT_RECOGNITION_ERROR
+                        ? `${PASSPORT_RECOGNITION_ERROR} (${msg.slice(0, 160)})`
+                        : PASSPORT_RECOGNITION_ERROR;
       toast.error(userMessage);
 
     } finally {

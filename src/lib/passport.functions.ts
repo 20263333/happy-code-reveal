@@ -27,15 +27,19 @@ export const extractPassport = createServerFn({ method: "POST" })
       .eq("owner_user_id", userId)
       .maybeSingle();
     const companyId = (prof as any)?.company_id ?? (owned as any)?.id;
-    if (!companyId) throw new Error("Ширкат ёфт нашуд");
+    if (!companyId) {
+      console.error("[passport-ocr] company not found for user");
+      throw new Error("Ширкат ёфт нашуд");
+    }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await (supabaseAdmin as any).rpc("consume_scan_credit", {
       _company_id: companyId,
     });
     if (error) {
+      console.error("[passport-ocr] scan credit check failed", { message: error.message });
       if (error.message?.includes("no_scan_credits")) throw new Error("no_scan_credits");
-      throw new Error(error.message);
+      throw new Error(`Кредити сканер: ${error.message}`);
     }
 
     return extractPassportFromImages(data);
