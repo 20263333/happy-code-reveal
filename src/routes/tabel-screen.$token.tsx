@@ -12,6 +12,7 @@ import { verifyWorkerFace } from "@/lib/face-id.functions";
 import { FaceCaptureDialog } from "@/components/face-capture-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/tabel-screen/$token")({
   head: () => ({ meta: [
@@ -111,6 +112,7 @@ function TabelScreen() {
 }
 
 function TabelBoard({ onLock }: { onLock: () => void }) {
+  const { tr } = useT();
   const workersFn = useServerFn(tabelListWorkers);
   const todayFn = useServerFn(tabelListToday);
   const markFn = useServerFn(tabelMark);
@@ -191,7 +193,7 @@ function TabelBoard({ onLock }: { onLock: () => void }) {
         face_confidence: res.confidence ?? null,
       });
     } catch (e: any) {
-      toast.error(e.message ?? "Хатогӣ дар тасдиқи рӯй");
+      toast.error(tr(e.message ?? "Хатогӣ дар тасдиқи рӯй"));
     } finally {
       setVerifying(false);
     }

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { providerFailure } from "./ai-service-errors.server";
 
 const InputSchema = z.object({
   pages: z.array(z.string().min(10)).min(1).max(8),
@@ -102,12 +103,7 @@ export const extractContract = createServerFn({ method: "POST" })
       body: JSON.stringify(body),
     });
 
-    if (res.status === 429) throw new Error("Лимит запросов исчерпан, попробуйте позже");
-    if (res.status === 402) throw new Error("Закончились AI-кредиты. Пополните в настройках Lovable.");
-    if (!res.ok) {
-      const t = await res.text();
-      throw new Error(`AI Gateway: ${res.status} ${t.slice(0, 200)}`);
-    }
+    if (!res.ok) throw await providerFailure(res);
     const json: any = await res.json();
     const text: string = json?.choices?.[0]?.message?.content ?? "{}";
 

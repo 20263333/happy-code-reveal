@@ -29,6 +29,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { structurePassport } from "@/lib/passport-structure.functions";
+import { isAiServiceFailure } from "@/lib/ai-service-errors";
+import { useT } from "@/lib/i18n";
 import { parseMrz } from "@/lib/mrz";
 import { buildPrefill, dataUrlToBlob, setPassportPrefill } from "@/lib/passport-prefill";
 import { getOcrSource } from "@/lib/passport-scan-store";
@@ -97,6 +99,7 @@ const DOCUMENT: PassportField[] = [
 ];
 
 function PassportReviewPage() {
+  const { tr } = useT();
   const navigate = useNavigate();
   const run = useServerFn(structurePassport);
   const { companyId } = useAuth();
@@ -135,7 +138,7 @@ function PassportReviewPage() {
         setEdited(new Set());
         setPassportResult(res);
       } catch (e) {
-        setError(e instanceof Error && /лимит|кредит/i.test(e.message) ? e.message : "Не удалось обработать паспорт.");
+        setError(e instanceof Error && (isAiServiceFailure(e) || /лимит|кредит/i.test(e.message)) ? e.message : "Не удалось обработать паспорт.");
       } finally {
         setLoading(false);
       }
@@ -321,10 +324,10 @@ function PassportReviewPage() {
       <main className="flex min-h-screen items-center justify-center bg-background px-6">
         <Card className="w-full max-w-md rounded-2xl border-destructive/40 bg-card/90 p-7 text-center shadow-lg">
           <ShieldAlert className="mx-auto h-12 w-12 text-destructive" />
-          <h1 className="mt-4 text-lg font-semibold">{error}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <h1 className="mt-4 text-lg font-semibold">{tr(error)}</h1>
+          {!isAiServiceFailure({ message: error }) && <p className="mt-2 text-sm text-muted-foreground">
             Текст распознавания оказался недостаточно чётким для извлечения данных.
-          </p>
+          </p>}
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             <Button variant="outline" className="h-12 rounded-xl" onClick={() => void load()}>
               <RotateCcw className="mr-2 h-4 w-4" />

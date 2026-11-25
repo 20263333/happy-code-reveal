@@ -13,6 +13,8 @@ import {
 import { kioskExtractPassport } from "@/lib/kiosk.functions";
 import { toast } from "sonner";
 import { compressImageFile } from "@/lib/image-compress";
+import { isAiServiceFailure } from "@/lib/ai-service-errors";
+import { useT } from "@/lib/i18n";
 
 type Props = {
   onExtracted?: (
@@ -52,6 +54,7 @@ function waitForUi() {
 }
 
 export function PassportCapture({ onExtracted, compact, mode = "auth" }: Props) {
+  const { tr } = useT();
   const [front, setFront] = useState<File | null>(null);
   const [back, setBack] = useState<File | null>(null);
   const [frontUrl, setFrontUrl] = useState<string | null>(null);
@@ -112,6 +115,7 @@ export function PassportCapture({ onExtracted, compact, mode = "auth" }: Props) 
           data = result as PassportExtractResult;
           break;
         } catch (error) {
+          if (isAiServiceFailure(error)) throw error;
           lastError = error;
           console.warn("[passport-capture] OCR attempt failed", {
             attempt,
@@ -138,6 +142,7 @@ export function PassportCapture({ onExtracted, compact, mode = "auth" }: Props) 
       toast.success("Completed.");
     } catch (e: any) {
       const msg = String(e?.message ?? "");
+      if (isAiServiceFailure(e)) { toast.error(tr(msg)); return; }
       const ocrDebug = parseOcrDebug(e);
       console.error("[passport-capture] OCR failed", { mode, message: msg, ocrDebug });
       const reason = typeof ocrDebug?.debug?.reason === "string" ? ocrDebug.debug.reason : "";

@@ -7,6 +7,7 @@ import { PageHeader, EmptyState, StatCard } from "@/components/page-header";
 import { ExcelImportWarehouse } from "@/components/excel-import-warehouse";
 import { compressImageFile } from "@/lib/image-compress";
 import { scanInvoiceItems } from "@/lib/warehouse-ocr.functions";
+import { isAiServiceFailure } from "@/lib/ai-service-errors";
 import { checkLowStock } from "@/lib/supply.functions";
 
 import { Badge } from "@/components/ui/badge";
@@ -51,7 +52,14 @@ async function uploadOcrImage(
 }
 
 export const Route = createFileRoute("/_app/warehouse")({
-  head: () => ({ meta: [{ title: "Склад — Binosoz.tj" }] }),
+  head: () => ({ meta: [
+    { title: "Склад — Binosoz.tj" },
+    { name: "description", content: "Идоракунии мавод, чеки харид, воридот ва содироти анбори ширкат." },
+    { property: "og:title", content: "Склад — Binosoz.tj" },
+    { property: "og:description", content: "Идоракунии мавод, чеки харид, воридот ва содироти анбори ширкат." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary_large_image" },
+  ] }),
   component: WarehousePage,
 });
 
@@ -569,6 +577,7 @@ function ReceiptDialog({ companyId, userId, suppliers, receipts, onDone, stockIt
             ok = true;
           } catch (e) {
             lastErr = e;
+            if (isAiServiceFailure(e)) throw e;
             // Шабакаи планшет баъзан дархости аввалро мебандад — як бор такрор мекунем.
             if (attempt === 0) await new Promise((r) => setTimeout(r, 1200));
           }
@@ -586,7 +595,7 @@ function ReceiptDialog({ companyId, userId, suppliers, receipts, onDone, stockIt
       toast.error(
         message.includes("403") || message.includes("Forbidden")
           ? tr("Сурат фиристода нашуд. Интернетро санҷед ва аз нав сурат гиред")
-          : message || tr("Сканер накладнойро хонда натавонист"),
+          : tr(message || "Сканер накладнойро хонда натавонист"),
       );
 
     } finally {

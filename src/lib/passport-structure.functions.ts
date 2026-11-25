@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { requireAiProvider } from "./ai-provider.server";
+import { providerFailure } from "./ai-service-errors.server";
 import {
   PASSPORT_FIELDS,
   emptyPassportData,
@@ -76,9 +77,7 @@ export const structurePassport = createServerFn({ method: "POST" })
       }),
     });
 
-    if (res.status === 429) throw new Error("Лимит запросов AI превышен, попробуйте позже");
-    if (res.status === 402) throw new Error("Кредиты AI исчерпаны");
-    if (!res.ok) throw new Error(`AI: ${res.status} ${(await res.text()).slice(0, 200)}`);
+    if (!res.ok) throw await providerFailure(res);
 
     const json: any = await res.json();
     const raw = json?.choices?.[0]?.message?.content ?? "";

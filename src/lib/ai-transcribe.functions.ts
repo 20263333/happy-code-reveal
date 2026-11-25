@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { requireAiProvider } from "./ai-provider.server";
+import { providerFailure } from "./ai-service-errors.server";
 
 // Client sends { base64, mime } — we forward as multipart to Lovable AI STT.
 export const transcribeAudio = createServerFn({ method: "POST" })
@@ -30,12 +31,7 @@ export const transcribeAudio = createServerFn({ method: "POST" })
       headers: provider.headers,
       body: fd,
     });
-    if (res.status === 429) throw new Error("Лимит зиёд шуд, каме сабр кунед");
-    if (res.status === 402) throw new Error("Кредити AI Gateway тамом шуд");
-    if (!res.ok) {
-      const t = await res.text();
-      throw new Error(`STT: ${res.status} ${t.slice(0, 200)}`);
-    }
+    if (!res.ok) throw await providerFailure(res);
     const json: any = await res.json();
     return { text: (json?.text ?? "").toString() };
   });

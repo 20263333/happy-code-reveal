@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { providerFailure } from "./ai-service-errors.server";
 
 const FACE_MODEL = "openai/gpt-5.4-mini";
 const MIN_CONFIDENCE = 0.75;
@@ -53,10 +54,8 @@ async function gatewayCompareFaces(enrolledDataUrl: string, capturedDataUrl: str
       body: JSON.stringify(body),
       signal: controller.signal,
     });
+    if (!res.ok) throw await providerFailure(res);
     const text = await res.text().catch(() => "");
-    if (!res.ok) {
-      throw new Error(`AI Gateway error ${res.status}: ${text.slice(0, 200)}`);
-    }
     const json = text ? JSON.parse(text) : null;
     const content = json?.choices?.[0]?.message?.content ?? "";
     const parsed = JSON.parse(content || "{}");

@@ -102,7 +102,7 @@ export function AiAssistant() {
           if (text) setInput((prev) => (prev ? prev + " " : "") + text);
           else toast.error("Матн ёфт нашуд");
         } catch (e: any) {
-          toast.error(e?.message ?? "Хатогии транскрипсия");
+          toast.error(tr(e?.message ?? "Хатогии транскрипсия"));
         } finally {
           setTranscribing(false);
         }
@@ -164,11 +164,14 @@ export function AiAssistant() {
     },
     onError: (e: any, _vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(historyKey, ctx.prev);
+      setInput(current => current || _vars);
+      qc.invalidateQueries({ queryKey: historyKey });
+      qc.invalidateQueries({ queryKey: actionKey });
       const msg = e?.message ?? "";
       if (msg.includes("no_credits")) {
         toast.error("Кредитҳо тамом шуданд. Пакет харидорӣ кунед: /ai-credits");
       } else {
-        toast.error(msg || "Хатогӣ");
+        toast.error(tr(msg || "Хатогӣ"));
       }
     },
   });
@@ -267,6 +270,7 @@ export function AiAssistant() {
       </ScrollArea>
 
       <div className="border-t border-border p-3">
+        {send.error && <p role="alert" className="mb-2 break-words text-xs text-destructive">{tr(send.error.message)}</p>}
         {credits && totalLeft === 0 && (
           <div className="mb-2 rounded-md bg-destructive/10 p-2 text-xs text-destructive">
             Кредитҳо тамом шуданд. Пакет харидорӣ кунед: <a href="/ai-credits" className="underline">AI Кредитҳо</a>

@@ -1,3 +1,5 @@
+import { providerFailure, AiServiceError } from "./ai-service-errors.server";
+
 export type PassportOcrInput = {
   front: string;
   back?: string | null;
@@ -43,7 +45,7 @@ function asDataUrl(s: string): string {
   return s.startsWith("data:") ? s : `data:image/jpeg;base64,${s}`;
 }
 
-const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
+const RETRYABLE_STATUSES = new Set([500, 502, 503, 504]);
 const OCR_ERROR_MESSAGE = "Passport could not be recognized. Please take a clearer photo.";
 // Gemini reads ID documents reliably and does not refuse personal documents,
 // so it is the primary OCR model; the OpenAI model stays as a second opinion.
@@ -435,6 +437,8 @@ async function callGatewayJson(provider: OcrProvider, body: unknown, stage: Pass
       throw toDebugError(lastDebug);
     }
 
+    if (res.status === 429 || res.status === 402) throw await providerFailure(res);
+
     const text = await res.text().catch((error) => {
       lastDebug = {
         provider: provider.name,
@@ -643,6 +647,7 @@ export async function extractPassportFromImages(data: PassportOcrInput): Promise
       try {
         direct = await callGatewayJson(provider, buildDirectBody(undefined, model), "image_extraction", imageMimes);
       } catch (error) {
+        if (error instanceof AiServiceError) throw error;
         passportOcrLog("direct extraction failed", { model, reason: error instanceof Error ? error.message.slice(0, 300) : String(error) });
         if (model === models[models.length - 1]) throw error;
         continue;

@@ -6,12 +6,14 @@ import { useServerFn } from "@tanstack/react-start";
 import { extractContract, type ContractExtractResult } from "@/lib/contract.functions";
 import { toast } from "sonner";
 import { compressImageFile } from "@/lib/image-compress";
+import { useT } from "@/lib/i18n";
 
 type Props = {
   onExtracted?: (data: ContractExtractResult) => void;
 };
 
 export function ContractCapture({ onExtracted }: Props) {
+  const { tr } = useT();
   const [files, setFiles] = useState<File[]>([]);
   const [urls, setUrls] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -42,7 +44,7 @@ export function ContractCapture({ onExtracted }: Props) {
       onExtracted?.(data);
       toast.success("Договор распознан — проверьте поля");
     } catch (e: any) {
-      toast.error(e?.message ?? "Не удалось распознать договор");
+      toast.error(tr(e?.message ?? "Не удалось распознать договор"));
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { AiServiceError, providerFailure } from "./ai-service-errors.server";
 
 export type ReceiptDocsScanResult = {
   check_number: string | null;
@@ -45,14 +46,6 @@ function resolveProvider(): OcrProvider {
   throw new Error("Сканер танзим нашудааст (LOVABLE_API_KEY ё OPENAI_API_KEY)");
 }
 
-function gatewayError(status: number, text: string): Error {
-  if (status === 429) return new Error("Дархостҳо аз ҳад зиёд — каме сабр кунед");
-  if (status === 402) return new Error("Кредити AI тамом шуд");
-  if (status === 403) return new Error("Сурат қабул нашуд — интернетро санҷед ва сурати хурдтар/равшантар гиред");
-  const clean = text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-  return new Error(`AI Gateway: ${status} ${clean.slice(0, 200)}`);
-}
-
 function asDataUrl(s: string): string {
   return s.startsWith("data:") ? s : `data:image/jpeg;base64,${s}`;
 }
@@ -95,7 +88,8 @@ async function postGateway(provider: OcrProvider, payload: unknown): Promise<Res
     if (res.status !== 401 && res.status !== 403) return res;
     last = res;
   }
-  return last!;
+  if (!last) throw new Error("Сканер танзим нашудааст");
+  return last;
 }
 
 async function callGateway(provider: OcrProvider, model: string, content: any[]): Promise<string> {
@@ -131,10 +125,7 @@ async function callGateway(provider: OcrProvider, model: string, content: any[])
         },
       },
   }));
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw gatewayError(res.status, text);
-  }
+  if (!res.ok) throw await providerFailure(res);
   const json = await res.json();
   const out = json?.choices?.[0]?.message?.content;
   if (typeof out !== "string" || !out.trim()) throw new Error("Ҷавоби холӣ аз AI");
@@ -176,13 +167,17 @@ export const scanReceiptDocs = createServerFn({ method: "POST" })
     if (data.patent_image) content.push({ type: "image_url", image_url: { url: asDataUrl(data.patent_image) } });
 
     let raw: string;
+    const primaryModel = provider.models[0];
+    if (!primaryModel) throw new Error("Модели сканер танзим нашудааст");
     try {
-      raw = await callGateway(provider, provider.models[0]!, content);
-    } catch {
+      raw = await callGateway(provider, primaryModel, content);
+    } catch (error) {
+      if (error instanceof AiServiceError) throw error;
       try {
-        raw = await callGateway(provider, provider.models[1] ?? provider.models[0]!, content);
-      } catch {
-        raw = await callGateway(provider, provider.models[provider.models.length - 1]!, content);
+        raw = await callGateway(provider, provider.models[1] ?? primaryModel, content);
+      } catch (error) {
+        if (error instanceof AiServiceError) throw error;
+        raw = await callGateway(provider, provider.models[provider.models.length - 1] ?? primaryModel, content);
       }
     }
 
@@ -217,12 +212,6 @@ const ITEMS_SYSTEM =
   "keep brands, model codes and sizes exactly as printed. Normalize units to one of these values: " +
   "dona, kg, tonna, litr, metr, m2, m3, qop. Never invent rows. " +
   "Use 0 when a number is not readable.";
-
-class GatewayRequestError extends Error {
-  constructor(public readonly status: number, message: string) {
-    super(message);
-  }
-}
 
 async function callItemsGateway(provider: OcrProvider, model: string, content: any[]): Promise<string> {
   const res = await postGateway(provider, ({
@@ -261,10 +250,7 @@ async function callItemsGateway(provider: OcrProvider, model: string, content: a
         },
       },
   }));
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new GatewayRequestError(res.status, gatewayError(res.status, text).message);
-  }
+  if (!res.ok) throw await providerFailure(res);
   const json = await res.json();
   const out = json?.choices?.[0]?.message?.content;
   if (typeof out !== "string" || !out.trim()) throw new Error("Ҷавоби холӣ аз AI");
@@ -317,13 +303,8 @@ export const scanInvoiceItems = createServerFn({ method: "POST" })
         if (Array.isArray(p?.items) && p.items.length > 0) break;
       } catch (e) {
         lastErr = e;
-        // Танҳо 400/401/402 воқеан ниҳоӣ ҳастанд; 403/429/5xx бо модели дигар санҷида мешавад.
-        if (
-          e instanceof GatewayRequestError &&
-          (e.status === 400 || e.status === 401 || e.status === 402)
-        ) {
-          throw e;
-        }
+        // Service denials must not trigger automatic model retries.
+        if (e instanceof AiServiceError) throw e;
       }
     }
     if (!parsed) throw (lastErr instanceof Error ? lastErr : new Error("Сканер кор накард"));

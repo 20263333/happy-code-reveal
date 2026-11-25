@@ -10,4 +10,10 @@ export default {
   "AI-помощник": "AI assistant",
   "Очистить историю": "Clear history",
   "Напишите сообщение…": "Write a message…",
+  "Средства или лимит оплаты сервиса AI закончились. Пополните баланс или проверьте лимит расходов у провайдера AI. Подписка ChatGPT не оплачивает OpenAI API; кредиты Binosoz.tj учитываются отдельно.": "The AI service balance or spending allowance is exhausted. Check your AI provider's balance and spending limit. A ChatGPT subscription does not pay for OpenAI API usage; Binosoz.tj credits are separate.",
+  "Сервис AI временно ограничил частоту запросов. Подождите и отправьте сообщение позже.": "The AI service temporarily limited request frequency. Wait and send your message later.",
+  "Сервис AI вернул 429: ограничение запросов или оплаты. Повторите позже; если ошибка остаётся, проверьте баланс и лимиты провайдера AI.": "The AI service returned 429: a request or billing limit. Try later; if it persists, check your AI provider's balance and limits.",
+  "Сервис AI не принял ключ доступа. Проверьте настройки AI на сервере.": "The AI service rejected the access key. Check the server's AI configuration.",
+  "Сервис AI запретил этот запрос. Проверьте доступ к выбранной модели и ограничения аккаунта AI.": "The AI service denied this request. Check access to the selected model and the AI account's restrictions.",
+  "Сервис AI не завершил запрос. Автоматический повтор не выполнен; проверьте состояние сервиса перед новой отправкой.": "The AI service did not complete the request. It was not automatically resent; check the service status before sending again.",
 };

@@ -12,13 +12,22 @@ import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
 import { verifyWorkerFaceAuthed } from "@/lib/face-id.functions";
 import { FaceCaptureDialog } from "@/components/face-capture-dialog";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_app/tabel-kiosk")({
-  head: () => ({ meta: [{ title: "Табел-Kiosk — Binosoz.tj" }] }),
+  head: () => ({ meta: [
+    { title: "Табел-Kiosk — Binosoz.tj" },
+    { name: "description", content: "Қайд кардани ҳозирии коргарон ва санҷиши рӯй дар табели ширкат." },
+    { property: "og:title", content: "Табел-Kiosk — Binosoz.tj" },
+    { property: "og:description", content: "Қайд кардани ҳозирии коргарон ва санҷиши рӯй дар табели ширкат." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary_large_image" },
+  ] }),
   component: TabelKioskPage,
 });
 
 function TabelKioskPage() {
+  const { tr } = useT();
   const { companyId, isOwner, isAccountant, isManager } = useAuth();
   const canEdit = isOwner || isAccountant || isManager;
   const qc = useQueryClient();
@@ -124,7 +133,7 @@ function TabelKioskPage() {
         face_confidence: res.confidence ?? null,
       });
     } catch (e: any) {
-      toast.error(e.message ?? "Хатогӣ дар тасдиқи рӯй");
+      toast.error(tr(e.message ?? "Хатогӣ дар тасдиқи рӯй"));
     } finally {
       setVerifying(false);
     }

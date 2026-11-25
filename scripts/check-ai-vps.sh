@@ -13,23 +13,35 @@ source "$ENV_FILE"
 set +a
 
 KEY="${LOVABLE_API_KEY:-${LOVABLE_AI_GATEWAY_KEY:-}}"
-BODY='{"model":"google/gemini-3.8-flash","messages":[{"role":"user","content":"Return only this JSON: {\"ok\":true}"}],"response_format":{"type":"json_object"}}'
+FORCED="${AI_PROVIDER:-}"
+FORCED="${FORCED,,}"
+TARGET="${1:-ocr}"
+if [[ "$TARGET" != "ocr" && "$TARGET" != "chat" ]]; then
+  echo "Usage: bash scripts/check-ai-vps.sh [ocr|chat]"
+  exit 2
+fi
 TMP_FILE=$(mktemp)
 trap 'rm -f "$TMP_FILE"' EXIT
 
-if [[ -n "$KEY" ]]; then
-  URL='https://ai.gateway.lovable.dev/v1/chat/completions'
-  MODE="Lovable AI Gateway (direct key)"
-  AUTH_HEADERS=(-H "Lovable-API-Key: $KEY" -H 'X-Lovable-AIG-SDK: fetch')
-elif [[ -n "${AI_PROXY_URL:-}" && -n "${AI_PROXY_SECRET:-}" ]]; then
-  URL="$AI_PROXY_URL"
-  MODE="Lovable AI Proxy ($AI_PROXY_URL)"
-  AUTH_HEADERS=(-H "X-AI-Proxy-Secret: $AI_PROXY_SECRET")
-elif [[ -n "${OPENAI_API_KEY:-}" ]]; then
+if [[ -n "${OPENAI_API_KEY:-}" && ( "$FORCED" == "openai" || -z "$KEY" ) ]]; then
   URL='https://api.openai.com/v1/chat/completions'
   MODE="OpenAI (personal key)"
   AUTH_HEADERS=(-H "Authorization: Bearer $OPENAI_API_KEY")
-  BODY='{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Return only this JSON: {\"ok\":true}"}],"response_format":{"type":"json_object"}}'
+  if [[ "$TARGET" == "chat" ]]; then
+    MODEL="${OPENAI_CHAT_MODEL:-${OPENAI_OCR_MODEL_PRO:-gpt-4o}}"
+  else
+    MODEL="${OPENAI_OCR_MODEL:-gpt-4o-mini}"
+  fi
+elif [[ -n "$KEY" ]]; then
+  URL='https://ai.gateway.lovable.dev/v1/chat/completions'
+  MODE="Lovable AI Gateway (direct key)"
+  AUTH_HEADERS=(-H "Lovable-API-Key: $KEY" -H 'X-Lovable-AIG-SDK: fetch')
+  if [[ "$TARGET" == "chat" ]]; then MODEL='openai/gpt-5.4'; else MODEL='google/gemini-3.8-flash'; fi
+elif [[ -n "${AI_PROXY_URL:-}" && -n "${AI_PROXY_SECRET:-}" ]]; then
+  URL="$AI_PROXY_URL"
+  MODE="Lovable AI Proxy"
+  AUTH_HEADERS=(-H "X-AI-Proxy-Secret: $AI_PROXY_SECRET")
+  if [[ "$TARGET" == "chat" ]]; then MODEL='openai/gpt-5.4'; else MODEL='google/gemini-3.8-flash'; fi
 else
   echo "ERROR: no AI configuration found in $ENV_FILE"
   echo "Set AI_PROXY_URL + AI_PROXY_SECRET (recommended) or LOVABLE_API_KEY or OPENAI_API_KEY."
@@ -37,6 +49,12 @@ else
 fi
 
 echo "Mode: $MODE"
+echo "Model: $MODEL"
+BODY=$(python3 - "$MODEL" <<'PY'
+import json, sys
+print(json.dumps({"model": sys.argv[1], "messages": [{"role": "user", "content": "Return only this JSON: {\"ok\":true}"}], "response_format": {"type": "json_object"}}))
+PY
+)
 
 STATUS=$(curl -sS -o "$TMP_FILE" -w '%{http_code}' \
   "$URL" \
@@ -45,7 +63,7 @@ STATUS=$(curl -sS -o "$TMP_FILE" -w '%{http_code}' \
   --data "$BODY")
 
 if [[ "$STATUS" == "200" ]]; then
-  echo "OK: AI is reachable and the passport OCR model is available."
+  echo "OK: selected AI model responded."
   exit 0
 fi
 
@@ -54,8 +72,17 @@ python3 - "$TMP_FILE" <<'PY'
 import json, sys
 try:
     payload = json.load(open(sys.argv[1], encoding="utf-8"))
-    message = payload.get("error", {}).get("message") or payload.get("message") or "Unknown gateway error"
-    print(message)
+    error = payload.get("error", {})
+    error = error if isinstance(error, dict) else {}
+    codes = {str(error.get("code", "")), str(error.get("type", "")), str(payload.get("code", ""))}
+    quota = {"insufficient_quota", "billing_hard_limit_reached", "billing_not_active", "usage_limit_reached", "credit_balance_exhausted", "credits_exhausted", "insufficient_credits", "payment_required"}
+    rate = {"rate_limit_exceeded", "rate_limited", "rate_limit_error", "too_many_requests"}
+    if codes & quota:
+        print("Сабаб: маблағ ё лимити пардохти ҳисоби AI тамом шудааст. Ҳисоби хизматрасонии AI-ро пур кунед; обунаи ChatGPT ба OpenAI API маблағ намедиҳад.")
+    elif codes & rate:
+        print("Сабаб: маҳдудияти муваққатии шумораи дархостҳо. Каме сабр карда, баъдтар санҷед.")
+    else:
+        print("Сабаби дақиқ аз ҷавоб муайян нашуд. Ҳолат, маблағ ва лимити ҳисоби AI-ро санҷед.")
 except Exception:
     print("The endpoint returned a non-JSON error response.")
 PY
