@@ -10,91 +10,11 @@ const CreateProjectSchema = z.object({
   cover_url: z.string().max(500).optional().nullable(),
 });
 
-// Resolve the company the signed-in user belongs to. Every listing is scoped
-// to it, so one company never sees another company's data.
-async function resolveCompanyId(userId: string): Promise<string | null> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const admin = supabaseAdmin as any;
-  const [profRes, ownedRes] = await Promise.all([
-    admin.from("profiles").select("company_id").eq("id", userId).maybeSingle(),
-    admin.from("companies").select("id").eq("owner_user_id", userId).maybeSingle(),
-  ]);
-  return ((profRes.data as any)?.company_id as string | null) ?? ((ownedRes.data as any)?.id ?? null);
-}
-
 export const listProjects = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { userId, supabase } = context;
-    const companyId = await resolveCompanyId(userId);
-    // Read as the signed-in user. This keeps the owner page independent from
-    // the privileged server key and lets the database policies enforce access.
-    let rootsQuery = supabase
-      .from("projects")
-      .select("id, name, location, status, cover_url, created_at, company_id")
-      .is("parent_id", null)
-      .order("created_at", { ascending: true });
-    // Hard company scope: platform admins or stale access rows must never leak
-    // another company's projects into this page.
-    if (companyId) rootsQuery = rootsQuery.eq("company_id", companyId);
-    const { data: rootsData, error: rootsError } = await rootsQuery;
-    if (rootsError) throw new Error(rootsError.message);
-    const roots = (rootsData ?? []).filter((p: any) => !companyId || p.company_id === companyId);
-
-    const rootIds = roots.map((project) => project.id as string);
-    if (!rootIds.length) return [];
-
-
-    const { data: children, error: childrenError } = await supabase
-      .from("projects")
-      .select("id, parent_id")
-      .in("parent_id", rootIds);
-    if (childrenError) throw new Error(childrenError.message);
-
-    const childIds = (children ?? []).map((project: any) => project.id as string);
-    let apartments: any[] = [];
-    if (childIds.length) {
-      const { data, error } = await supabase
-        .from("apartments")
-        .select("project_id, status")
-        .in("project_id", childIds);
-      if (error) throw new Error(error.message);
-      apartments = data ?? [];
-    }
-
-    // Sign covers with the current user's storage access. A failed photo must
-    // never prevent the owner from opening the projects page.
-    const coverPaths = roots
-      .map((project: any) => project.cover_url as string | null)
-      .filter((url): url is string => !!url && !url.startsWith("http"));
-    const coverMap: Record<string, string> = {};
-    if (coverPaths.length) {
-      try {
-        const { data: signed } = await supabase.storage
-          .from("project-covers")
-          .createSignedUrls(coverPaths, 60 * 60 * 6);
-        for (const item of (signed ?? []) as any[]) {
-          if (item?.path && item?.signedUrl) coverMap[item.path] = item.signedUrl;
-        }
-      } catch {
-        // storage unavailable — the client signs the covers itself as a fallback
-      }
-    }
-
-    return roots.map((project) => ({
-      ...project,
-      cover_signed_url: typeof project.cover_url === "string" && project.cover_url
-        ? project.cover_url.startsWith("http")
-          ? project.cover_url
-          : (coverMap[project.cover_url] ?? null)
-        : null,
-      children: (children ?? [])
-        .filter((child: any) => child.parent_id === project.id)
-        .map((child: any) => ({
-          id: child.id,
-          apartments: apartments.filter((apartment: any) => apartment.project_id === child.id),
-        })),
-    }));
+    const { loadCompanyProjects } = await import("@/lib/projects-list.server");
+    return loadCompanyProjects(context.supabase, context.userId);
   });
 
 export const createProject = createServerFn({ method: "POST" })

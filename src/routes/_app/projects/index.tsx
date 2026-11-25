@@ -22,7 +22,14 @@ import { toast } from "sonner";
 
 
 export const Route = createFileRoute("/_app/projects/")({
-  head: () => ({ meta: [{ title: "Проекты — Binosoz.tj" }] }),
+  head: () => ({ meta: [
+    { title: "Проекты — Binosoz.tj" },
+    { name: "description", content: "Лоиҳаҳои ширкати сохтмонии шумо: маҷмааҳо, блокҳо ва хонаҳо дар Binosoz.tj." },
+    { property: "og:title", content: "Проекты — Binosoz.tj" },
+    { property: "og:description", content: "Идоракунии лоиҳаҳо, блокҳо ва хонаҳои ширкати сохтмонӣ." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: ProjectsList,
 });
 
@@ -77,6 +84,7 @@ function ProjectsList() {
         <div className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-lg border border-border bg-card px-4 text-center">
           <Building2 className="h-10 w-10 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">{tr("Не удалось загрузить проекты")}</p>
+          <p role="alert" className="max-w-lg break-words text-sm text-muted-foreground">{projectsQuery.error instanceof Error ? projectsQuery.error.message : tr("Ошибка")}</p>
           <Button variant="outline" onClick={() => projectsQuery.refetch()}>{tr("Повторить")}</Button>
         </div>
       ) : projects.length === 0 ? (
@@ -143,9 +151,9 @@ function ProjectsList() {
 
 
                     <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-xs">
-                      <span className="text-muted-foreground">{tr("Блоков:")} <b className="text-foreground">{blockCount}</b></span>
-                      <span className="text-muted-foreground">{tr("Квартир:")} <b className="text-foreground">{total}</b></span>
-                      <span className="text-success">{tr("Продано:")} <b>{sold}</b></span>
+                      <span className="text-muted-foreground">{tr("Блоков:")} <b className="text-foreground">{p.stats_available === false ? "—" : blockCount}</b></span>
+                      <span className="text-muted-foreground">{tr("Квартир:")} <b className="text-foreground">{p.stats_available === false ? "—" : total}</b></span>
+                      <span className="text-success">{tr("Продано:")} <b>{p.stats_available === false ? "—" : sold}</b></span>
                     </div>
                   </div>
                 </Link>

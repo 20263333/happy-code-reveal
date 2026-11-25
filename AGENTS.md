@@ -4,3 +4,4 @@
 - Normalize server-signed storage URLs with fixStorageUrl at browser consumption points, including cached kiosk media and print images, because VPS signing may return an internal origin.
 - Passport OCR resolves credentials only on the server and prioritizes configured OpenAI credentials by default; explicit provider overrides remain supported so hosted and VPS deployments can select their provider securely.
 - VPS scan-credit RPC repair is transactional and server-only, invoked by the migration sync script; preserve balances and lock the company row to prevent concurrent overspending.
+- Project listings resolve company identity with the authenticated client and always scope roots/blocks to that company; optional statistics and image failures cannot hide projects, and unavailable statistics are not shown as zero.
