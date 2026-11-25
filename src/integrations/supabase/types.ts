@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_action_requests: {
+        Row: {
+          arguments: Json
+          company_id: string
+          completed_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          preview: Json
+          result: Json | null
+          status: string
+          tool_name: string
+          user_id: string
+        }
+        Insert: {
+          arguments: Json
+          company_id: string
+          completed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          preview: Json
+          result?: Json | null
+          status?: string
+          tool_name: string
+          user_id: string
+        }
+        Update: {
+          arguments?: Json
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          preview?: Json
+          result?: Json | null
+          status?: string
+          tool_name?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_action_requests_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_chat_messages: {
         Row: {
           company_id: string
@@ -5572,6 +5622,10 @@ export type Database = {
       admin_delete_company: {
         Args: { _company_id: string }
         Returns: undefined
+      }
+      ai_apply_apartment_updates: {
+        Args: { _company_id: string; _updates: Json }
+        Returns: Json
       }
       assign_tour_template: {
         Args: { _apartment_id: string; _template_id: string }

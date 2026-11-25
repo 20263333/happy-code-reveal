@@ -7,7 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { sendAiChatMessage, getAiChatHistory, getAiCredits, clearAiChatHistory } from "@/lib/ai-chat.functions";
+import { sendAiChatMessage, getAiChatHistory, getAiCredits, clearAiChatHistory, getAiPendingActions, resolveAiAction } from "@/lib/ai-chat.functions";
+import { AiActionReview } from "@/components/ai-action-review";
+import { useT } from "@/lib/i18n";
+import { useAuth } from "@/hooks/use-auth";
 import { transcribeAudio } from "@/lib/ai-transcribe.functions";
 
 interface AiAssistantContextValue {
@@ -30,7 +33,7 @@ export function AiAssistantButton({ show }: { show?: boolean }) {
   const { open, setOpen } = useContext(AiAssistantContext);
   if (!show) return null;
   return (
-    <button
+    <Button size="icon" variant="ghost"
       type="button"
       onClick={() => setOpen(!open)}
       className="relative flex h-8 w-8 items-center justify-center rounded-full text-primary hover:bg-primary/10 transition-colors"
@@ -38,7 +41,7 @@ export function AiAssistantButton({ show }: { show?: boolean }) {
       title="AI Ёрдамчӣ"
     >
       <Sparkles className="h-4 w-4" />
-    </button>
+    </Button>
   );
 }
 
@@ -47,11 +50,17 @@ export function AiAssistant() {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const qc = useQueryClient();
+  const { tr } = useT();
+  const { user, companyId } = useAuth();
+  const historyKey = ["ai-chat-history", companyId, user?.id];
+  const actionKey = ["ai-actions", companyId, user?.id];
 
   const sendFn = useServerFn(sendAiChatMessage);
   const historyFn = useServerFn(getAiChatHistory);
   const creditsFn = useServerFn(getAiCredits);
   const clearFn = useServerFn(clearAiChatHistory);
+  const pendingFn = useServerFn(getAiPendingActions);
+  const resolveFn = useServerFn(resolveAiAction);
   const transcribeFn = useServerFn(transcribeAudio);
 
   const [recording, setRecording] = useState(false);
@@ -114,14 +123,21 @@ export function AiAssistant() {
   };
 
   const { data: history = [] } = useQuery({
-    queryKey: ["ai-chat-history"],
+    queryKey: historyKey,
     queryFn: () => historyFn(),
     enabled: open,
   });
   const { data: credits } = useQuery({
-    queryKey: ["ai-credits"],
+    queryKey: ["ai-credits", companyId, user?.id],
     queryFn: () => creditsFn(),
     enabled: open,
+  });
+
+  const { data: actions = [], error: actionsError } = useQuery({ queryKey: actionKey, queryFn: () => pendingFn(), enabled: open });
+  const resolve = useMutation({
+    mutationFn: (data: { id: string; confirm: boolean }) => resolveFn({ data }),
+    onSuccess: (result) => { qc.invalidateQueries(); toast.success(tr(result.cancelled ? "Изменения отменены" : "Изменения сохранены")); },
+    onError: (error: Error) => { qc.invalidateQueries({ queryKey: actionKey }); toast.error(error.message); },
   });
 
   const send = useMutation({
@@ -131,31 +147,23 @@ export function AiAssistant() {
       return sendFn({ data: { text, currentProjectId: match?.[1] ?? null, currentPath: path } });
     },
     onMutate: async (text: string) => {
-      await qc.cancelQueries({ queryKey: ["ai-chat-history"] });
-      const prev = qc.getQueryData<any[]>(["ai-chat-history"]) ?? [];
+      await qc.cancelQueries({ queryKey: historyKey });
+      const prev = qc.getQueryData<any[]>(historyKey) ?? [];
       const optimistic = [
         ...prev,
         { id: `tmp-${Date.now()}`, role: "user", content: text, created_at: new Date().toISOString() },
       ];
-      qc.setQueryData(["ai-chat-history"], optimistic);
+      qc.setQueryData(historyKey, optimistic);
       setInput("");
       return { prev };
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["ai-chat-history"] });
+      qc.invalidateQueries({ queryKey: historyKey });
+      qc.invalidateQueries({ queryKey: actionKey });
       qc.invalidateQueries({ queryKey: ["ai-credits"] });
-      // AI may touch many modules — refresh broadly.
-      for (const key of [
-        "floors", "project-blocks", "project", "projects", "apartments",
-        "customers", "sales", "payments", "debtors", "expenses",
-        "workers", "suppliers", "subcontractors", "equipment",
-        "payables", "warehouse-items", "warehouse-receipts", "warehouse-issues",
-        "materials", "material-movements", "project-stages", "stages",
-        "dashboard", "company-summary",
-      ]) qc.invalidateQueries({ queryKey: [key] });
     },
     onError: (e: any, _vars, ctx) => {
-      if (ctx?.prev) qc.setQueryData(["ai-chat-history"], ctx.prev);
+      if (ctx?.prev) qc.setQueryData(historyKey, ctx.prev);
       const msg = e?.message ?? "";
       if (msg.includes("no_credits")) {
         toast.error("Кредитҳо тамом шуданд. Пакет харидорӣ кунед: /ai-credits");
@@ -167,18 +175,18 @@ export function AiAssistant() {
 
   const clear = useMutation({
     mutationFn: () => clearFn(),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["ai-chat-history"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: historyKey }),
   });
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [history, send.isPending]);
+  }, [history, send.isPending, actions]);
 
   const submit = () => {
     const t = input.trim();
-    if (!t || send.isPending) return;
+    if (!t || send.isPending || resolve.isPending) return;
     send.mutate(t);
   };
 
@@ -188,19 +196,19 @@ export function AiAssistant() {
   if (!open) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex h-[min(600px,90vh)] w-[min(400px,95vw)] flex-col rounded-2xl border border-border bg-card shadow-2xl">
+    <div className="fixed bottom-6 right-3 sm:right-6 z-50 flex h-[min(600px,90vh)] w-[min(440px,calc(100vw-24px))] flex-col rounded-2xl border border-border bg-card shadow-2xl">
       <div className="flex items-center justify-between border-b border-border p-3">
         <div className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
           <div>
-            <div className="font-semibold text-sm">AI Ёрдамчӣ</div>
+            <div className="font-semibold text-sm">{tr("AI-помощник")}</div>
             <div className="text-[10px] text-muted-foreground">
               {credits ? `${freeLeft}/${credits.free_limit} ройгон · ${credits.paid_balance} харидашуда` : "…"}
             </div>
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <Button size="icon" variant="ghost" onClick={() => clear.mutate()} title="Тоза кардан" disabled={!history.length}>
+          <Button size="icon" variant="ghost" onClick={() => clear.mutate()} title={tr("Очистить историю")} disabled={!history.length || send.isPending || resolve.isPending}>
             <Trash2 className="h-4 w-4" />
           </Button>
           <Button size="icon" variant="ghost" onClick={() => setOpen(false)}>
@@ -209,28 +217,19 @@ export function AiAssistant() {
         </div>
       </div>
 
-      <ScrollArea className="flex-1 p-3">
-        <div ref={scrollRef} className="space-y-3 h-full">
+      <ScrollArea className="min-h-0 flex-1 p-3">
+        <div ref={scrollRef} className="space-y-3 h-full min-w-0">
           {history.length === 0 && !send.isPending && (
             <div className="text-center text-sm text-muted-foreground py-8 space-y-2">
               <Sparkles className="h-8 w-8 mx-auto text-primary/50" />
               <p className="font-medium">Салом! Ман ёрдамчии AI-и шумо</p>
-              <p className="text-xs">Ба ҳамаи модулҳо дастрасӣ дорам: лоиҳа, фурӯш, пардохт, хароҷот, склад, коргарон ва ғайра</p>
-              <div className="text-xs text-left space-y-1 mt-4 mx-auto max-w-[260px]">
-                <p className="text-muted-foreground">Мисолҳо:</p>
-                <p>• "Муштарии нав: Али, +992 900..."</p>
-                <p>• "Квартираи 12-ро ба Али фурӯхтем 500000 сом"</p>
-                <p>• "Хароҷоти 5000 сом. барои цемент сабт кун"</p>
-                <p>• "Кӣ ба ман қарздор аст?"</p>
-                <p>• "Хулосаи умумии ширкат"</p>
-              </div>
 
             </div>
           )}
           {history.map((m: any) => (
             <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
               <div
-                className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
+                className={`max-w-[85%] break-words rounded-2xl px-3 py-2 text-sm ${
                   m.role === "user"
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-foreground"
@@ -246,6 +245,17 @@ export function AiAssistant() {
               </div>
             </div>
           ))}
+          {actionsError && <p className="text-xs text-destructive">{actionsError.message}</p>}
+          {actions.map(action => <div key={action.id} className="border-t border-border py-3">
+            <p className="mb-2 text-xs font-semibold text-primary">{tr("Изменения ожидают подтверждения")}</p>
+            <AiActionReview preview={action.preview} />
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button size="sm" onClick={() => resolve.mutate({ id: action.id, confirm: true })} disabled={resolve.isPending || send.isPending}>
+                {resolve.isPending && resolve.variables?.id === action.id && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}{tr("Подтвердить изменения")}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => resolve.mutate({ id: action.id, confirm: false })} disabled={resolve.isPending || send.isPending}>{tr("Отменить изменения")}</Button>
+            </div>
+          </div>)}
           {send.isPending && (
             <div className="flex justify-start">
               <div className="rounded-2xl bg-muted px-3 py-2 text-sm">
@@ -257,7 +267,7 @@ export function AiAssistant() {
       </ScrollArea>
 
       <div className="border-t border-border p-3">
-        {totalLeft === 0 && (
+        {credits && totalLeft === 0 && (
           <div className="mb-2 rounded-md bg-destructive/10 p-2 text-xs text-destructive">
             Кредитҳо тамом шуданд. Пакет харидорӣ кунед: <a href="/ai-credits" className="underline">AI Кредитҳо</a>
           </div>
@@ -269,21 +279,21 @@ export function AiAssistant() {
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); }
             }}
-            placeholder={transcribing ? "Транскрипсия…" : recording ? "Сабт шуда истодааст…" : "Паём нависед…"}
+            placeholder={transcribing ? "Транскрипсия…" : recording ? "Сабт шуда истодааст…" : tr("Напишите сообщение…")}
             rows={1}
             className="resize-none min-h-[40px] max-h-32"
-            disabled={send.isPending || totalLeft === 0 || recording || transcribing}
+            disabled={send.isPending || resolve.isPending || recording || transcribing}
           />
           <Button
             size="icon"
             variant={recording ? "destructive" : "outline"}
             onClick={recording ? stopRecording : startRecording}
-            disabled={send.isPending || totalLeft === 0 || transcribing}
+            disabled={send.isPending || resolve.isPending || transcribing}
             title={recording ? "Сабтро қатъ кун" : "Овоз сабт кун"}
           >
             {transcribing ? <Loader2 className="h-4 w-4 animate-spin" /> : recording ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
           </Button>
-          <Button size="icon" onClick={submit} disabled={!input.trim() || send.isPending || totalLeft === 0 || recording || transcribing}>
+          <Button size="icon" onClick={submit} disabled={!input.trim() || send.isPending || resolve.isPending || recording || transcribing}>
             {send.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </div>

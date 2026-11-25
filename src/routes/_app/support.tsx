@@ -14,6 +14,14 @@ import { LifeBuoy, Send, CheckCircle2, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/support")({
+  head: () => ({ meta: [
+    { title: "Дастгирӣ | Binosoz.tj" },
+    { name: "description", content: "Дархостҳои дастгирӣ ва ҷавобҳо барои ширкати шумо." },
+    { property: "og:title", content: "Дастгирӣ | Binosoz.tj" },
+    { property: "og:description", content: "Дархостҳои дастгирӣ ва ҷавобҳо барои ширкати шумо." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary_large_image" },
+  ] }),
   component: SupportPage,
 });
 

@@ -4,6 +4,14 @@ import { AiCreditsPanel } from "@/components/ai-credits-panel";
 import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_app/ai-credits")({
+  head: () => ({ meta: [
+    { title: "Кредитҳои AI | Binosoz.tj" },
+    { name: "description", content: "Кредитҳо ва пардохтҳои ёрдамчии AI ва сканерҳои ширкат." },
+    { property: "og:title", content: "Кредитҳои AI | Binosoz.tj" },
+    { property: "og:description", content: "Кредитҳо ва пардохтҳои ёрдамчии AI ва сканерҳои ширкат." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary_large_image" },
+  ] }),
   component: AiCreditsPage,
 });
 

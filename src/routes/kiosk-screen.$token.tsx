@@ -10,6 +10,14 @@ import { KioskProjectView } from "@/components/kiosk/kiosk-project-view";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/kiosk-screen/$token")({
+  head: () => ({ meta: [
+    { title: "Экрани намоиши лоиҳа | Binosoz.tj" },
+    { name: "description", content: "Намоиши лоиҳаҳо, хонаҳо ва схемаҳо дар экрани ширкат." },
+    { property: "og:title", content: "Экрани намоиши лоиҳа | Binosoz.tj" },
+    { property: "og:description", content: "Намоиши лоиҳаҳо, хонаҳо ва схемаҳо дар экрани ширкат." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary_large_image" },
+  ] }),
   ssr: false,
   component: KioskScreen,
 });

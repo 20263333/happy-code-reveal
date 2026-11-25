@@ -22,6 +22,13 @@
       "when": 1791459932851,
       "tag": "0002_site_shots_public_read",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795604667950,
+      "tag": "0003_company_ai_actions",
+      "breakpoints": true
     }
   ]
 }

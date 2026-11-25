@@ -14,6 +14,14 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/tabel-screen/$token")({
+  head: () => ({ meta: [
+    { title: "Экрани табел | Binosoz.tj" },
+    { name: "description", content: "Қайд кардани ҳозирии коргарон дар экрани табели ширкат." },
+    { property: "og:title", content: "Экрани табел | Binosoz.tj" },
+    { property: "og:description", content: "Қайд кардани ҳозирии коргарон дар экрани табели ширкат." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary_large_image" },
+  ] }),
   ssr: false,
   component: TabelScreen,
 });

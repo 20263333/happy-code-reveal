@@ -5,6 +5,14 @@ import { Building2, Loader2, MapPin } from "lucide-react";
 import { kioskListProjects } from "@/lib/kiosk.functions";
 
 export const Route = createFileRoute("/_app/kiosk/")({
+  head: () => ({ meta: [
+    { title: "Интихоби лоиҳаи киоск | Binosoz.tj" },
+    { name: "description", content: "Интихоби лоиҳа барои намоиши хонаҳо ва схемаҳо дар киоск." },
+    { property: "og:title", content: "Интихоби лоиҳаи киоск | Binosoz.tj" },
+    { property: "og:description", content: "Интихоби лоиҳа барои намоиши хонаҳо ва схемаҳо дар киоск." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary_large_image" },
+  ] }),
   component: KioskProjectPicker,
 });
 

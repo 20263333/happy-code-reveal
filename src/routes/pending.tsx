@@ -11,6 +11,14 @@ import { Building, Clock, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/pending")({
+  head: () => ({ meta: [
+    { title: "Дархости ширкат | Binosoz.tj" },
+    { name: "description", content: "Дархости ширкати нав ва ҳолати фаъолшавии дастрасӣ." },
+    { property: "og:title", content: "Дархости ширкат | Binosoz.tj" },
+    { property: "og:description", content: "Дархости ширкати нав ва ҳолати фаъолшавии дастрасӣ." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary_large_image" },
+  ] }),
   component: PendingPage,
 });
 
