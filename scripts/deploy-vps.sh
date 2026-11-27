@@ -10,13 +10,16 @@ echo "==> 1/5 Ensure app directory exists"
 mkdir -p "$APP_DIR"
 
 echo "==> 2/5 Load environment"
-if [[ ! -f "$ENV_FILE" ]]; then
-  echo "ERROR: $ENV_FILE not found. Create it first (see .env.vps.example)."
-  exit 1
+if [[ -f "$ENV_FILE" ]]; then
+  set -a
+  source "$ENV_FILE"
+  set +a
 fi
-set -a
-source "$ENV_FILE"
-set +a
+if [[ -f "$APP_DIR/.env" ]]; then
+  set -a
+  source "$APP_DIR/.env"
+  set +a
+fi
 
 if [[ -z "${LOVABLE_API_KEY:-}" && -z "${LOVABLE_AI_GATEWAY_KEY:-}" && -z "${OPENAI_API_KEY:-}" ]]; then
   echo "WARNING: AI scanner is not configured. LOVABLE_API_KEY and OPENAI_API_KEY are empty in $ENV_FILE."

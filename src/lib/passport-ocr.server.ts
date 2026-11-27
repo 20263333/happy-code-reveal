@@ -63,12 +63,25 @@ type OcrProvider = {
 
 function resolveOcrProvider(): OcrProvider | null {
   const forced = process.env.AI_PROVIDER?.trim().toLowerCase();
-  const openaiKeyPref = process.env.OPENAI_API_KEY?.trim();
-  // Passport scanning uses the saved OpenAI key by default, even when a
-  // managed Lovable key is also present. Explicit provider overrides remain.
-  const preferOpenAI = !!openaiKeyPref && (!forced || forced === "openai");
+  const geminiKey = process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim();
+  const openaiKey = process.env.OPENAI_API_KEY?.trim();
   const lovableKey = process.env.LOVABLE_API_KEY?.trim() || process.env.LOVABLE_AI_GATEWAY_KEY?.trim();
-  if (!preferOpenAI && lovableKey) {
+
+  // 1. Агар калиди ройгони Gemini бошад ва openai маҷбур нашуда бошад, Gemini афзалият дорад
+  if (geminiKey && forced !== "openai") {
+    const model = process.env.GEMINI_OCR_MODEL?.trim() || "gemini-1.5-flash";
+    return {
+      name: "Google Gemini",
+      url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+      headers: { Authorization: `Bearer ${geminiKey}` },
+      flash: model,
+      pro: model,
+      fallback: model,
+    };
+  }
+
+  // 2. Lovable AI Gateway
+  if (lovableKey && (!forced || forced === "lovable")) {
     return {
       name: "Lovable AI Gateway",
       url: "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -81,22 +94,8 @@ function resolveOcrProvider(): OcrProvider | null {
       fallback: FALLBACK_MODEL,
     };
   }
-  // Варианти ройгон / муваққатӣ: Google Gemini API (дар aistudio.google.com бепул дода мешавад)
-  const geminiKey = process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim();
-  if (geminiKey && (forced === "gemini" || forced === "google" || (!openaiKeyPref && !lovableKey))) {
-    const model = process.env.GEMINI_OCR_MODEL?.trim() || "gemini-1.5-flash";
-    return {
-      name: "Google Gemini",
-      url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-      headers: { Authorization: `Bearer ${geminiKey}` },
-      flash: model,
-      pro: model,
-      fallback: model,
-    };
-  }
 
-  // Агар калиди Lovable набошад (масалан дар сервери худамон), худкор ба OpenAI мегузарем.
-  const openaiKey = process.env.OPENAI_API_KEY?.trim();
+  // 3. OpenAI
   if (openaiKey && (!forced || forced === "openai")) {
     return {
       name: "OpenAI",
@@ -108,6 +107,7 @@ function resolveOcrProvider(): OcrProvider | null {
     };
   }
 
+  // 4. Fallback Gemini
   if (geminiKey) {
     const model = process.env.GEMINI_OCR_MODEL?.trim() || "gemini-1.5-flash";
     return {

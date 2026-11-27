@@ -9,6 +9,31 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
 
+// Auto-load environment files on start so changes in .env take immediate effect
+function loadEnvFile(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return;
+    const content = fs.readFileSync(filePath, "utf-8");
+    for (const line of content.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const eqIdx = trimmed.indexOf("=");
+      if (eqIdx === -1) continue;
+      const key = trimmed.slice(0, eqIdx).trim();
+      let val = trimmed.slice(eqIdx + 1).trim();
+      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+        val = val.slice(1, -1);
+      }
+      process.env[key] = val;
+    }
+    console.log(`[node-adapter] loaded environment from ${filePath}`);
+  } catch (err) {
+    console.warn(`[node-adapter] could not load ${filePath}:`, err?.message);
+  }
+}
+loadEnvFile("/root/binosoz.env");
+loadEnvFile(path.resolve(root, ".env"));
+
 // Nitro writes either dist/ or .output/ depending on version/preset.
 const candidates = [
   { dist: path.resolve(root, "dist"), client: path.resolve(root, "dist/client"), server: path.resolve(root, "dist/server/index.mjs") },
