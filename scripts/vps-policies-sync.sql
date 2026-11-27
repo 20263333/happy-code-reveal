@@ -371,14 +371,38 @@ CREATE POLICY "Company members read contract template" ON public.contract_templa
   USING ((company_id = private.user_company_id(auth.uid())));
 DROP POLICY IF EXISTS "Owner deletes contract template" ON public.contract_templates;
 CREATE POLICY "Owner deletes contract template" ON public.contract_templates AS PERMISSIVE FOR DELETE TO authenticated
-  USING (((company_id = private.user_company_id(auth.uid())) AND private.has_role(auth.uid(), 'owner'::app_role)));
+  USING (
+    private.is_platform_admin(auth.uid()) OR
+    (
+      (company_id = private.user_company_id(auth.uid()) OR EXISTS (SELECT 1 FROM public.companies c WHERE c.id = company_id AND c.owner_user_id = auth.uid()))
+      AND (private.has_role(auth.uid(), 'owner'::app_role) OR EXISTS (SELECT 1 FROM public.companies c WHERE c.id = company_id AND c.owner_user_id = auth.uid()))
+    )
+  );
 DROP POLICY IF EXISTS "Owner inserts contract template" ON public.contract_templates;
 CREATE POLICY "Owner inserts contract template" ON public.contract_templates AS PERMISSIVE FOR INSERT TO authenticated
-  WITH CHECK (((company_id = private.user_company_id(auth.uid())) AND private.has_role(auth.uid(), 'owner'::app_role)));
+  WITH CHECK (
+    private.is_platform_admin(auth.uid()) OR
+    (
+      (company_id = private.user_company_id(auth.uid()) OR EXISTS (SELECT 1 FROM public.companies c WHERE c.id = company_id AND c.owner_user_id = auth.uid()))
+      AND (private.has_role(auth.uid(), 'owner'::app_role) OR EXISTS (SELECT 1 FROM public.companies c WHERE c.id = company_id AND c.owner_user_id = auth.uid()))
+    )
+  );
 DROP POLICY IF EXISTS "Owner updates contract template" ON public.contract_templates;
 CREATE POLICY "Owner updates contract template" ON public.contract_templates AS PERMISSIVE FOR UPDATE TO authenticated
-  USING (((company_id = private.user_company_id(auth.uid())) AND private.has_role(auth.uid(), 'owner'::app_role)))
-  WITH CHECK (((company_id = private.user_company_id(auth.uid())) AND private.has_role(auth.uid(), 'owner'::app_role)));
+  USING (
+    private.is_platform_admin(auth.uid()) OR
+    (
+      (company_id = private.user_company_id(auth.uid()) OR EXISTS (SELECT 1 FROM public.companies c WHERE c.id = company_id AND c.owner_user_id = auth.uid()))
+      AND (private.has_role(auth.uid(), 'owner'::app_role) OR EXISTS (SELECT 1 FROM public.companies c WHERE c.id = company_id AND c.owner_user_id = auth.uid()))
+    )
+  )
+  WITH CHECK (
+    private.is_platform_admin(auth.uid()) OR
+    (
+      (company_id = private.user_company_id(auth.uid()) OR EXISTS (SELECT 1 FROM public.companies c WHERE c.id = company_id AND c.owner_user_id = auth.uid()))
+      AND (private.has_role(auth.uid(), 'owner'::app_role) OR EXISTS (SELECT 1 FROM public.companies c WHERE c.id = company_id AND c.owner_user_id = auth.uid()))
+    )
+  );
 DROP POLICY IF EXISTS director_read_company ON public.contract_templates;
 CREATE POLICY director_read_company ON public.contract_templates AS PERMISSIVE FOR SELECT TO authenticated
   USING ((is_director(auth.uid()) AND (company_id = private.user_company_id(auth.uid()))));

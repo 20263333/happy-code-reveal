@@ -127,3 +127,158 @@ export const extractContract = createServerFn({ method: "POST" })
       footer_text: parsed.footer_text ?? null,
     };
   });
+
+
+async function verifyCompanyOwnerOrAdmin(supabase: any, userId: string, companyId: string) {
+  const { data: pa } = await supabase
+    .from("platform_admins")
+    .select("user_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (pa) return true;
+
+  const { data: company } = await supabase
+    .from("companies")
+    .select("owner_user_id")
+    .eq("id", companyId)
+    .maybeSingle();
+  if (company && company.owner_user_id === userId) return true;
+
+  const { data: role } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "owner")
+    .maybeSingle();
+  if (role) return true;
+
+  throw new Error("Танҳо соҳиби ширкат метавонад шаблонро танзим кунад");
+}
+
+export const saveContractTemplate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      company_id: z.string().uuid(),
+      contract_title: z.string().nullable().optional(),
+      number_prefix: z.string().nullable().optional(),
+      director_name: z.string().nullable().optional(),
+      director_position: z.string().nullable().optional(),
+      inn: z.string().nullable().optional(),
+      legal_address: z.string().nullable().optional(),
+      bank_details: z.string().nullable().optional(),
+      phone: z.string().nullable().optional(),
+      intro_text: z.string().nullable().optional(),
+      body_text: z.string().nullable().optional(),
+      footer_text: z.string().nullable().optional(),
+    }).parse(d)
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await verifyCompanyOwnerOrAdmin(supabase, userId, data.company_id);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as any;
+
+    const { error } = await admin
+      .from("contract_templates")
+      .upsert(data, { onConflict: "company_id" });
+    if (error) throw new Error(error.message);
+
+    return { ok: true };
+  });
+
+export const uploadContractTemplateDocx = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      company_id: z.string().uuid(),
+      kind: z.enum(["full", "installment", "shop_full", "shop_installment"]),
+      file_base64: z.string(),
+      file_name: z.string(),
+    }).parse(d)
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await verifyCompanyOwnerOrAdmin(supabase, userId, data.company_id);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as any;
+
+    const columnMap: Record<string, string> = {
+      full: "docx_full_path",
+      installment: "docx_installment_path",
+      shop_full: "docx_shop_full_path",
+      shop_installment: "docx_shop_installment_path",
+    };
+    const column = columnMap[data.kind];
+
+    const { data: current } = await admin
+      .from("contract_templates")
+      .select(column)
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    const oldPath = current?.[column];
+    if (oldPath) {
+      await admin.storage.from("contract-templates").remove([oldPath]);
+    }
+
+    const buffer = Buffer.from(data.file_base64, "base64");
+    const objPath = `${data.company_id}/${data.kind}-${Date.now()}.docx`;
+
+    const { error: upErr } = await admin.storage
+      .from("contract-templates")
+      .upload(objPath, buffer, {
+        contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        upsert: true,
+      });
+    if (upErr) throw new Error(upErr.message);
+
+    const { error: dbErr } = await admin
+      .from("contract_templates")
+      .upsert({ company_id: data.company_id, [column]: objPath }, { onConflict: "company_id" });
+    if (dbErr) throw new Error(dbErr.message);
+
+    return { ok: true, path: objPath };
+  });
+
+export const deleteContractTemplateDocx = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      company_id: z.string().uuid(),
+      kind: z.enum(["full", "installment", "shop_full", "shop_installment"]),
+    }).parse(d)
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await verifyCompanyOwnerOrAdmin(supabase, userId, data.company_id);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as any;
+
+    const columnMap: Record<string, string> = {
+      full: "docx_full_path",
+      installment: "docx_installment_path",
+      shop_full: "docx_shop_full_path",
+      shop_installment: "docx_shop_installment_path",
+    };
+    const column = columnMap[data.kind];
+
+    const { data: current } = await admin
+      .from("contract_templates")
+      .select(column)
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    const oldPath = current?.[column];
+    if (oldPath) {
+      await admin.storage.from("contract-templates").remove([oldPath]);
+    }
+
+    const { error } = await admin
+      .from("contract_templates")
+      .upsert({ company_id: data.company_id, [column]: null }, { onConflict: "company_id" });
+    if (error) throw new Error(error.message);
+
+    return { ok: true };
+  });

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { FileSignature, Save } from "lucide-react";
@@ -82,14 +83,16 @@ function ContractsPage() {
     }
   }, [template]);
 
+  const saveFn = useServerFn(saveContractTemplate);
   const save = useMutation({
     mutationFn: async () => {
       if (!companyId) throw new Error("no company");
-      const payload = { company_id: companyId, ...form };
-      const { error } = await (supabase as any)
-        .from("contract_templates")
-        .upsert(payload, { onConflict: "company_id" });
-      if (error) throw error;
+      await saveFn({
+        data: {
+          company_id: companyId,
+          ...form,
+        },
+      });
     },
     onSuccess: () => {
       toast.success(tr("Договор сохранён"));

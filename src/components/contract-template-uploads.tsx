@@ -1,9 +1,11 @@
 import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { FileType2, Upload, Trash2, Loader2, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { uploadContractTemplateDocx, deleteContractTemplateDocx } from "@/lib/contract.functions";
 
 type Kind = "full" | "installment" | "shop_full" | "shop_installment";
 
@@ -56,6 +58,8 @@ function Slot({ kind, companyId, canEdit }: { kind: Kind; companyId: string | nu
   const meta = META[kind];
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const uploadFn = useServerFn(uploadContractTemplateDocx);
+  const deleteFn = useServerFn(deleteContractTemplateDocx);
 
   const { data: path } = useQuery({
     queryKey: ["contract-tpl-file", companyId, meta.column],
@@ -71,31 +75,40 @@ function Slot({ kind, companyId, canEdit }: { kind: Kind; companyId: string | nu
     enabled: !!companyId,
   });
 
-  const savePath = async (value: string | null) => {
-    const { error } = await (supabase as any)
-      .from("contract_templates")
-      .upsert({ company_id: companyId, [meta.column]: value }, { onConflict: "company_id" });
-    if (error) throw error;
-    qc.invalidateQueries({ queryKey: ["contract-tpl-file", companyId, meta.column] });
-    qc.invalidateQueries({ queryKey: ["contract-template", companyId] });
-  };
-
   const upload = async (file: File) => {
     if (!companyId) return;
     if (!file.name.toLowerCase().endsWith(".docx")) {
       toast.error("Танҳо файли .docx қабул мешавад");
       return;
     }
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error("Файл аз 20 MB зиёд аст");
+      return;
+    }
     setBusy(true);
     try {
-      const objPath = `${companyId}/${kind}-${Date.now()}.docx`;
-      const { error } = await supabase.storage.from("contract-templates").upload(objPath, file, {
-        contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        upsert: false,
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => {
+          const res = reader.result as string;
+          const base64 = res.split(",")[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
       });
-      if (error) throw error;
-      if (path) await supabase.storage.from("contract-templates").remove([path]);
-      await savePath(objPath);
+      reader.readAsDataURL(file);
+      const file_base64 = await base64Promise;
+
+      await uploadFn({
+        data: {
+          company_id: companyId,
+          kind,
+          file_base64,
+          file_name: file.name,
+        },
+      });
+      qc.invalidateQueries({ queryKey: ["contract-tpl-file", companyId, meta.column] });
+      qc.invalidateQueries({ queryKey: ["contract-template", companyId] });
       toast.success("Шаблон илова шуд");
     } catch (e: any) {
       toast.error(e?.message ?? "Хатогӣ ҳангоми боркунӣ");
@@ -106,11 +119,12 @@ function Slot({ kind, companyId, canEdit }: { kind: Kind; companyId: string | nu
   };
 
   const remove = async () => {
-    if (!path) return;
+    if (!companyId) return;
     setBusy(true);
     try {
-      await supabase.storage.from("contract-templates").remove([path]);
-      await savePath(null);
+      await deleteFn({ data: { company_id: companyId, kind } });
+      qc.invalidateQueries({ queryKey: ["contract-tpl-file", companyId, meta.column] });
+      qc.invalidateQueries({ queryKey: ["contract-template", companyId] });
       toast.success("Нест карда шуд");
     } catch (e: any) {
       toast.error(e?.message ?? "Хатогӣ");

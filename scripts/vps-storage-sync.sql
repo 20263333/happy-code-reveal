@@ -122,13 +122,41 @@ CREATE POLICY co_tax_read ON storage.objects AS PERMISSIVE FOR SELECT TO authent
 DROP POLICY IF EXISTS co_tax_write ON storage.objects;
 CREATE POLICY co_tax_write ON storage.objects AS PERMISSIVE FOR INSERT TO authenticated WITH CHECK (((bucket_id = 'tax-reports'::text) AND ((storage.foldername(name))[1] = (user_company_id(auth.uid()))::text) AND has_role(auth.uid(), 'owner'::app_role)));
 DROP POLICY IF EXISTS contract_tpl_delete ON storage.objects;
-CREATE POLICY contract_tpl_delete ON storage.objects AS PERMISSIVE FOR DELETE TO authenticated USING (((bucket_id = 'contract-templates'::text) AND ((storage.foldername(name))[1] = (user_company_id(auth.uid()))::text) AND has_role(auth.uid(), 'owner'::app_role)));
+CREATE POLICY contract_tpl_delete ON storage.objects AS PERMISSIVE FOR DELETE TO authenticated
+  USING (
+    (bucket_id = 'contract-templates'::text) AND (
+      private.is_platform_admin(auth.uid()) OR
+      ((storage.foldername(name))[1] = (private.user_company_id(auth.uid()))::text) OR
+      EXISTS (SELECT 1 FROM public.companies c WHERE c.id::text = (storage.foldername(name))[1] AND c.owner_user_id = auth.uid())
+    )
+  );
 DROP POLICY IF EXISTS contract_tpl_read ON storage.objects;
-CREATE POLICY contract_tpl_read ON storage.objects AS PERMISSIVE FOR SELECT TO authenticated USING (((bucket_id = 'contract-templates'::text) AND ((storage.foldername(name))[1] = (user_company_id(auth.uid()))::text)));
+CREATE POLICY contract_tpl_read ON storage.objects AS PERMISSIVE FOR SELECT TO authenticated
+  USING (
+    (bucket_id = 'contract-templates'::text) AND (
+      private.is_platform_admin(auth.uid()) OR
+      ((storage.foldername(name))[1] = (private.user_company_id(auth.uid()))::text) OR
+      EXISTS (SELECT 1 FROM public.companies c WHERE c.id::text = (storage.foldername(name))[1] AND c.owner_user_id = auth.uid())
+    )
+  );
 DROP POLICY IF EXISTS contract_tpl_update ON storage.objects;
-CREATE POLICY contract_tpl_update ON storage.objects AS PERMISSIVE FOR UPDATE TO authenticated USING (((bucket_id = 'contract-templates'::text) AND ((storage.foldername(name))[1] = (user_company_id(auth.uid()))::text) AND has_role(auth.uid(), 'owner'::app_role)));
+CREATE POLICY contract_tpl_update ON storage.objects AS PERMISSIVE FOR UPDATE TO authenticated
+  USING (
+    (bucket_id = 'contract-templates'::text) AND (
+      private.is_platform_admin(auth.uid()) OR
+      ((storage.foldername(name))[1] = (private.user_company_id(auth.uid()))::text) OR
+      EXISTS (SELECT 1 FROM public.companies c WHERE c.id::text = (storage.foldername(name))[1] AND c.owner_user_id = auth.uid())
+    )
+  );
 DROP POLICY IF EXISTS contract_tpl_write ON storage.objects;
-CREATE POLICY contract_tpl_write ON storage.objects AS PERMISSIVE FOR INSERT TO authenticated WITH CHECK (((bucket_id = 'contract-templates'::text) AND ((storage.foldername(name))[1] = (user_company_id(auth.uid()))::text) AND has_role(auth.uid(), 'owner'::app_role)));
+CREATE POLICY contract_tpl_write ON storage.objects AS PERMISSIVE FOR INSERT TO authenticated
+  WITH CHECK (
+    (bucket_id = 'contract-templates'::text) AND (
+      private.is_platform_admin(auth.uid()) OR
+      ((storage.foldername(name))[1] = (private.user_company_id(auth.uid()))::text) OR
+      EXISTS (SELECT 1 FROM public.companies c WHERE c.id::text = (storage.foldername(name))[1] AND c.owner_user_id = auth.uid())
+    )
+  );
 DROP POLICY IF EXISTS cphotos_delete ON storage.objects;
 CREATE POLICY cphotos_delete ON storage.objects AS PERMISSIVE FOR DELETE TO authenticated USING (((bucket_id = 'construction-photos'::text) AND ((storage.foldername(name))[1] = (user_company_id(auth.uid()))::text) AND (is_platform_admin(auth.uid()) OR is_director(auth.uid()) OR (EXISTS ( SELECT 1
    FROM companies c
