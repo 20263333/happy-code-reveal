@@ -14,7 +14,7 @@ import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
 import { ContractCapture } from "@/components/contract-capture";
 import { ContractTemplateUploads } from "@/components/contract-template-uploads";
-import type { ContractExtractResult } from "@/lib/contract.functions";
+import { saveContractTemplate, type ContractExtractResult } from "@/lib/contract.functions";
 
 export const Route = createFileRoute("/_app/contracts")({
   head: () => ({ meta: [{ title: "Договор — Binosoz.tj" }] }),
