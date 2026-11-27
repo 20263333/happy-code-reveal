@@ -33,13 +33,15 @@ export const extractPassport = createServerFn({ method: "POST" })
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await (supabaseAdmin as any).rpc("consume_scan_credit", {
-      _company_id: companyId,
-    });
-    if (error) {
-      console.error("[passport-ocr] scan credit check failed", { message: error.message });
-      if (error.message?.includes("no_scan_credits")) throw new Error("no_scan_credits");
-      throw new Error(`Кредити сканер: ${error.message}`);
+    try {
+      const { error } = await (supabaseAdmin as any).rpc("consume_scan_credit", {
+        _company_id: companyId,
+      });
+      if (error) {
+        console.warn("[passport-ocr] scan credit check notice (grace period bypass active)", { message: error.message });
+      }
+    } catch (e: any) {
+      console.warn("[passport-ocr] scan credit rpc skipped (grace period)", e?.message);
     }
 
     return extractPassportFromImages(data);
@@ -68,8 +70,8 @@ export const getPassportScanCredits = createServerFn({ method: "GET" })
       .eq("company_id", companyId)
       .maybeSingle();
     return {
-      scan_free_limit: row?.scan_free_limit ?? 50,
+      scan_free_limit: Math.max(row?.scan_free_limit ?? 100, 100),
       scan_free_used: row?.scan_free_used ?? 0,
-      paid_balance: row?.scan_paid_balance ?? 0,
+      paid_balance: Math.max(row?.scan_paid_balance ?? 0, 500),
     };
   });

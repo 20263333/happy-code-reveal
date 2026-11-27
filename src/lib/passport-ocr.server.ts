@@ -81,9 +81,23 @@ function resolveOcrProvider(): OcrProvider | null {
       fallback: FALLBACK_MODEL,
     };
   }
+  // Варианти ройгон / муваққатӣ: Google Gemini API (дар aistudio.google.com бепул дода мешавад)
+  const geminiKey = process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim();
+  if (geminiKey && (forced === "gemini" || forced === "google" || (!openaiKeyPref && !lovableKey))) {
+    const model = process.env.GEMINI_OCR_MODEL?.trim() || "gemini-1.5-flash";
+    return {
+      name: "Google Gemini",
+      url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+      headers: { Authorization: `Bearer ${geminiKey}` },
+      flash: model,
+      pro: model,
+      fallback: model,
+    };
+  }
+
   // Агар калиди Lovable набошад (масалан дар сервери худамон), худкор ба OpenAI мегузарем.
   const openaiKey = process.env.OPENAI_API_KEY?.trim();
-  if (openaiKey) {
+  if (openaiKey && (!forced || forced === "openai")) {
     return {
       name: "OpenAI",
       url: "https://api.openai.com/v1/chat/completions",
@@ -91,6 +105,18 @@ function resolveOcrProvider(): OcrProvider | null {
       flash: process.env.OPENAI_OCR_MODEL?.trim() || "gpt-4o-mini",
       pro: process.env.OPENAI_OCR_MODEL_PRO?.trim() || "gpt-4o",
       fallback: process.env.OPENAI_OCR_MODEL_PRO?.trim() || "gpt-4o",
+    };
+  }
+
+  if (geminiKey) {
+    const model = process.env.GEMINI_OCR_MODEL?.trim() || "gemini-1.5-flash";
+    return {
+      name: "Google Gemini",
+      url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+      headers: { Authorization: `Bearer ${geminiKey}` },
+      flash: model,
+      pro: model,
+      fallback: model,
     };
   }
   // Варианти сеюм: проксии AI дар хостинги Lovable (барои VPS бе калид).

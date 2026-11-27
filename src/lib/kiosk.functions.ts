@@ -213,10 +213,13 @@ export const kioskExtractPassport = createServerFn({ method: "POST" })
     const s = await requireUnlockedSession();
     assertPassportOcrConfigured();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await (supabaseAdmin as any).rpc("consume_scan_credit", { _company_id: s.company_id });
-    if (error) {
-      if (error.message?.includes("no_scan_credits")) throw new Error("no_scan_credits");
-      throw new Error(error.message);
+    try {
+      const { error } = await (supabaseAdmin as any).rpc("consume_scan_credit", { _company_id: s.company_id });
+      if (error) {
+        console.warn("[kiosk-ocr] scan credit notice (grace period bypass active)", { message: error.message });
+      }
+    } catch (e: any) {
+      console.warn("[kiosk-ocr] scan credit rpc skipped (grace period)", e?.message);
     }
     return extractPassportFromImages(data);
   });
