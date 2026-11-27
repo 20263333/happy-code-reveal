@@ -12,7 +12,19 @@ set -a
 source "$ENV_FILE"
 set +a
 
+# Also read /var/www/binosoz/.env if present
+if [[ -f "/var/www/binosoz/.env" ]]; then
+  while IFS='=' read -r key val || [[ -n "$key" ]]; do
+    key="$(echo "$key" | sed -e "s/^export //" -e "s/^[[:space:]]*//" -e "s/[[:space:]]*$//")"
+    val="$(echo "$val" | sed -e "s/^[[:space:]]*//" -e "s/[[:space:]]*$//" -e "s/^['\"]//" -e "s/['\"]$//")"
+    if [[ "$key" == "GEMINI_API_KEY" || "$key" == "AI_PROVIDER" || "$key" == "GEMINI_OCR_MODEL" || "$key" == "OPENAI_API_KEY" ]]; then
+      export "$key"="$val"
+    fi
+  done < "/var/www/binosoz/.env" 2>/dev/null || true
+fi
+
 KEY="${LOVABLE_API_KEY:-${LOVABLE_AI_GATEWAY_KEY:-}}"
+GEMINI_KEY="${GEMINI_API_KEY:-${GOOGLE_API_KEY:-}}"
 FORCED="${AI_PROVIDER:-}"
 FORCED="${FORCED,,}"
 TARGET="${1:-ocr}"
@@ -23,7 +35,15 @@ fi
 TMP_FILE=$(mktemp)
 trap 'rm -f "$TMP_FILE"' EXIT
 
-if [[ -n "${OPENAI_API_KEY:-}" && ( "$FORCED" == "openai" || -z "$KEY" ) ]]; then
+if [[ -n "$GEMINI_KEY" && ( "$FORCED" == "gemini" || "$FORCED" == "google" || ( "$FORCED" != "openai" && -z "$KEY" ) ) ]]; then
+  URL='https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'
+  MODE="Google Gemini (personal key)"
+  AUTH_HEADERS=(-H "Authorization: Bearer $GEMINI_KEY")
+  MODEL="${GEMINI_OCR_MODEL:-gemini-2.5-flash}"
+  if [[ "$MODEL" == "gemini-1.5-flash" || "$MODEL" == "gemini-1.5-pro" ]]; then
+    MODEL="gemini-2.5-flash"
+  fi
+elif [[ -n "${OPENAI_API_KEY:-}" && ( "$FORCED" == "openai" || -z "$KEY" ) ]]; then
   URL='https://api.openai.com/v1/chat/completions'
   MODE="OpenAI (personal key)"
   AUTH_HEADERS=(-H "Authorization: Bearer $OPENAI_API_KEY")
@@ -44,7 +64,7 @@ elif [[ -n "${AI_PROXY_URL:-}" && -n "${AI_PROXY_SECRET:-}" ]]; then
   if [[ "$TARGET" == "chat" ]]; then MODEL='openai/gpt-5.4'; else MODEL='google/gemini-3.8-flash'; fi
 else
   echo "ERROR: no AI configuration found in $ENV_FILE"
-  echo "Set AI_PROXY_URL + AI_PROXY_SECRET (recommended) or LOVABLE_API_KEY or OPENAI_API_KEY."
+  echo "Set GEMINI_API_KEY, AI_PROXY_URL + AI_PROXY_SECRET, LOVABLE_API_KEY or OPENAI_API_KEY."
   exit 2
 fi
 
@@ -63,7 +83,7 @@ STATUS=$(curl -sS -o "$TMP_FILE" -w '%{http_code}' \
   --data "$BODY")
 
 if [[ "$STATUS" == "200" ]]; then
-  echo "OK: selected AI model responded."
+  echo "OK: selected AI model responded successfully."
   exit 0
 fi
 
@@ -74,15 +94,18 @@ try:
     payload = json.load(open(sys.argv[1], encoding="utf-8"))
     error = payload.get("error", {})
     error = error if isinstance(error, dict) else {}
+    msg = str(error.get("message", ""))
     codes = {str(error.get("code", "")), str(error.get("type", "")), str(payload.get("code", ""))}
     quota = {"insufficient_quota", "billing_hard_limit_reached", "billing_not_active", "usage_limit_reached", "credit_balance_exhausted", "credits_exhausted", "insufficient_credits", "payment_required"}
     rate = {"rate_limit_exceeded", "rate_limited", "rate_limit_error", "too_many_requests"}
-    if codes & quota:
+    if "is not found for API version" in msg or "not found" in msg.lower():
+        print(f"Сабаб: Модели интихобшуда дастрас нест ё кӯҳна шудааст ({msg}). Ба модели муосир гузаред.")
+    elif codes & quota:
         print("Сабаб: маблағ ё лимити пардохти ҳисоби AI тамом шудааст. Ҳисоби хизматрасонии AI-ро пур кунед; обунаи ChatGPT ба OpenAI API маблағ намедиҳад.")
     elif codes & rate:
         print("Сабаб: маҳдудияти муваққатии шумораи дархостҳо. Каме сабр карда, баъдтар санҷед.")
     else:
-        print("Сабаби дақиқ аз ҷавоб муайян нашуд. Ҳолат, маблағ ва лимити ҳисоби AI-ро санҷед.")
+        print(f"Ҷавоби сервер: {msg}")
 except Exception:
     print("The endpoint returned a non-JSON error response.")
 PY

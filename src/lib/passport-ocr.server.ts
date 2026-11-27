@@ -52,6 +52,27 @@ const OCR_ERROR_MESSAGE = "Passport could not be recognized. Please take a clear
 const FLASH_MODEL = "google/gemini-3.8-flash";
 const PRO_MODEL = "google/gemini-3.8-flash";
 const FALLBACK_MODEL = "google/gemini-3.8-flash";
+
+// Моделҳои муосири Google Gemini барои OCR (1.5-flash аз 29.09.2025 хомӯш карда шудааст)
+const GEMINI_CANDIDATE_MODELS = [
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-3.5-flash",
+];
+
+function getGeminiCandidateModels(): string[] {
+  const custom = process.env.GEMINI_OCR_MODEL?.trim();
+  const list: string[] = [];
+  if (custom && custom !== "gemini-1.5-flash" && custom !== "gemini-1.5-pro") {
+    list.push(custom);
+  }
+  for (const m of GEMINI_CANDIDATE_MODELS) {
+    if (!list.includes(m)) list.push(m);
+  }
+  return list;
+}
+
 type OcrProvider = {
   name: string;
   url: string;
@@ -59,6 +80,7 @@ type OcrProvider = {
   flash: string;
   pro: string;
   fallback: string;
+  candidateModels?: string[];
 };
 
 function resolveOcrProvider(): OcrProvider | null {
@@ -69,14 +91,17 @@ function resolveOcrProvider(): OcrProvider | null {
 
   // 1. Агар калиди ройгони Gemini бошад ва openai маҷбур нашуда бошад, Gemini афзалият дорад
   if (geminiKey && forced !== "openai") {
-    const model = process.env.GEMINI_OCR_MODEL?.trim() || "gemini-1.5-flash";
+    const candidates = getGeminiCandidateModels();
+    const primary = candidates[0];
+    const fallback = candidates[1] || candidates[0];
     return {
       name: "Google Gemini",
       url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
       headers: { Authorization: `Bearer ${geminiKey}` },
-      flash: model,
-      pro: model,
-      fallback: model,
+      flash: primary,
+      pro: primary,
+      fallback,
+      candidateModels: candidates,
     };
   }
 
@@ -109,14 +134,17 @@ function resolveOcrProvider(): OcrProvider | null {
 
   // 4. Fallback Gemini
   if (geminiKey) {
-    const model = process.env.GEMINI_OCR_MODEL?.trim() || "gemini-1.5-flash";
+    const candidates = getGeminiCandidateModels();
+    const primary = candidates[0];
+    const fallback = candidates[1] || candidates[0];
     return {
       name: "Google Gemini",
       url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
       headers: { Authorization: `Bearer ${geminiKey}` },
-      flash: model,
-      pro: model,
-      fallback: model,
+      flash: primary,
+      pro: primary,
+      fallback,
+      candidateModels: candidates,
     };
   }
   // Варианти сеюм: проксии AI дар хостинги Lovable (барои VPS бе калид).
@@ -447,81 +475,108 @@ function wait(ms: number) {
 
 async function callGatewayJson(provider: OcrProvider, body: unknown, stage: PassportOcrDebug["stage"], imageMimes: string[]) {
   let lastDebug: PassportOcrDebug | null = null;
-  for (let attempt = 1; attempt <= 2; attempt += 1) {
-    let res: Response;
-    try {
-      res = await postPassportOcr(provider, body, attempt, stage);
-    } catch (error) {
-      lastDebug = {
-        provider: provider.name,
-        model: (body as any)?.model ?? provider.flash,
-        stage,
-        reason: error instanceof Error ? error.message : String(error),
-        image_mime_types: imageMimes,
-      };
-      if (attempt === 1) continue;
-      throw toDebugError(lastDebug);
+  const initialModel = (body as any)?.model ?? provider.flash;
+  const candidates = provider.candidateModels && provider.candidateModels.length > 0
+    ? Array.from(new Set([initialModel, ...provider.candidateModels]))
+    : [initialModel];
+
+  for (let candidateIdx = 0; candidateIdx < candidates.length; candidateIdx += 1) {
+    const currentModel = candidates[candidateIdx];
+    if (body && typeof body === "object") {
+      (body as any).model = currentModel;
     }
 
-    if (res.status === 429 || res.status === 402) throw await providerFailure(res);
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      let res: Response;
+      try {
+        res = await postPassportOcr(provider, body, attempt, stage);
+      } catch (error) {
+        lastDebug = {
+          provider: provider.name,
+          model: currentModel,
+          stage,
+          reason: error instanceof Error ? error.message : String(error),
+          image_mime_types: imageMimes,
+        };
+        if (attempt === 1) continue;
+        throw toDebugError(lastDebug);
+      }
 
-    const text = await res.text().catch((error) => {
-      lastDebug = {
+      if (res.status === 429 || res.status === 402) throw await providerFailure(res);
+
+      const text = await res.text().catch((error) => {
+        lastDebug = {
+          provider: provider.name,
+          model: currentModel,
+          stage,
+          status: res.status,
+          reason: error instanceof Error ? error.message : String(error),
+          log_id: res.headers.get("X-Lovable-AIG-Log-ID"),
+          run_id: res.headers.get("X-Lovable-AIG-Run-ID"),
+          image_mime_types: imageMimes,
+        };
+        return "";
+      });
+
+      let json: any = null;
+      try { json = text ? JSON.parse(text) : null; } catch { json = null; }
+      const debug: PassportOcrDebug = {
         provider: provider.name,
-        model: (body as any)?.model ?? provider.flash,
+        model: currentModel,
         stage,
         status: res.status,
-        reason: error instanceof Error ? error.message : String(error),
         log_id: res.headers.get("X-Lovable-AIG-Log-ID"),
         run_id: res.headers.get("X-Lovable-AIG-Run-ID"),
+        raw_response: stringifyForDebug(json ?? text.slice(0, 4000)),
         image_mime_types: imageMimes,
       };
-      return "";
-    });
 
-    let json: any = null;
-    try { json = text ? JSON.parse(text) : null; } catch { json = null; }
-    const debug: PassportOcrDebug = {
-      provider: provider.name,
-      model: (body as any)?.model ?? provider.flash,
-      stage,
-      status: res.status,
-      log_id: res.headers.get("X-Lovable-AIG-Log-ID"),
-      run_id: res.headers.get("X-Lovable-AIG-Run-ID"),
-      raw_response: stringifyForDebug(json ?? text.slice(0, 4000)),
-      image_mime_types: imageMimes,
-    };
-
-    if (res.ok) {
-      const refusal = json?.choices?.[0]?.message?.refusal;
-      const content = messageContentText(json);
-      if (typeof refusal === "string" && refusal.trim()) {
-        throw toDebugError({ ...debug, reason: refusal.trim() });
+      if (res.ok) {
+        const refusal = json?.choices?.[0]?.message?.refusal;
+        const content = messageContentText(json);
+        if (typeof refusal === "string" && refusal.trim()) {
+          throw toDebugError({ ...debug, reason: refusal.trim() });
+        }
+        if (!content.trim()) {
+          throw toDebugError({ ...debug, reason: "AI returned an empty OCR result" });
+        }
+        // Таъин кардани модели комёбшуда барои қадамҳои оянда
+        provider.flash = currentModel;
+        provider.pro = currentModel;
+        provider.fallback = currentModel;
+        return { json, text, debug };
       }
-      if (!content.trim()) {
-        throw toDebugError({ ...debug, reason: "AI returned an empty OCR result" });
+
+      const errorText = typeof json?.error?.message === "string" ? json.error.message : text.slice(0, 500);
+      lastDebug = { ...debug, reason: errorText || `HTTP ${res.status}` };
+      passportOcrLog("gateway error", {
+        stage,
+        attempt,
+        status: res.status,
+        model: currentModel,
+        reason: lastDebug.reason,
+        retrying: attempt === 1 && RETRYABLE_STATUSES.has(res.status),
+        log_id: debug.log_id,
+        run_id: debug.run_id,
+      });
+
+      // Агар модел вуҷуд надошта бошад (HTTP 404 ё "not found"), дарҳол ба модели дигар гузар
+      if (res.status === 404 && candidateIdx < candidates.length - 1) {
+        passportOcrLog("model 404 not found, falling back to next candidate", {
+          failedModel: currentModel,
+          nextModel: candidates[candidateIdx + 1],
+          reason: lastDebug.reason,
+        });
+        break;
       }
-      return { json, text, debug };
-    }
 
-    const errorText = typeof json?.error?.message === "string" ? json.error.message : text.slice(0, 500);
-    lastDebug = { ...debug, reason: errorText || `HTTP ${res.status}` };
-    passportOcrLog("gateway error", {
-      stage,
-      attempt,
-      status: res.status,
-      reason: lastDebug.reason,
-      retrying: attempt === 1 && RETRYABLE_STATUSES.has(res.status),
-      log_id: debug.log_id,
-      run_id: debug.run_id,
-    });
-
-    if (res.status === 402) throw toDebugError({ ...lastDebug, reason: "AI credits exhausted" }, "AI кредитҳо тамом шуданд. Лутфан кредитҳоро пур кунед.");
-    if (attempt === 1 && RETRYABLE_STATUSES.has(res.status)) {
-      await wait(retryDelayMs(res, attempt));
-      continue;
+      if (res.status === 402) throw toDebugError({ ...lastDebug, reason: "AI credits exhausted" }, "AI кредитҳо тамом шуданд. Лутфан кредитҳоро пур кунед.");
+      if (attempt === 1 && RETRYABLE_STATUSES.has(res.status)) {
+        await wait(retryDelayMs(res, attempt));
+        continue;
+      }
+      throw toDebugError(lastDebug);
     }
-    throw toDebugError(lastDebug);
   }
   throw toDebugError(lastDebug ?? { provider: provider.name, model: provider.flash, stage, reason: "unknown_gateway_failure", image_mime_types: imageMimes });
 }

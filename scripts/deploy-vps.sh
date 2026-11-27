@@ -26,7 +26,7 @@ if [[ -f "$APP_DIR/.env" ]]; then
   done < "$APP_DIR/.env" 2>/dev/null || true
 fi
 
-if [[ -z "${LOVABLE_API_KEY:-}" && -z "${LOVABLE_AI_GATEWAY_KEY:-}" && -z "${OPENAI_API_KEY:-}" ]]; then
+if [[ -z "${LOVABLE_API_KEY:-}" && -z "${LOVABLE_AI_GATEWAY_KEY:-}" && -z "${OPENAI_API_KEY:-}" && -z "${GEMINI_API_KEY:-}" && -z "${GOOGLE_API_KEY:-}" ]]; then
   echo "WARNING: AI scanner is not configured. LOVABLE_API_KEY and OPENAI_API_KEY are empty in $ENV_FILE."
   echo "         Passport and warehouse scanning will not work until an AI key is configured."
 fi
