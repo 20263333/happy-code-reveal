@@ -46,6 +46,7 @@ import {
   makeCompanyUnlimited,
   setCompanyModules,
   updateCompanyInfo,
+  listCompaniesForAdmin,
 } from "@/lib/company.functions";
 import {
   approveSubscriptionPayment,
@@ -236,6 +237,7 @@ function SitePlanRequestsTab() {
 /* ---------------- Companies (existing) ---------------- */
 function CompaniesTab() {
   const qc = useQueryClient();
+  const listCompaniesFn = useServerFn(listCompaniesForAdmin);
   const approveFn = useServerFn(approveCompanyRequest);
   const rejectFn = useServerFn(rejectCompanyRequest);
   const suspendFn = useServerFn(suspendCompany);
@@ -341,15 +343,20 @@ function CompaniesTab() {
   } = useQuery({
     queryKey: ["companies-all"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("companies")
-        .select(
-          "id,name,owner_user_id,status,phone,created_at,updated_at,subscription_tariff_id,subscription_started_at,subscription_expires_at,max_staff,max_projects,max_blocks,enabled_modules,is_demo,demo_expires_at,kiosk_enabled",
-        )
-        .or("is_demo.is.null,is_demo.eq.false")
-        .order("created_at", { ascending: false });
-      if (error) throw new Error(error.message);
-      return data ?? [];
+      try {
+        const res = await listCompaniesFn();
+        return res ?? [];
+      } catch (err) {
+        const { data, error } = await (supabase as any)
+          .from("companies")
+          .select(
+            "id,name,owner_user_id,status,phone,created_at,updated_at,subscription_tariff_id,subscription_started_at,subscription_expires_at,max_staff,max_projects,max_blocks,enabled_modules,is_demo,demo_expires_at,kiosk_enabled",
+          )
+          .or("is_demo.is.null,is_demo.eq.false")
+          .order("created_at", { ascending: false });
+        if (error) throw new Error(error.message);
+        return data ?? [];
+      }
     },
     refetchInterval: 30000,
   });

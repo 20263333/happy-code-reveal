@@ -453,3 +453,25 @@ export const deleteCompany = createServerFn({ method: "POST" })
     return { ok: true, deleted_users: userIds.length };
   });
 
+
+
+// Super Admin fetches all companies (uses service role to bypass client RLS issues)
+export const listCompaniesForAdmin = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    await requireAdmin(supabase, userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as any;
+
+    const { data, error } = await admin
+      .from("companies")
+      .select(
+        "id,name,owner_user_id,status,phone,created_at,updated_at,subscription_tariff_id,subscription_started_at,subscription_expires_at,max_staff,max_projects,max_blocks,enabled_modules,is_demo,demo_expires_at,kiosk_enabled"
+      )
+      .or("is_demo.is.null,is_demo.eq.false")
+      .order("created_at", { ascending: false });
+
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
