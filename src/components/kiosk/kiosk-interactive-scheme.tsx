@@ -618,10 +618,12 @@ export function KioskInteractiveScheme({
             {schemeUrl ? (
               <div
                 ref={schemeContainerRef}
-                className="relative max-h-full max-w-full aspect-[4/3] flex items-center justify-center will-change-transform transition-[transform] duration-75"
+                className="relative max-h-full max-w-full aspect-[4/3] flex items-center justify-center transition-[transform] duration-75"
                 style={{
-                  transform: `translate(${tx}px, ${ty}px) scale(${scale})`,
+                  transform: (scale === 1 && tx === 0 && ty === 0) ? undefined : `translate(${tx}px, ${ty}px) scale(${scale})`,
                   cursor: isEditing ? "crosshair" : scale > 1 ? "grab" : "default",
+                  WebkitFontSmoothing: "antialiased",
+                  MozOsxFontSmoothing: "grayscale",
                 }}
               >
                 {/* Architectural Blueprint Image */}
@@ -741,30 +743,44 @@ export function KioskInteractiveScheme({
                         </div>
                       )}
 
-                      {/* Floating Tooltip on Hover / Selection */}
+                      {/* High-Resolution Crisp Floating Tooltip on Hover / Selection */}
                       {!isEditing && (
                         <div
                           className={cn(
-                            "absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-neutral-900/95 text-white text-[11px] rounded-xl shadow-2xl border border-white/15 whitespace-nowrap pointer-events-none transition-all duration-150 z-50",
+                            "absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 px-3.5 py-2.5 bg-neutral-950/98 text-white rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.85)] border border-neutral-700/90 whitespace-nowrap pointer-events-none transition-all duration-150 z-50",
                             isActiveGreen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 translate-y-1"
                           )}
+                          style={{
+                            WebkitFontSmoothing: "antialiased",
+                            MozOsxFontSmoothing: "grayscale",
+                            textRendering: "geometricPrecision",
+                          }}
                         >
-                          <div className="font-bold text-emerald-400 flex items-center gap-1.5">
-                            <span>Хонаи №{apt.apartment_number}</span>
-                            <span className="text-[10px] text-muted-foreground">•</span>
-                            <span className="text-white/90 font-normal">{cfg.label}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-black text-emerald-400 tracking-tight">
+                              Хонаи №{apt.apartment_number}
+                            </span>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40">
+                              {cfg.label}
+                            </span>
                           </div>
+
                           {apt.area && (
-                            <div className="text-[10px] text-neutral-300 font-mono">
-                              Масоҳат: <strong className="text-white">{apt.area} м²</strong>
+                            <div className="text-xs font-semibold text-neutral-100 mt-1.5 flex items-center gap-1.5 font-mono">
+                              <span className="text-neutral-300 font-sans font-medium">Масоҳат:</span>
+                              <strong className="text-white font-black text-sm">{apt.area} м²</strong>
                             </div>
                           )}
+
                           {apt.price ? (
-                            <div className="text-emerald-300 font-mono text-[10px] font-bold">
+                            <div className="text-sm font-black text-emerald-300 font-mono mt-1">
                               {Number(apt.price).toLocaleString()} TJS
                             </div>
                           ) : null}
-                          <div className="text-[9px] text-neutral-400 mt-0.5">Барои тафсилот пахш кунед</div>
+
+                          <div className="text-xs font-medium text-neutral-300 mt-1.5 pt-1.5 border-t border-neutral-800/90">
+                            Барои тафсилот пахш кунед
+                          </div>
                         </div>
                       )}
                     </div>
