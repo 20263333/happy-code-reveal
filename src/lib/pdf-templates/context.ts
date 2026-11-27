@@ -50,6 +50,7 @@ export type ContractCtx = {
   docx_installment_path: string;
   docx_shop_full_path: string;
   docx_shop_installment_path: string;
+  docx_schedule_path: string;
   is_shop: boolean;
 };
 
@@ -201,6 +202,7 @@ export async function buildContractContext(saleId: string, opts?: { usdRate?: nu
     docx_installment_path: tpl?.docx_installment_path || "",
     docx_shop_full_path: tpl?.docx_shop_full_path || "",
     docx_shop_installment_path: tpl?.docx_shop_installment_path || "",
+    docx_schedule_path: tpl?.docx_schedule_path || "",
     is_shop: isShopUnit(floorBlockName || blockName, floor?.floor_number),
   };
 }

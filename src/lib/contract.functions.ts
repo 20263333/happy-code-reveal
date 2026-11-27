@@ -215,7 +215,7 @@ export const uploadContractTemplateDocx = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
     z.object({
       company_id: z.string().uuid(),
-      kind: z.enum(["full", "installment", "shop_full", "shop_installment"]),
+      kind: z.enum(["full", "installment", "shop_full", "shop_installment", "schedule"]),
       file_base64: z.string(),
       file_name: z.string(),
     }).parse(d)
@@ -232,6 +232,7 @@ export const uploadContractTemplateDocx = createServerFn({ method: "POST" })
       installment: "docx_installment_path",
       shop_full: "docx_shop_full_path",
       shop_installment: "docx_shop_installment_path",
+      schedule: "docx_schedule_path",
     };
     const column = columnMap[data.kind];
 
@@ -283,7 +284,7 @@ export const deleteContractTemplateDocx = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
     z.object({
       company_id: z.string().uuid(),
-      kind: z.enum(["full", "installment", "shop_full", "shop_installment"]),
+      kind: z.enum(["full", "installment", "shop_full", "shop_installment", "schedule"]),
     }).parse(d)
   )
   .handler(async ({ data, context }) => {
@@ -298,6 +299,7 @@ export const deleteContractTemplateDocx = createServerFn({ method: "POST" })
       installment: "docx_installment_path",
       shop_full: "docx_shop_full_path",
       shop_installment: "docx_shop_installment_path",
+      schedule: "docx_schedule_path",
     };
     const column = columnMap[data.kind];
 

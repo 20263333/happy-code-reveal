@@ -379,6 +379,7 @@ ALTER TABLE public.contract_templates ADD COLUMN IF NOT EXISTS docx_full_path te
 ALTER TABLE public.contract_templates ADD COLUMN IF NOT EXISTS docx_installment_path text;
 ALTER TABLE public.contract_templates ADD COLUMN IF NOT EXISTS docx_shop_full_path text;
 ALTER TABLE public.contract_templates ADD COLUMN IF NOT EXISTS docx_shop_installment_path text;
+ALTER TABLE public.contract_templates ADD COLUMN IF NOT EXISTS docx_schedule_path text;
 ALTER TABLE public.customer_documents ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid();
 ALTER TABLE public.customer_documents ADD COLUMN IF NOT EXISTS customer_id uuid;
 ALTER TABLE public.customer_documents ADD COLUMN IF NOT EXISTS company_id uuid;

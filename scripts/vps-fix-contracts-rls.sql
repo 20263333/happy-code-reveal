@@ -178,3 +178,6 @@ EXCEPTION WHEN OTHERS THEN
 END $$;
 
 NOTIFY pgrst, 'reload schema';
+
+-- Сутуни docx_schedule_path барои шаблони графики пардохт
+ALTER TABLE public.contract_templates ADD COLUMN IF NOT EXISTS docx_schedule_path text;

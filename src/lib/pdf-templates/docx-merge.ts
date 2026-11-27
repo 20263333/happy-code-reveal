@@ -36,7 +36,16 @@ function fmtDateTj(d: Date): string {
   return `${dd} ${TJ_MONTHS[d.getMonth()]} соли ${d.getFullYear()}`;
 }
 
-type ScheduleRow = { n: string; date: string; amount_line: string };
+type ScheduleRow = {
+  n: string;
+  num?: string;
+  number?: string;
+  date: string;
+  payment_date?: string;
+  amount?: string;
+  amount_words?: string;
+  amount_line: string;
+};
 
 function buildScheduleRows(ctx: Awaited<ReturnType<typeof buildContractContext>>): ScheduleRow[] {
   const months = Math.max(0, Math.floor(ctx.installment_months || 0));
@@ -48,7 +57,12 @@ function buildScheduleRows(ctx: Awaited<ReturnType<typeof buildContractContext>>
     const d = new Date(start.getFullYear(), start.getMonth() + i, start.getDate());
     rows.push({
       n: String(i + 1),
+      num: String(i + 1),
+      number: String(i + 1),
       date: fmtDateTj(d),
+      payment_date: fmtDateTj(d),
+      amount: fmtMoney(monthly),
+      amount_words: amountToTajikWords(Math.round(monthly)),
       amount_line: `${fmtMoney(monthly)} сомонӣ (${amountToTajikWords(Math.round(monthly))}) бо асъори миллӣ дар рӯзи пардохт`,
     });
   }
@@ -88,7 +102,9 @@ async function loadTemplateBuffer(kind: TemplateKind, ctx: Awaited<ReturnType<ty
       ? (shop && ctx.docx_shop_full_path) || ctx.docx_full_path
       : kind === "installment"
         ? (shop && ctx.docx_shop_installment_path) || ctx.docx_installment_path
-        : "";
+        : kind === "schedule"
+          ? ctx.docx_schedule_path
+          : "";
   if (path) {
     const { supabase } = await import("@/integrations/supabase/client");
     const dl = await supabase.storage.from("contract-templates").download(path);
@@ -172,7 +188,11 @@ export async function downloadContractDocx(kind: TemplateKind, saleId: string, u
     advance_payment_usd_words_us_dollars: (ctx as any).advance_payment_usd_words || "",
     price_usd_words_us_dollars: ctx.price_usd_words,
     mortgage_payment_schedule: buildScheduleText(ctx),
+    schedule_text: buildScheduleText(ctx),
     rows: buildScheduleRows(ctx),
+    schedule_rows: buildScheduleRows(ctx),
+    schedule: buildScheduleRows(ctx),
+    items: buildScheduleRows(ctx),
   };
 
 

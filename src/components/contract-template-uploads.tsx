@@ -1,15 +1,15 @@
 import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { FileType2, Upload, Trash2, Loader2, CheckCircle2 } from "lucide-react";
+import { FileType2, CalendarDays, Upload, Trash2, Loader2, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { uploadContractTemplateDocx, deleteContractTemplateDocx } from "@/lib/contract.functions";
 
-type Kind = "full" | "installment" | "shop_full" | "shop_installment";
+type Kind = "full" | "installment" | "shop_full" | "shop_installment" | "schedule";
 
-type Column = "docx_full_path" | "docx_installment_path" | "docx_shop_full_path" | "docx_shop_installment_path";
+type Column = "docx_full_path" | "docx_installment_path" | "docx_shop_full_path" | "docx_shop_installment_path" | "docx_schedule_path";
 
 const META: Record<Kind, { column: Column; title: string; hint: string }> = {
   full: {
@@ -21,6 +21,11 @@ const META: Record<Kind, { column: Column; title: string; hint: string }> = {
     column: "docx_installment_path",
     title: "Шартномаи рассрочка",
     hint: "Файли Word (.docx) барои фурӯши қисм-қисм бо ҷадвали пардохт.",
+  },
+  schedule: {
+    column: "docx_schedule_path",
+    title: "Шаблони график (ҷадвали пардохтҳо)",
+    hint: "Файли Word (.docx) барои графики пардохт бо тегҳои {{client_full_name}}, {{#rows}} {{n}} {{date}} {{amount_line}} {{/rows}}.",
   },
   shop_full: {
     column: "docx_shop_full_path",
@@ -43,9 +48,10 @@ export function ContractTemplateUploads({ companyId, canEdit }: { companyId: str
           Ҳар як шаблонро як маротиба илова кунед — барнома маълумоти мизоҷро ба он мегузорад ва барои чоп мебарорад.
         </p>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Slot kind="full" companyId={companyId} canEdit={canEdit} />
         <Slot kind="installment" companyId={companyId} canEdit={canEdit} />
+        <Slot kind="schedule" companyId={companyId} canEdit={canEdit} />
         <Slot kind="shop_full" companyId={companyId} canEdit={canEdit} />
         <Slot kind="shop_installment" companyId={companyId} canEdit={canEdit} />
       </div>
@@ -138,7 +144,7 @@ function Slot({ kind, companyId, canEdit }: { kind: Kind; companyId: string | nu
   return (
     <div className="rounded-lg border border-border/70 bg-muted/20 p-4 space-y-3">
       <div className="flex items-start gap-2">
-        <FileType2 className="mt-0.5 h-4 w-4 text-primary" />
+        {kind === "schedule" ? <CalendarDays className="mt-0.5 h-4 w-4 text-primary" /> : <FileType2 className="mt-0.5 h-4 w-4 text-primary" />}
         <div className="min-w-0">
           <p className="text-sm font-medium">{meta.title}</p>
           <p className="text-xs text-muted-foreground">{meta.hint}</p>
