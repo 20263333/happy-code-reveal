@@ -993,12 +993,21 @@ function AddBlockButton({ parentId, onAdded }: { parentId: string; onAdded: () =
   const [status, setStatus] = useState<"planning" | "in_progress" | "completed">("in_progress");
   const [floorCount, setFloorCount] = useState("1");
   const [apartmentsPerFloor, setApartmentsPerFloor] = useState("1");
-  const [startFloor, setStartFloor] = useState("1");
-  const [commercialFloors, setCommercialFloors] = useState("0");
+  const [commercialType, setCommercialType] = useState<"none" | "1" | "0">("none");
+  const [commercialFloors, setCommercialFloors] = useState("1");
   const [shopsPerFloor, setShopsPerFloor] = useState("1");
+  const [shopArea, setShopArea] = useState("");
+  const [aptAreas, setAptAreas] = useState<string[]>([""]);
   const createFn = useServerFn(createBlock);
+
+  const isCommercial = commercialType !== "none";
+  const startFloorNum = commercialType === "0" ? 0 : 1;
+  const commFloorsNum = isCommercial ? Math.max(1, Number(commercialFloors) || 1) : 0;
+  const aptCount = Math.max(1, Number(apartmentsPerFloor) || 1);
+
   const add = useMutation({
     mutationFn: async () => {
+      const parsedAreas = Array.from({ length: aptCount }, (_, i) => Number(aptAreas[i]) || 0);
       return await createFn({
         data: {
           parent_id: parentId,
@@ -1006,10 +1015,12 @@ function AddBlockButton({ parentId, onAdded }: { parentId: string; onAdded: () =
           description: description || null,
           status,
           floor_count: Number(floorCount),
-          apartments_per_floor: Number(apartmentsPerFloor),
-          start_floor: Number(startFloor),
-          commercial_floors: Math.min(Number(commercialFloors) || 0, Number(floorCount)),
+          apartments_per_floor: aptCount,
+          start_floor: startFloorNum,
+          commercial_floors: Math.min(commFloorsNum, Number(floorCount)),
           shops_per_floor: Math.max(1, Number(shopsPerFloor) || 1),
+          apartment_areas: parsedAreas,
+          shop_area: Number(shopArea) || 0,
         },
       });
     },
@@ -1021,9 +1032,11 @@ function AddBlockButton({ parentId, onAdded }: { parentId: string; onAdded: () =
       setStatus("in_progress");
       setFloorCount("1");
       setApartmentsPerFloor("1");
-      setStartFloor("1");
-      setCommercialFloors("0");
+      setCommercialType("none");
+      setCommercialFloors("1");
       setShopsPerFloor("1");
+      setShopArea("");
+      setAptAreas([""]);
       onAdded();
     },
     onError: (e: any) => toast.error(e?.message || "Хатогӣ"),
@@ -1031,7 +1044,7 @@ function AddBlockButton({ parentId, onAdded }: { parentId: string; onAdded: () =
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild><Button><Plus className="mr-2 h-4 w-4" />Блок илова кардан</Button></DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[550px]">
         <DialogHeader><DialogTitle>Блоки нав</DialogTitle></DialogHeader>
         <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); add.mutate(); }}>
           <div className="space-y-1.5"><Label>Номи блок</Label><Input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Блоки 1" /></div>
@@ -1042,37 +1055,119 @@ function AddBlockButton({ parentId, onAdded }: { parentId: string; onAdded: () =
             </div>
             <div className="space-y-1.5">
               <Label>Хонаҳо дар ҳар ошёна</Label>
-              <Input type="number" min={1} max={200} required value={apartmentsPerFloor} onChange={(e) => setApartmentsPerFloor(e.target.value)} />
+              <Input
+                type="number"
+                min={1}
+                max={200}
+                required
+                value={apartmentsPerFloor}
+                onChange={(e) => {
+                  setApartmentsPerFloor(e.target.value);
+                  const newCount = Math.max(1, Math.min(50, Number(e.target.value) || 1));
+                  setAptAreas((prev) => {
+                    const next = [...prev];
+                    while (next.length < newCount) next.push("");
+                    return next.slice(0, newCount);
+                  });
+                }}
+              />
             </div>
           </div>
-          <div className="rounded-md border border-border p-3 space-y-2">
-            <div className="text-sm font-medium">Магозаҳо (ошёнаҳои тиҷоратӣ)</div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="space-y-1.5">
-                <Label>Ошёнаи аввал</Label>
-                <Select value={startFloor} onValueChange={setStartFloor}>
+
+          <div className="rounded-md border border-border bg-muted/20 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Масоҳати хонаҳои як ошёна (м²)</Label>
+              <span className="text-xs text-muted-foreground">Ба ҳамаи ошёнаҳо гузошта мешавад</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 max-h-48 overflow-y-auto p-1">
+              {Array.from({ length: Math.min(aptCount, 50) }, (_, i) => (
+                <div key={i} className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Хонаи {i + 1} (м²)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0"
+                    value={aptAreas[i] ?? ""}
+                    onChange={(e) => {
+                      const next = [...aptAreas];
+                      while (next.length <= i) next.push("");
+                      next[i] = e.target.value;
+                      setAptAreas(next);
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-md border border-border p-3 space-y-2.5">
+            <div className="text-sm font-medium">Мағозаҳо (ошёнаҳои тиҷоратӣ)</div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label>Ошёнаи аввал (ихтиёрӣ)</Label>
+                <Select value={commercialType} onValueChange={(v: "none" | "1" | "0") => setCommercialType(v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="0">0 (цокол)</SelectItem>
-                    <SelectItem value="1">1</SelectItem>
+                    <SelectItem value="none">Ихтиёрӣ: Бе мағоза (квартираҳо аз 1-ум ошёна)</SelectItem>
+                    <SelectItem value="1">1 (ошёнаи 1 — мағоза, квартираҳо аз 2-юм ошёна)</SelectItem>
+                    <SelectItem value="0">0 (цокол — мағоза, квартираҳо аз 1-ум ошёна)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
-                <Label>Шумораи ошёнаҳои магоза</Label>
-                <Input type="number" min={0} max={50} value={commercialFloors} onChange={(e) => setCommercialFloors(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Магоза дар ҳар ошёна</Label>
-                <Input type="number" min={1} max={200} value={shopsPerFloor} onChange={(e) => setShopsPerFloor(e.target.value)} />
-              </div>
+              {commercialType !== "none" && (
+                <>
+                  <div className="space-y-1.5">
+                    <Label>Шумораи ошёнаҳои мағоза</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={50}
+                      value={commercialFloors}
+                      onChange={(e) => setCommercialFloors(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Мағоза дар ҳар ошёна</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={200}
+                      value={shopsPerFloor}
+                      onChange={(e) => setShopsPerFloor(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label>Масоҳати мағоза (м², ихтиёрӣ)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0"
+                      value={shopArea}
+                      onChange={(e) => setShopArea(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
             </div>
-            {Number(commercialFloors) > 0 && (
+            {commercialType === "none" && (
               <p className="text-xs text-muted-foreground">
-                Ошёнаҳои {startFloor}–{Number(startFloor) + Math.min(Number(commercialFloors), Number(floorCount)) - 1} магоза мешаванд (М-1, М-2…), боқимонда — хонаҳои истиқоматӣ.
+                Бе мағоза. Ҳамаи {floorCount || 1} ошёна барои квартираҳо мебошанд (аз 1-ум ошёна).
+              </p>
+            )}
+            {commercialType === "1" && (
+              <p className="text-xs text-emerald-400">
+                Ошёнаи 1{Number(commercialFloors) > 1 ? `–${Number(commercialFloors)}` : ""} мағоза мешавад (М-1, М-2…). Квартираҳо аз {Math.min(Number(commercialFloors) + 1, Number(floorCount))}-юм ошёна ҳисоб мешаванд.
+              </p>
+            )}
+            {commercialType === "0" && (
+              <p className="text-xs text-emerald-400">
+                Ошёнаи 0 (цокол){Number(commercialFloors) > 1 ? `–${Number(commercialFloors) - 1}` : ""} мағоза мешавад (М-1…). Квартираҳо аз 1-ум ошёна ҳисоб мешаванд.
               </p>
             )}
           </div>
+
           <div className="space-y-1.5">
             <Label>Ҳолат</Label>
             <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
@@ -1091,7 +1186,6 @@ function AddBlockButton({ parentId, onAdded }: { parentId: string; onAdded: () =
     </Dialog>
   );
 }
-
 
 function AddFloorButton({ projectId, onAdded }: { projectId: string; onAdded: () => void }) {
   const { t } = useT();

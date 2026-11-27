@@ -14,6 +14,8 @@ const CreateBlockSchema = z.object({
   start_floor: z.number().int().min(-5).max(1).default(1),
   commercial_floors: z.number().int().min(0).max(50).default(0),
   shops_per_floor: z.number().int().min(1).max(200).default(1),
+  apartment_areas: z.array(z.number().min(0)).optional().default([]),
+  shop_area: z.number().min(0).optional().default(0),
 });
 
 const ProjectIdSchema = z.object({ project_id: z.string().uuid() });
@@ -114,15 +116,21 @@ export const createBlock = createServerFn({ method: "POST" })
       .sort((a: any, b: any) => a.floor_number - b.floor_number)
       .flatMap((floor: any) => {
         const isShop = floor.floor_number <= commercialMax;
-        return Array.from({ length: isShop ? data.shops_per_floor : data.apartments_per_floor }, () => ({
-          project_id: created.id,
-          floor_id: floor.id,
-          apartment_number: isShop ? `М-${shopNumber++}` : String(apartmentNumber++),
-          area: 0,
-          price: 0,
-          price_per_sqm: 0,
-          status: "empty",
-        }));
+        const count = isShop ? data.shops_per_floor : data.apartments_per_floor;
+        return Array.from({ length: count }, (_, aptIdx) => {
+          const area = isShop
+            ? (data.shop_area || 0)
+            : (data.apartment_areas?.[aptIdx] || 0);
+          return {
+            project_id: created.id,
+            floor_id: floor.id,
+            apartment_number: isShop ? `М-${shopNumber++}` : String(apartmentNumber++),
+            area: area,
+            price: 0,
+            price_per_sqm: 0,
+            status: "empty",
+          };
+        });
       });
 
     for (let index = 0; index < apartmentRows.length; index += 500) {
