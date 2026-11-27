@@ -133,3 +133,48 @@ CREATE POLICY contract_tpl_read ON storage.objects AS PERMISSIVE FOR SELECT TO a
       )
     )
   );
+
+
+-- 4. Deduplicate and ensure constraints on contract_templates
+DO $$
+BEGIN
+  -- Ensure id column is populated and not null
+  UPDATE public.contract_templates SET id = gen_random_uuid() WHERE id IS NULL;
+  ALTER TABLE public.contract_templates ALTER COLUMN id SET NOT NULL;
+
+  -- Primary key
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'contract_templates_pkey'
+  ) THEN
+    ALTER TABLE public.contract_templates ADD CONSTRAINT contract_templates_pkey PRIMARY KEY (id);
+  END IF;
+
+  -- Deduplicate: keep the newest record per company_id
+  DELETE FROM public.contract_templates a
+  USING public.contract_templates b
+  WHERE a.company_id = b.company_id
+    AND a.created_at < b.created_at;
+
+  DELETE FROM public.contract_templates a
+  USING public.contract_templates b
+  WHERE a.company_id = b.company_id
+    AND a.ctid < b.ctid;
+
+  -- Unique constraint on company_id
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'contract_templates_company_id_key'
+  ) THEN
+    ALTER TABLE public.contract_templates ADD CONSTRAINT contract_templates_company_id_key UNIQUE (company_id);
+  END IF;
+
+  -- Foreign key
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'contract_templates_company_id_fkey'
+  ) THEN
+    ALTER TABLE public.contract_templates ADD CONSTRAINT contract_templates_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id) ON DELETE CASCADE;
+  END IF;
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Constraint setup warning: %', SQLERRM;
+END $$;
+
+NOTIFY pgrst, 'reload schema';

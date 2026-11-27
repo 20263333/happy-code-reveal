@@ -60,7 +60,7 @@ function ContractsPage() {
     queryKey: ["contract-template", companyId],
     queryFn: async () =>
       companyId
-        ? (await (supabase as any).from("contract_templates").select("*").eq("company_id", companyId).maybeSingle()).data
+        ? (await (supabase as any).from("contract_templates").select("*").eq("company_id", companyId).order("updated_at", { ascending: false }).limit(1).maybeSingle()).data
         : null,
     enabled: !!companyId,
   });

@@ -69,6 +69,8 @@ function Slot({ kind, companyId, canEdit }: { kind: Kind; companyId: string | nu
         .from("contract_templates")
         .select(meta.column)
         .eq("company_id", companyId)
+        .order("updated_at", { ascending: false })
+        .limit(1)
         .maybeSingle();
       return (data?.[meta.column] as string | null) ?? null;
     },

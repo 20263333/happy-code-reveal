@@ -22,6 +22,9 @@ run_sql "$DIR/vps-policies-sync.sql"
 echo "==> 3/5 Ҳамоҳангсозии захирагоҳи файлҳо (buckets)"
 run_sql "$DIR/vps-storage-sync.sql"
 
+echo "==> 3.1/5 Ислоҳи RLS ва калидҳои contract_templates"
+run_sql "$DIR/vps-fix-contracts-rls.sql"
+
 echo "==> 4/5 Барқарор кардани кредити сканери паспорт"
 # Fail loudly: skipping a failed RPC repair would leave OCR unusable.
 if ! docker exec -i --user root supabase-db psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres < "$DIR/vps-scan-credit-sync.sql" >> "$LOG" 2>&1; then

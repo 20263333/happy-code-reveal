@@ -180,10 +180,32 @@ export const saveContractTemplate = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const admin = supabaseAdmin as any;
 
-    const { error } = await admin
+    const { data: existing } = await admin
       .from("contract_templates")
-      .upsert(data, { onConflict: "company_id" });
-    if (error) throw new Error(error.message);
+      .select("id")
+      .eq("company_id", data.company_id)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existing?.id) {
+      const { error } = await admin
+        .from("contract_templates")
+        .update({
+          ...data,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existing.id);
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await admin
+        .from("contract_templates")
+        .insert({
+          ...data,
+          updated_at: new Date().toISOString(),
+        });
+      if (error) throw new Error(error.message);
+    }
 
     return { ok: true };
   });
@@ -215,8 +237,10 @@ export const uploadContractTemplateDocx = createServerFn({ method: "POST" })
 
     const { data: current } = await admin
       .from("contract_templates")
-      .select(column)
+      .select(`id, ${column}`)
       .eq("company_id", data.company_id)
+      .order("updated_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
     const oldPath = current?.[column];
     if (oldPath) {
@@ -234,10 +258,22 @@ export const uploadContractTemplateDocx = createServerFn({ method: "POST" })
       });
     if (upErr) throw new Error(upErr.message);
 
-    const { error: dbErr } = await admin
-      .from("contract_templates")
-      .upsert({ company_id: data.company_id, [column]: objPath }, { onConflict: "company_id" });
-    if (dbErr) throw new Error(dbErr.message);
+    if (current?.id) {
+      const { error: dbErr } = await admin
+        .from("contract_templates")
+        .update({ [column]: objPath, updated_at: new Date().toISOString() })
+        .eq("id", current.id);
+      if (dbErr) throw new Error(dbErr.message);
+    } else {
+      const { error: dbErr } = await admin
+        .from("contract_templates")
+        .insert({
+          company_id: data.company_id,
+          [column]: objPath,
+          updated_at: new Date().toISOString(),
+        });
+      if (dbErr) throw new Error(dbErr.message);
+    }
 
     return { ok: true, path: objPath };
   });
@@ -267,18 +303,23 @@ export const deleteContractTemplateDocx = createServerFn({ method: "POST" })
 
     const { data: current } = await admin
       .from("contract_templates")
-      .select(column)
+      .select(`id, ${column}`)
       .eq("company_id", data.company_id)
+      .order("updated_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
     const oldPath = current?.[column];
     if (oldPath) {
       await admin.storage.from("contract-templates").remove([oldPath]);
     }
 
-    const { error } = await admin
-      .from("contract_templates")
-      .upsert({ company_id: data.company_id, [column]: null }, { onConflict: "company_id" });
-    if (error) throw new Error(error.message);
+    if (current?.id) {
+      const { error } = await admin
+        .from("contract_templates")
+        .update({ [column]: null, updated_at: new Date().toISOString() })
+        .eq("id", current.id);
+      if (error) throw new Error(error.message);
+    }
 
     return { ok: true };
   });
