@@ -16,9 +16,14 @@ if [[ -f "$ENV_FILE" ]]; then
   set +a
 fi
 if [[ -f "$APP_DIR/.env" ]]; then
-  set -a
-  source "$APP_DIR/.env"
-  set +a
+  # Load only Gemini/AI variables if defined in local .env to prevent overwriting Supabase keys
+  while IFS='=' read -r key val || [[ -n "$key" ]]; do
+    key="$(echo "$key" | sed -e "s/^export //" -e "s/^[[:space:]]*//" -e "s/[[:space:]]*$//")"
+    val="$(echo "$val" | sed -e "s/^[[:space:]]*//" -e "s/[[:space:]]*$//" -e "s/^['\"]//" -e "s/['\"]$//")"
+    if [[ "$key" == "GEMINI_API_KEY" || "$key" == "AI_PROVIDER" || "$key" == "GEMINI_OCR_MODEL" ]]; then
+      export "$key"="$val"
+    fi
+  done < "$APP_DIR/.env" 2>/dev/null || true
 fi
 
 if [[ -z "${LOVABLE_API_KEY:-}" && -z "${LOVABLE_AI_GATEWAY_KEY:-}" && -z "${OPENAI_API_KEY:-}" ]]; then

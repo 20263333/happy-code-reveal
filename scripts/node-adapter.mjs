@@ -10,7 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
 
 // Auto-load environment files on start so changes in .env take immediate effect
-function loadEnvFile(filePath) {
+function loadEnvFile(filePath, allowOverwrite = false) {
   try {
     if (!fs.existsSync(filePath)) return;
     const content = fs.readFileSync(filePath, "utf-8");
@@ -19,20 +19,25 @@ function loadEnvFile(filePath) {
       if (!trimmed || trimmed.startsWith("#")) continue;
       const eqIdx = trimmed.indexOf("=");
       if (eqIdx === -1) continue;
-      const key = trimmed.slice(0, eqIdx).trim();
+      let key = trimmed.slice(0, eqIdx).trim();
+      if (key.startsWith("export ")) key = key.slice(7).trim();
       let val = trimmed.slice(eqIdx + 1).trim();
       if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
         val = val.slice(1, -1);
       }
-      process.env[key] = val;
+      if (allowOverwrite || process.env[key] === undefined || process.env[key] === "") {
+        process.env[key] = val;
+      }
     }
     console.log(`[node-adapter] loaded environment from ${filePath}`);
   } catch (err) {
     console.warn(`[node-adapter] could not load ${filePath}:`, err?.message);
   }
 }
-loadEnvFile("/root/binosoz.env");
-loadEnvFile(path.resolve(root, ".env"));
+// 1. Primary config from /root/binosoz.env
+loadEnvFile("/root/binosoz.env", true);
+// 2. Local additions (GEMINI_API_KEY, AI_PROVIDER etc.) without overwriting primary keys
+loadEnvFile(path.resolve(root, ".env"), false);
 
 // Nitro writes either dist/ or .output/ depending on version/preset.
 const candidates = [
