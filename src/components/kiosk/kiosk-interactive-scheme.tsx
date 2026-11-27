@@ -11,18 +11,24 @@ import {
   LayoutGrid,
   Home,
   Maximize2,
+  Minimize2,
   Tag,
   ArrowRight,
   Info,
   Eye,
   EyeOff,
   Sparkles,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export type PinCoord = { slot: number; x: number; y: number };
+
+const MIN_SCALE = 0.5;
+const MAX_SCALE = 20;
+const ZOOM_PRESETS = [0.5, 1, 2, 4, 8, 15, 20];
 
 const STATUS_CONFIG: Record<
   string,
@@ -181,20 +187,120 @@ export function KioskInteractiveScheme({
   const [isEditing, setIsEditing] = useState(false);
   const [savingPins, setSavingPins] = useState(false);
 
-  // Zoom / Pan state
+  // High-Precision Smooth Zoom / Pan State
   const [scale, setScale] = useState(1);
   const [tx, setTx] = useState(0);
   const [ty, setTy] = useState(0);
-  const draggingCanvas = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null);
+  const [isDraggingCanvas, setIsDraggingCanvas] = useState(false);
+  const [showZoomMenu, setShowZoomMenu] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const schemeViewportRef = useRef<HTMLDivElement>(null);
   const schemeContainerRef = useRef<HTMLDivElement>(null);
+  const dragStartRef = useRef<{ clientX: number; clientY: number; startTx: number; startTy: number } | null>(null);
+  const dragMovedRef = useRef<boolean>(false);
   const draggingPin = useRef<{ slot: number } | null>(null);
 
-  const clamp = (s: number) => Math.min(4, Math.max(1, s));
+  const activeTouchesRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const initialPinchDistRef = useRef<number | null>(null);
+  const initialPinchScaleRef = useRef<number>(1);
+  const initialPinchCenterRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  const resetZoom = () => {
+  const clampScale = useCallback((s: number) => {
+    return Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.round(s * 1000) / 1000));
+  }, []);
+
+  const resetZoom = useCallback(() => {
     setScale(1);
     setTx(0);
     setTy(0);
+  }, []);
+
+  // Zoom relative to pointer cursor position or center
+  const zoomBy = useCallback((factor: number, clientX?: number, clientY?: number) => {
+    const vp = schemeViewportRef.current;
+    setScale((prevScale) => {
+      const nextScale = clampScale(prevScale * factor);
+      if (nextScale === prevScale) return prevScale;
+
+      if (vp && clientX !== undefined && clientY !== undefined) {
+        const rect = vp.getBoundingClientRect();
+        const mouseX = clientX - rect.left - rect.width / 2;
+        const mouseY = clientY - rect.top - rect.height / 2;
+        const ratio = nextScale / prevScale;
+        setTx((prevTx) => mouseX - (mouseX - prevTx) * ratio);
+        setTy((prevTy) => mouseY - (mouseY - prevTy) * ratio);
+      } else {
+        const ratio = nextScale / prevScale;
+        setTx((prevTx) => prevTx * ratio);
+        setTy((prevTy) => prevTy * ratio);
+      }
+      return nextScale;
+    });
+  }, [clampScale]);
+
+  const setZoomLevel = useCallback((targetScale: number) => {
+    const nextScale = clampScale(targetScale);
+    setScale((prevScale) => {
+      if (nextScale === prevScale) return prevScale;
+      const ratio = nextScale / prevScale;
+      setTx((prevTx) => prevTx * ratio);
+      setTy((prevTy) => prevTy * ratio);
+      return nextScale;
+    });
+    setShowZoomMenu(false);
+  }, [clampScale]);
+
+  // Smooth mouse wheel zoom anchored at cursor
+  useEffect(() => {
+    const vp = schemeViewportRef.current;
+    if (!vp) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const rect = vp.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left - rect.width / 2;
+      const mouseY = e.clientY - rect.top - rect.height / 2;
+
+      // Smooth geometric zoom
+      const delta = -e.deltaY;
+      const factor = delta > 0 ? 1.15 : 1 / 1.15;
+
+      setScale((prevScale) => {
+        const nextScale = clampScale(prevScale * factor);
+        if (nextScale === prevScale) return prevScale;
+        const ratio = nextScale / prevScale;
+        setTx((prevTx) => mouseX - (mouseX - prevTx) * ratio);
+        setTy((prevTy) => mouseY - (mouseY - prevTy) * ratio);
+        return nextScale;
+      });
+    };
+
+    vp.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      vp.removeEventListener("wheel", handleWheel);
+    };
+  }, [clampScale]);
+
+  // Track Fullscreen changes
+  useEffect(() => {
+    const handler = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handler);
+    return () => document.removeEventListener("fullscreenchange", handler);
+  }, []);
+
+  const toggleFullscreen = () => {
+    const vp = schemeViewportRef.current;
+    if (!vp) return;
+    if (!document.fullscreenElement) {
+      vp.requestFullscreen?.().catch(() => {});
+    } else {
+      document.exitFullscreen?.().catch(() => {});
+    }
   };
 
   const getSlotCoord = useCallback(
@@ -207,13 +313,40 @@ export function KioskInteractiveScheme({
   );
 
   const handlePointerDownCanvas = (e: React.PointerEvent) => {
-    if (isEditing) return;
-    if (scale <= 1) return;
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-    draggingCanvas.current = { x: e.clientX, y: e.clientY, tx, ty };
+    activeTouchesRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    // Handle 2-finger touch pinch-to-zoom
+    if (activeTouchesRef.current.size === 2) {
+      const pts = Array.from(activeTouchesRef.current.values());
+      initialPinchDistRef.current = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      initialPinchScaleRef.current = scale;
+      const vp = schemeViewportRef.current;
+      if (vp) {
+        const rect = vp.getBoundingClientRect();
+        initialPinchCenterRef.current = {
+          x: (pts[0].x + pts[1].x) / 2 - rect.left - rect.width / 2,
+          y: (pts[0].y + pts[1].y) / 2 - rect.top - rect.height / 2,
+        };
+      }
+      dragStartRef.current = null;
+      setIsDraggingCanvas(false);
+      return;
+    }
+
+    if (e.button !== 0) return; // Only primary mouse button
+
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    dragStartRef.current = {
+      clientX: e.clientX,
+      clientY: e.clientY,
+      startTx: tx,
+      startTy: ty,
+    };
+    dragMovedRef.current = false;
   };
 
   const handlePointerMoveCanvas = (e: React.PointerEvent) => {
+    // Pin dragging in edit mode
     if (draggingPin.current && isEditing && schemeContainerRef.current) {
       const rect = schemeContainerRef.current.getBoundingClientRect();
       const xPercent = Math.min(95, Math.max(5, ((e.clientX - rect.left) / rect.width) * 100));
@@ -232,14 +365,61 @@ export function KioskInteractiveScheme({
       return;
     }
 
-    if (!draggingCanvas.current) return;
-    setTx(draggingCanvas.current.tx + (e.clientX - draggingCanvas.current.x));
-    setTy(draggingCanvas.current.ty + (e.clientY - draggingCanvas.current.y));
+    if (activeTouchesRef.current.has(e.pointerId)) {
+      activeTouchesRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    }
+
+    // 2-finger touch pinch zoom
+    if (activeTouchesRef.current.size >= 2 && initialPinchDistRef.current && initialPinchDistRef.current > 0) {
+      const pts = Array.from(activeTouchesRef.current.values());
+      const curDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      const ratio = curDist / initialPinchDistRef.current;
+      const targetScale = clampScale(initialPinchScaleRef.current * ratio);
+      const center = initialPinchCenterRef.current;
+
+      setScale((prevScale) => {
+        if (prevScale === targetScale) return prevScale;
+        const r = targetScale / prevScale;
+        setTx((prevTx) => center.x - (center.x - prevTx) * r);
+        setTy((prevTy) => center.y - (center.y - prevTy) * r);
+        return targetScale;
+      });
+      return;
+    }
+
+    // 1-pointer pan
+    if (!dragStartRef.current) return;
+    const dx = e.clientX - dragStartRef.current.clientX;
+    const dy = e.clientY - dragStartRef.current.clientY;
+
+    if (!dragMovedRef.current && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
+      dragMovedRef.current = true;
+      setIsDraggingCanvas(true);
+    }
+
+    if (dragMovedRef.current) {
+      setTx(dragStartRef.current.startTx + dx);
+      setTy(dragStartRef.current.startTy + dy);
+    }
   };
 
-  const handlePointerUpCanvas = () => {
-    draggingCanvas.current = null;
+  const handlePointerUpCanvas = (e: React.PointerEvent) => {
+    activeTouchesRef.current.delete(e.pointerId);
+    if (activeTouchesRef.current.size < 2) {
+      initialPinchDistRef.current = null;
+    }
+    dragStartRef.current = null;
+    setIsDraggingCanvas(false);
     draggingPin.current = null;
+  };
+
+  const handleDoubleClickCanvas = (e: React.MouseEvent) => {
+    if (isEditing) return;
+    if (scale > 1.2) {
+      resetZoom();
+    } else {
+      zoomBy(2.5, e.clientX, e.clientY);
+    }
   };
 
   const startEditing = () => {
@@ -263,220 +443,192 @@ export function KioskInteractiveScheme({
 
   function handleResetDefaultPositions() {
     const total = currentApartments.length || 7;
-    const defaults: PinCoord[] = [];
+    const defs: PinCoord[] = [];
     for (let i = 0; i < total; i++) {
-      defaults.push({ slot: i, ...getDefaultPinPosition(i, total) });
+      const pos = getDefaultPinPosition(i, total);
+      defs.push({ slot: i, x: pos.x, y: pos.y });
     }
-    setPins(defaults);
-    toast.info("Мавқеъҳо ба ҳолати пешфарз баргардонида шуданд. Барои тасдиқ «Сабт»-ро пахш кунед.");
+    setPins(defs);
+    toast.info("Мавқеъҳо ба ҳолати аввала (пешфарз) баргардонида шуданд");
   }
 
   const activeFloor = sortedFloors.find((f) => f.id === activeFloorId);
-  const activeAptCfg = activeApt ? STATUS_CONFIG[activeApt.status] ?? STATUS_CONFIG.empty : null;
+
+  // Counter-scaling factor so markers stay compact, crisp and clickable at any zoom level up to 20x
+  // without ballooning and obscuring the blueprint details
+  const pinScaleFactor = useMemo(() => {
+    if (scale <= 1) return 1;
+    return Math.max(0.16, Math.min(1.0, 1 / Math.pow(scale, 0.72)));
+  }, [scale]);
 
   return (
-    <div className="h-full flex flex-col bg-background/50 overflow-hidden select-none">
-      {/* Top Banner when in Edit Mode */}
-      {isEditing && (
-        <div className="bg-amber-500/10 border-b border-amber-500/30 px-4 py-2 flex items-center justify-between text-amber-200 text-xs sm:text-sm animate-in fade-in">
-          <div className="flex items-center gap-2">
-            <Move className="h-4 w-4 animate-pulse text-amber-400" />
-            <span>
-              <strong>Ҳолати танзим:</strong> Меткаҳоро бо муш кашида ба болои хонаи мувофиқи нақша гузоред. Ин тарҳрезӣ худкор ба <strong>ҳамаи ошёнаҳо</strong> татбиқ мешавад.
-            </span>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={handleResetDefaultPositions}
-              className="px-2.5 py-1 text-xs rounded border border-amber-500/40 hover:bg-amber-500/20 text-amber-300"
-            >
-              Аз нав гузоштан
-            </button>
-            <Button
-              size="sm"
-              variant="default"
-              className="bg-emerald-600 hover:bg-emerald-500 text-white h-7 text-xs"
-              onClick={handleSavePins}
-              disabled={savingPins}
-            >
-              {savingPins ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5 mr-1" />}
-              Сабти мавқеъҳо
-            </Button>
-            <button
-              onClick={() => {
-                setPins(initialPins ?? []);
-                setIsEditing(false);
-              }}
-              className="text-xs text-muted-foreground hover:text-foreground px-2 py-1"
-            >
-              Бекор кардан
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Main Container: Left Sidebar (Floors + Apartment Card) + Scheme Canvas */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Column: Floors List + Dedicated Apartment Detail Card */}
-        <div className="w-72 sm:w-80 shrink-0 border-r border-border bg-card/75 flex flex-col overflow-hidden">
-          {/* Floor Selector Header */}
-          <div className="p-3 border-b border-border/80 flex items-center justify-between shrink-0">
-            <div className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
-              <Layers className="h-3.5 w-3.5 text-primary" />
-              Ошёнаҳо
-            </div>
-            <span className="text-xs text-muted-foreground font-mono">{sortedFloors.length} ошёна</span>
-          </div>
-
-          {/* Floors Scrollable List */}
-          <div className="max-h-48 sm:max-h-56 overflow-y-auto p-2 space-y-1 shrink-0 border-b border-border/80">
-            {sortedFloors.map((f) => {
-              const apts = apartmentsByFloor.get(f.id) ?? [];
-              const isActive = f.id === activeFloorId;
-              const emptyCount = apts.filter((a) => a.status === "empty").length;
-
+    <div className="flex flex-col h-full bg-background select-none">
+      {/* Top Bar: Floor Selection Tabs */}
+      <div className="border-b border-border bg-card/60 px-4 py-2 flex items-center justify-between gap-3 overflow-x-auto shrink-0">
+        <div className="flex items-center gap-2">
+          <Layers className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">
+            Ошёнаҳо:
+          </span>
+          <div className="flex items-center gap-1.5 flex-nowrap">
+            {sortedFloors.map((fl) => {
+              const aptsCount = apartmentsByFloor.get(fl.id)?.length ?? 0;
+              const isActive = fl.id === activeFloorId;
               return (
                 <button
-                  key={f.id}
-                  onClick={() => {
-                    setActiveFloorId(f.id);
-                  }}
+                  key={fl.id}
+                  onClick={() => setActiveFloorId(fl.id)}
                   className={cn(
-                    "w-full text-left p-2 rounded-xl transition flex items-center justify-between group",
+                    "px-3 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5",
                     isActive
-                      ? "bg-primary text-primary-foreground shadow-sm scale-[1.01]"
-                      : "hover:bg-muted/70 text-card-foreground border border-transparent"
+                      ? "bg-primary text-primary-foreground shadow-md scale-105"
+                      : "bg-muted/70 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/50",
                   )}
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div
+                  <span>{fl.floor_number}-ум ошёна</span>
+                  {aptsCount > 0 && (
+                    <span
                       className={cn(
-                        "w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0",
-                        isActive
-                          ? "bg-primary-foreground/20 text-primary-foreground"
-                          : "bg-muted text-foreground border border-border/60"
+                        "text-[10px] px-1.5 py-0.2 rounded-full font-mono font-semibold",
+                        isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-background/80 text-foreground",
                       )}
                     >
-                      {f.floor_number}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-semibold truncate leading-tight">
-                        {f.floor_number === 0 ? "Цокол" : `${f.floor_number}-ум ошёна`}
-                      </div>
-                      <div
-                        className={cn(
-                          "text-[10px] truncate",
-                          isActive ? "text-primary-foreground/80" : "text-muted-foreground"
-                        )}
-                      >
-                        {apts.length > 0 ? `${apts.length} квартира` : "Хона нест"}
-                      </div>
-                    </div>
-                  </div>
-
-                  {apts.length > 0 && (
-                    <div className="shrink-0 flex items-center gap-1">
-                      {emptyCount > 0 ? (
-                        <span
-                          className={cn(
-                            "px-1.5 py-0.5 rounded text-[9px] font-bold",
-                            isActive
-                              ? "bg-primary-foreground text-primary"
-                              : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                          )}
-                        >
-                          {emptyCount} холӣ
-                        </span>
-                      ) : (
-                        <span className="w-2 h-2 rounded-full bg-red-500" title="Ҳама фурӯхта шуд" />
-                      )}
-                    </div>
+                      {aptsCount}
+                    </span>
                   )}
                 </button>
               );
             })}
           </div>
+        </div>
 
-          {/* DEDICATED APARTMENT CARD (Карточкаи хона) */}
-          <div className="flex-1 flex flex-col p-3 overflow-y-auto bg-card/40">
-            {activeApt && activeAptCfg ? (
-              <div className="flex-1 flex flex-col justify-between rounded-2xl border border-emerald-500/30 bg-gradient-to-b from-card to-background p-4 shadow-lg animate-in fade-in duration-150 relative overflow-hidden">
-                {/* Background decorative glow */}
-                <div className="absolute -top-10 -right-10 w-28 h-28 rounded-full bg-emerald-500/10 blur-2xl pointer-events-none" />
+        {/* Edit mode controls */}
+        {isEditing && (
+          <div className="flex items-center gap-2 shrink-0 animate-in fade-in">
+            <span className="text-xs text-amber-400 font-medium hidden sm:inline">
+              Доирачаҳоро ба болои нақша кашед
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleResetDefaultPositions}
+              className="h-8 text-xs border-amber-500/40 text-amber-400 hover:bg-amber-500/10"
+            >
+              Пешфарз
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setPins(initialPins ?? []);
+                setIsEditing(false);
+              }}
+              className="h-8 text-xs"
+            >
+              Бекор кардан
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSavePins}
+              disabled={savingPins}
+              className="h-8 text-xs bg-emerald-600 hover:bg-emerald-500 text-white gap-1 font-semibold"
+            >
+              {savingPins ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+              Сабти схема
+            </Button>
+          </div>
+        )}
+      </div>
 
-                <div className="space-y-3.5 relative">
-                  {/* Card Header: Badge & Status */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-                      <Home className="h-3.5 w-3.5 text-emerald-400" />
-                      Карточкаи хона
-                    </span>
-                    <span
-                      className={cn(
-                        "px-2.5 py-0.5 rounded-full text-[11px] font-bold border flex items-center gap-1 shadow-sm",
-                        activeAptCfg.bg,
-                        "text-white",
-                        activeAptCfg.border
-                      )}
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                      {activeAptCfg.label}
-                    </span>
+      {/* Main Workspace */}
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+        {/* Left Sidebar: Detailed Apartment Info Card */}
+        <div className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r border-border bg-card/30 backdrop-blur flex flex-col shrink-0 overflow-y-auto max-h-[35vh] lg:max-h-full">
+          <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
+            <div>
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                    <Home className="h-4 w-4" />
                   </div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-foreground">
+                    Маълумоти хона
+                  </span>
+                </div>
+                {activeApt && (
+                  <span
+                    className={cn(
+                      "text-xs px-2.5 py-1 rounded-full font-bold border shadow-sm",
+                      STATUS_CONFIG[activeApt.status]?.bg ?? "bg-emerald-500",
+                      "text-white border-white/20",
+                    )}
+                  >
+                    {STATUS_CONFIG[activeApt.status]?.label ?? "Холӣ"}
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-snug">
+                Мушро ба болои доирачаҳо дар нақша баред ё пахш кунед.
+              </p>
+            </div>
 
-                  {/* Big Apartment Title */}
-                  <div className="border-b border-border/80 pb-3">
-                    <div className="text-2xl sm:text-3xl font-black text-foreground tracking-tight flex items-baseline gap-2">
-                      <span className="text-emerald-400">№{activeApt.apartment_number}</span>
-                      <span className="text-xs text-muted-foreground font-normal">
-                        ({activeFloor?.floor_number}-ум ошёна)
-                      </span>
+            {activeApt ? (
+              <div className="space-y-3 bg-card/80 border border-border/80 rounded-2xl p-4 shadow-lg backdrop-blur-sm">
+                <div className="flex items-baseline justify-between border-b border-border/60 pb-3">
+                  <div>
+                    <span className="text-xs text-muted-foreground font-medium">Рақами манзил</span>
+                    <div className="text-2xl font-black text-foreground tracking-tight">
+                      №{activeApt.apartment_number}
                     </div>
                   </div>
-
-                  {/* Apartment Specs Grid */}
-                  <div className="grid grid-cols-2 gap-2.5 pt-1">
-                    {/* Area (Квадрат) */}
-                    <div className="bg-muted/60 rounded-xl p-2.5 border border-border/60">
-                      <div className="text-[10px] text-muted-foreground uppercase font-semibold flex items-center gap-1">
-                        <Maximize2 className="h-3 w-3 text-emerald-400" />
-                        Масоҳат
-                      </div>
-                      <div className="text-lg font-black text-foreground mt-0.5">
-                        {activeApt.area ? `${activeApt.area} м²` : "—"}
-                      </div>
+                  <div className="text-right">
+                    <span className="text-xs text-muted-foreground font-medium">Ошёна</span>
+                    <div className="text-base font-bold text-foreground">
+                      {activeFloor?.floor_number ?? "-"}-ум ошёна
                     </div>
-
-                    {/* Rooms / Type */}
-                    <div className="bg-muted/60 rounded-xl p-2.5 border border-border/60">
-                      <div className="text-[10px] text-muted-foreground uppercase font-semibold flex items-center gap-1">
-                        <Tag className="h-3 w-3 text-emerald-400" />
-                        Ҳуҷраҳо
-                      </div>
-                      <div className="text-sm font-bold text-foreground mt-1">
-                        {activeApt.rooms ? `${activeApt.rooms}-ҳуҷрагӣ` : "Истиқоматӣ"}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Pricing Info */}
-                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
-                    <div className="text-[10px] uppercase font-semibold text-emerald-400">Нархи умумӣ</div>
-                    <div className="text-xl font-black text-emerald-300 mt-0.5 font-mono">
-                      {activeApt.price ? `${Number(activeApt.price).toLocaleString()} TJS` : "Бо маслиҳат"}
-                    </div>
-                    {activeApt.price_per_sqm || (activeApt.price && activeApt.area) ? (
-                      <div className="text-[11px] text-muted-foreground mt-1 font-mono">
-                        {activeApt.price_per_sqm
-                          ? `${Number(activeApt.price_per_sqm).toLocaleString()} TJS / м²`
-                          : `${Math.round(Number(activeApt.price) / Number(activeApt.area)).toLocaleString()} TJS / м²`}
-                      </div>
-                    ) : null}
                   </div>
                 </div>
 
+                {/* Specs Grid */}
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <div className="bg-muted/60 rounded-xl p-2.5 border border-border/60">
+                    <div className="text-[10px] text-muted-foreground uppercase font-semibold flex items-center gap-1">
+                      <Maximize2 className="h-3 w-3 text-emerald-400" />
+                      Масоҳат
+                    </div>
+                    <div className="text-base font-black text-foreground mt-0.5 font-mono">
+                      {activeApt.area ? `${activeApt.area} м²` : "—"}
+                    </div>
+                  </div>
+
+                  <div className="bg-muted/60 rounded-xl p-2.5 border border-border/60">
+                    <div className="text-[10px] text-muted-foreground uppercase font-semibold flex items-center gap-1">
+                      <Tag className="h-3 w-3 text-emerald-400" />
+                      Ҳуҷраҳо
+                    </div>
+                    <div className="text-sm font-bold text-foreground mt-1">
+                      {activeApt.rooms ? `${activeApt.rooms}-ҳуҷрагӣ` : "Истиқоматӣ"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pricing Info */}
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
+                  <div className="text-[10px] uppercase font-semibold text-emerald-400">Нархи умумӣ</div>
+                  <div className="text-xl font-black text-emerald-300 mt-0.5 font-mono">
+                    {activeApt.price ? `${Number(activeApt.price).toLocaleString()} TJS` : "Бо маслиҳат"}
+                  </div>
+                  {activeApt.price_per_sqm || (activeApt.price && activeApt.area) ? (
+                    <div className="text-[11px] text-muted-foreground mt-1 font-mono">
+                      {activeApt.price_per_sqm
+                        ? `${Number(activeApt.price_per_sqm).toLocaleString()} TJS / м²`
+                        : `${Math.round(Number(activeApt.price) / Number(activeApt.area)).toLocaleString()} TJS / м²`}
+                    </div>
+                  ) : null}
+                </div>
+
                 {/* Open Modal / Purchase Button */}
-                <div className="pt-3">
+                <div className="pt-2">
                   <Button
                     onClick={() => onApartmentClick(activeApt)}
                     className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-10 text-xs sm:text-sm rounded-xl shadow-md gap-1.5 transition-all hover:shadow-emerald-500/25"
@@ -527,7 +679,7 @@ export function KioskInteractiveScheme({
                     "h-8 text-xs gap-1.5 transition-all",
                     !showPins
                       ? "bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-sm"
-                      : "border-border hover:bg-muted text-muted-foreground hover:text-foreground"
+                      : "border-border hover:bg-muted text-muted-foreground hover:text-foreground",
                   )}
                   onClick={() => setShowPins((v) => !v)}
                   title={
@@ -594,12 +746,13 @@ export function KioskInteractiveScheme({
 
           {/* Scheme Viewport Canvas */}
           <div
+            ref={schemeViewportRef}
             className="flex-1 relative overflow-hidden bg-neutral-950 flex items-center justify-center touch-none select-none"
             onPointerDown={handlePointerDownCanvas}
             onPointerMove={handlePointerMoveCanvas}
             onPointerUp={handlePointerUpCanvas}
             onPointerCancel={handlePointerUpCanvas}
-            onDoubleClick={resetZoom}
+            onDoubleClick={handleDoubleClickCanvas}
           >
             {/* Notification Banner when Clean View is Active */}
             {!showPins && !isEditing && schemeUrl && (
@@ -615,13 +768,17 @@ export function KioskInteractiveScheme({
               </div>
             )}
 
+            {/* Scheme Blueprint and Interactive Overlays */}
             {schemeUrl ? (
               <div
                 ref={schemeContainerRef}
-                className="relative max-h-full max-w-full aspect-[4/3] flex items-center justify-center transition-[transform] duration-75"
+                className={cn(
+                  "relative max-h-full max-w-full aspect-[4/3] flex items-center justify-center origin-center",
+                  !isDraggingCanvas && "transition-transform duration-100 ease-out",
+                )}
                 style={{
-                  transform: (scale === 1 && tx === 0 && ty === 0) ? undefined : `translate(${tx}px, ${ty}px) scale(${scale})`,
-                  cursor: isEditing ? "crosshair" : scale > 1 ? "grab" : "default",
+                  transform: scale === 1 && tx === 0 && ty === 0 ? undefined : `translate(${tx}px, ${ty}px) scale(${scale})`,
+                  cursor: isEditing ? (draggingPin.current ? "grabbing" : "crosshair") : isDraggingCanvas ? "grabbing" : "grab",
                   WebkitFontSmoothing: "antialiased",
                   MozOsxFontSmoothing: "grayscale",
                 }}
@@ -646,12 +803,16 @@ export function KioskInteractiveScheme({
                   const isVisible = showPins || isEditing || isActiveGreen;
                   if (!isVisible) return null;
 
+                  const pinDynamicScale = isActiveGreen ? pinScaleFactor * 1.25 : pinScaleFactor;
+
                   return (
                     <div
                       key={apt.id}
                       style={{
                         left: `${coord.x}%`,
                         top: `${coord.y}%`,
+                        transform: `translate(-50%, -50%) scale(${pinDynamicScale})`,
+                        transformOrigin: "center center",
                         zIndex: isActiveGreen ? 50 : 20,
                       }}
                       onPointerDown={(e) => {
@@ -661,6 +822,7 @@ export function KioskInteractiveScheme({
                         }
                       }}
                       onClick={(e) => {
+                        if (dragMovedRef.current) return;
                         if (!isEditing) {
                           e.stopPropagation();
                           setSelectedAptId(apt.id);
@@ -675,9 +837,8 @@ export function KioskInteractiveScheme({
                         setHoveredAptId(null);
                       }}
                       className={cn(
-                        "absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-200 group",
-                        isActiveGreen ? "scale-115 z-50" : "scale-100",
-                        isEditing && "cursor-move ring-2 ring-amber-400 ring-offset-2 ring-offset-background"
+                        "absolute cursor-pointer transition-all duration-150 group",
+                        isEditing && "cursor-move ring-2 ring-amber-400 ring-offset-2 ring-offset-background",
                       )}
                     >
                       {/* Radial green aura glow when hovered/active */}
@@ -691,8 +852,8 @@ export function KioskInteractiveScheme({
                           className={cn(
                             "relative w-7 h-7 sm:w-8 sm:h-8 rounded-full font-black text-xs sm:text-sm border-2 shadow-lg backdrop-blur-md transition-all flex items-center justify-center",
                             isActiveGreen
-                              ? "bg-emerald-500 text-white border-white scale-125 ring-4 ring-emerald-400/50 shadow-[0_0_22px_rgba(16,185,129,0.95)]"
-                              : "bg-neutral-900/90 text-white border-neutral-600/80 shadow-md hover:border-emerald-400 hover:scale-110",
+                              ? "bg-emerald-500 text-white border-white scale-110 ring-4 ring-emerald-400/50 shadow-[0_0_22px_rgba(16,185,129,0.95)]"
+                              : "bg-neutral-900/90 text-white border-neutral-600/80 shadow-md hover:border-emerald-400 hover:scale-105",
                           )}
                         >
                           <span className="leading-none drop-shadow-sm font-bold">
@@ -712,14 +873,14 @@ export function KioskInteractiveScheme({
                             isActiveGreen
                               ? "bg-emerald-500 text-white border-emerald-300 ring-4 ring-emerald-400/40 shadow-[0_0_25px_rgba(16,185,129,0.9)]"
                               : "bg-neutral-900/85 text-white border-neutral-700/80 shadow-md hover:border-neutral-500",
-                            isEditing && "ring-2 ring-amber-400"
+                            isEditing && "ring-2 ring-amber-400",
                           )}
                         >
                           <div className="flex items-center gap-1 leading-none">
                             <span
                               className={cn(
                                 "text-sm sm:text-base font-black tracking-tight drop-shadow",
-                                isActiveGreen ? "text-white" : "text-neutral-100"
+                                isActiveGreen ? "text-white" : "text-neutral-100",
                               )}
                             >
                               №{apt.apartment_number}
@@ -729,7 +890,7 @@ export function KioskInteractiveScheme({
                             <div
                               className={cn(
                                 "text-[9px] sm:text-[10px] font-medium leading-tight mt-0.5",
-                                isActiveGreen ? "text-emerald-100 font-bold" : "text-neutral-300"
+                                isActiveGreen ? "text-emerald-100 font-bold" : "text-neutral-300",
                               )}
                             >
                               {apt.area} м²
@@ -747,10 +908,13 @@ export function KioskInteractiveScheme({
                       {!isEditing && (
                         <div
                           className={cn(
-                            "absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 px-3.5 py-2.5 bg-neutral-950/98 text-white rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.85)] border border-neutral-700/90 whitespace-nowrap pointer-events-none transition-all duration-150 z-50",
-                            isActiveGreen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 translate-y-1"
+                            "absolute bottom-full left-1/2 mb-2.5 px-3.5 py-2.5 bg-neutral-950/98 text-white rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.85)] border border-neutral-700/90 whitespace-nowrap pointer-events-none transition-opacity duration-150 z-50",
+                            isActiveGreen ? "opacity-100" : "opacity-0 pointer-events-none",
                           )}
                           style={{
+                            // Counter-scale tooltip so text is always 100% sharp and readable at standard font size
+                            transform: `translate(-50%, 0) scale(${1 / (scale * pinDynamicScale)})`,
+                            transformOrigin: "bottom center",
                             WebkitFontSmoothing: "antialiased",
                             MozOsxFontSmoothing: "grayscale",
                             textRendering: "geometricPrecision",
@@ -807,33 +971,101 @@ export function KioskInteractiveScheme({
               </div>
             )}
 
-            {/* Scheme Zoom Controls */}
+            {/* Hint pill for gestures */}
             {schemeUrl && (
-              <div className="absolute bottom-4 right-4 flex flex-col gap-1.5 bg-card/90 backdrop-blur rounded-xl border border-border shadow-2xl p-1 z-30">
-                <button
-                  onClick={() => setScale((s) => clamp(s * 1.3))}
-                  className="h-10 w-10 rounded-lg hover:bg-muted text-foreground flex items-center justify-center transition"
-                  aria-label="Наздик кардан"
-                  title="Наздик кардан"
-                >
-                  <ZoomIn className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setScale((s) => clamp(s / 1.3))}
-                  className="h-10 w-10 rounded-lg hover:bg-muted text-foreground flex items-center justify-center transition"
-                  aria-label="Дур кардан"
-                  title="Дур кардан"
-                >
-                  <ZoomOut className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={resetZoom}
-                  className="h-10 w-10 rounded-lg hover:bg-muted text-foreground flex items-center justify-center transition"
-                  aria-label="Бозсозӣ"
-                  title="Андозаи аввала"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                </button>
+              <div className="absolute bottom-4 left-4 hidden md:flex items-center gap-2 bg-neutral-900/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-neutral-800 text-[11px] text-neutral-300 pointer-events-none select-none z-20">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Чархаки муш (wheel) ё 2 ангушт барои зум то 2000% · Кашола кардан барои ҳаракат</span>
+              </div>
+            )}
+
+            {/* Scheme Zoom Controls Dock */}
+            {schemeUrl && (
+              <div className="absolute bottom-4 right-4 flex items-center gap-1.5 z-30">
+                {/* Presets dropdown popover */}
+                {showZoomMenu && (
+                  <div className="absolute bottom-full right-0 mb-2 bg-neutral-900/95 backdrop-blur-xl border border-neutral-700 rounded-2xl p-2 shadow-2xl flex flex-col gap-1 min-w-[130px] animate-in fade-in slide-in-from-bottom-2">
+                    <div className="text-[10px] font-bold uppercase text-neutral-400 px-2 py-1">
+                      Зуми фаврӣ
+                    </div>
+                    {ZOOM_PRESETS.map((val) => (
+                      <button
+                        key={val}
+                        onClick={() => setZoomLevel(val)}
+                        className={cn(
+                          "px-2.5 py-1 text-xs rounded-lg text-left font-mono font-semibold transition flex items-center justify-between",
+                          Math.round(scale * 100) === Math.round(val * 100)
+                            ? "bg-emerald-500 text-white font-bold"
+                            : "text-neutral-200 hover:bg-neutral-800",
+                        )}
+                      >
+                        <span>{Math.round(val * 100)}%</span>
+                        {val === 1 && <span className="text-[10px] opacity-75 font-sans">Аввала</span>}
+                        {val === 20 && <span className="text-[10px] opacity-75 font-sans">Макс</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div className="bg-neutral-900/90 backdrop-blur-md rounded-2xl border border-neutral-700/80 shadow-2xl p-1.5 flex items-center gap-1 text-white">
+                  {/* Zoom Out Button */}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => zoomBy(1 / 1.35)}
+                    disabled={scale <= MIN_SCALE}
+                    className="h-9 w-9 rounded-xl hover:bg-neutral-800 text-neutral-200 hover:text-white transition disabled:opacity-40"
+                    title="Дур кардан (Zoom Out)"
+                  >
+                    <ZoomOut className="h-4 w-4" />
+                  </Button>
+
+                  {/* Percentage Display & Presets Trigger */}
+                  <button
+                    onClick={() => setShowZoomMenu((v) => !v)}
+                    className="px-2.5 py-1 text-xs font-mono font-bold text-emerald-400 hover:text-emerald-300 hover:bg-neutral-800/80 rounded-lg transition flex items-center gap-1"
+                    title="Интихоби фоизи зум"
+                  >
+                    <span>{Math.round(scale * 100)}%</span>
+                    <ChevronDown className="h-3 w-3 opacity-70" />
+                  </button>
+
+                  {/* Zoom In Button */}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => zoomBy(1.35)}
+                    disabled={scale >= MAX_SCALE}
+                    className="h-9 w-9 rounded-xl hover:bg-neutral-800 text-neutral-200 hover:text-white transition disabled:opacity-40"
+                    title="Наздик кардан (Zoom In)"
+                  >
+                    <ZoomIn className="h-4 w-4" />
+                  </Button>
+
+                  <div className="w-[1px] h-5 bg-neutral-700 mx-0.5" />
+
+                  {/* Reset 100% Button */}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={resetZoom}
+                    className="h-9 w-9 rounded-xl hover:bg-neutral-800 text-neutral-300 hover:text-white transition"
+                    title="Андозаи аввала (100%)"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                  </Button>
+
+                  {/* Fullscreen Toggle */}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={toggleFullscreen}
+                    className="h-9 w-9 rounded-xl hover:bg-neutral-800 text-neutral-300 hover:text-white transition"
+                    title={isFullscreen ? "Баромадан аз тамоми экран" : "Намоиш дар тамоми экран"}
+                  >
+                    {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -868,7 +1100,7 @@ export function KioskInteractiveScheme({
                         "rounded-xl p-2.5 min-w-[100px] flex flex-col items-center justify-center transition-all shrink-0 shadow",
                         isActiveGreen
                           ? "bg-emerald-500 text-white ring-2 ring-emerald-300 scale-105 shadow-emerald-500/40"
-                          : "bg-muted/80 text-foreground hover:bg-muted border border-border/80"
+                          : "bg-muted/80 text-foreground hover:bg-muted border border-border/80",
                       )}
                     >
                       <div className="text-xl font-black">№{a.apartment_number}</div>
