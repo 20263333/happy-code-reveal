@@ -3,7 +3,7 @@
 // Tablet cameras (iPad/Android) often produce HEIC or 12+ MP photos with EXIF rotation,
 // so we always decode -> re-encode to JPEG and shrink until the payload is small enough.
 
-const DEFAULT_MAX_BYTES = 900_000; // ~900 KB base64 — safe through proxies/WAF
+const DEFAULT_MAX_BYTES = 450_000; // ~450 KB base64 — safe through proxies and ultra fast upload
 
 async function decode(file: File): Promise<{ w: number; h: number; draw: (ctx: CanvasRenderingContext2D, w: number, h: number) => void } | null> {
   // createImageBitmap handles EXIF orientation and more formats (incl. HEIC on Safari 17+).
@@ -39,8 +39,8 @@ export async function compressImageFile(
   opts: { maxSize?: number; quality?: number; maxBytes?: number } = {},
 ): Promise<string> {
   const maxBytes = opts.maxBytes ?? DEFAULT_MAX_BYTES;
-  let maxSize = opts.maxSize ?? 1600;
-  let quality = opts.quality ?? 0.85;
+  let maxSize = opts.maxSize ?? 1280;
+  let quality = opts.quality ?? 0.82;
 
   const src = await decode(file);
   if (!src || !src.w || !src.h) {

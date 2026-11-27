@@ -116,6 +116,17 @@ export function PassportCapture({ onExtracted, compact, mode = "auth" }: Props) 
           break;
         } catch (error) {
           if (isAiServiceFailure(error)) throw error;
+          const errMsg = error instanceof Error ? error.message : String(error ?? "");
+          if (
+            errMsg.includes("no_scan_credits") ||
+            errMsg.includes("kiosk_locked") ||
+            errMsg.includes("Ширкат ёфт нашуд") ||
+            errMsg.includes("Unauthorized") ||
+            errMsg.includes("401") ||
+            errMsg.includes("Unsupported image")
+          ) {
+            throw error;
+          }
           lastError = error;
           console.warn("[passport-capture] OCR attempt failed", {
             attempt,

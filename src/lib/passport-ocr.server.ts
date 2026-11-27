@@ -53,24 +53,30 @@ const FLASH_MODEL = "google/gemini-3.8-flash";
 const PRO_MODEL = "google/gemini-3.8-flash";
 const FALLBACK_MODEL = "google/gemini-3.8-flash";
 
-// Моделҳои муосири Google Gemini барои OCR (1.5-flash аз 29.09.2025 хомӯш карда шудааст)
+// Моделҳои муосири Google Gemini барои OCR
+// gemini-2.0-flash модели асосӣ ва ниҳоят тез (1-3 сония) аст
 const GEMINI_CANDIDATE_MODELS = [
-  "gemini-2.5-flash",
   "gemini-2.0-flash",
-  "gemini-2.5-flash-lite",
-  "gemini-3.5-flash",
+  "gemini-2.0-flash-lite",
+  "gemini-1.5-flash-latest",
 ];
+
+let rememberedWorkingModel: string | null = null;
+const INVALID_MODELS = new Set<string>();
 
 function getGeminiCandidateModels(): string[] {
   const custom = process.env.GEMINI_OCR_MODEL?.trim();
   const list: string[] = [];
-  if (custom && custom !== "gemini-1.5-flash" && custom !== "gemini-1.5-pro") {
+  if (custom && custom !== "gemini-1.5-flash" && custom !== "gemini-1.5-pro" && !INVALID_MODELS.has(custom)) {
     list.push(custom);
   }
-  for (const m of GEMINI_CANDIDATE_MODELS) {
-    if (!list.includes(m)) list.push(m);
+  if (rememberedWorkingModel && !INVALID_MODELS.has(rememberedWorkingModel) && !list.includes(rememberedWorkingModel)) {
+    list.push(rememberedWorkingModel);
   }
-  return list;
+  for (const m of GEMINI_CANDIDATE_MODELS) {
+    if (!INVALID_MODELS.has(m) && !list.includes(m)) list.push(m);
+  }
+  return list.length > 0 ? list : ["gemini-2.0-flash"];
 }
 
 type OcrProvider = {
@@ -89,7 +95,35 @@ function resolveOcrProvider(): OcrProvider | null {
   const openaiKey = process.env.OPENAI_API_KEY?.trim();
   const lovableKey = process.env.LOVABLE_API_KEY?.trim() || process.env.LOVABLE_AI_GATEWAY_KEY?.trim();
 
-  // 1. Агар калиди ройгони Gemini бошад ва openai маҷбур нашуда бошад, Gemini афзалият дорад
+  // 1. Агар калиди Gemini бошад ва OpenAI маҷбур нашуда бошад
+  if (geminiKey && (forced === "gemini" || forced === "google" || (forced !== "openai" && (!openaiKey || forced === "gemini")))) {
+    const candidates = getGeminiCandidateModels();
+    const primary = candidates[0];
+    const fallback = candidates[1] || candidates[0];
+    return {
+      name: "Google Gemini",
+      url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+      headers: { Authorization: `Bearer ${geminiKey}` },
+      flash: primary,
+      pro: primary,
+      fallback,
+      candidateModels: candidates,
+    };
+  }
+
+  // 2. OpenAI
+  if (openaiKey && (!forced || forced === "openai")) {
+    return {
+      name: "OpenAI",
+      url: "https://api.openai.com/v1/chat/completions",
+      headers: { Authorization: `Bearer ${openaiKey}` },
+      flash: process.env.OPENAI_OCR_MODEL?.trim() || "gpt-4o-mini",
+      pro: process.env.OPENAI_OCR_MODEL_PRO?.trim() || "gpt-4o",
+      fallback: process.env.OPENAI_OCR_MODEL_PRO?.trim() || "gpt-4o",
+    };
+  }
+
+  // 3. Fallback Gemini
   if (geminiKey && forced !== "openai") {
     const candidates = getGeminiCandidateModels();
     const primary = candidates[0];
@@ -105,23 +139,8 @@ function resolveOcrProvider(): OcrProvider | null {
     };
   }
 
-  // 2. Lovable AI Gateway
+  // 4. Lovable AI Gateway
   if (lovableKey && (!forced || forced === "lovable")) {
-    return {
-      name: "Lovable AI Gateway",
-      url: "https://ai.gateway.lovable.dev/v1/chat/completions",
-      headers: {
-        "Lovable-API-Key": lovableKey,
-        "X-Lovable-AIG-SDK": "fetch",
-      },
-      flash: FLASH_MODEL,
-      pro: PRO_MODEL,
-      fallback: FALLBACK_MODEL,
-    };
-  }
-
-  // 3. OpenAI
-  if (openaiKey && (!forced || forced === "openai")) {
     return {
       name: "OpenAI",
       url: "https://api.openai.com/v1/chat/completions",
@@ -429,7 +448,7 @@ function parsePassportText(text: string): PassportOcrResult {
 
 async function postPassportOcr(provider: OcrProvider, body: unknown, attempt: number, stage: PassportOcrDebug["stage"]) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 35_000);
+  const timeout = setTimeout(() => controller.abort(), 16_000);
   try {
     const started = Date.now();
     const res = await fetch(provider.url, {
@@ -541,9 +560,12 @@ async function callGatewayJson(provider: OcrProvider, body: unknown, stage: Pass
           throw toDebugError({ ...debug, reason: "AI returned an empty OCR result" });
         }
         // Таъин кардани модели комёбшуда барои қадамҳои оянда
-        provider.flash = currentModel;
-        provider.pro = currentModel;
-        provider.fallback = currentModel;
+        if (provider.candidateModels && provider.candidateModels.length > 0) {
+          rememberedWorkingModel = currentModel;
+          provider.flash = currentModel;
+          provider.pro = currentModel;
+          provider.fallback = currentModel;
+        }
         return { json, text, debug };
       }
 
@@ -561,13 +583,16 @@ async function callGatewayJson(provider: OcrProvider, body: unknown, stage: Pass
       });
 
       // Агар модел вуҷуд надошта бошад (HTTP 404 ё "not found"), дарҳол ба модели дигар гузар
-      if (res.status === 404 && candidateIdx < candidates.length - 1) {
-        passportOcrLog("model 404 not found, falling back to next candidate", {
-          failedModel: currentModel,
-          nextModel: candidates[candidateIdx + 1],
-          reason: lastDebug.reason,
-        });
-        break;
+      if (res.status === 404 || (errorText && errorText.toLowerCase().includes("not found"))) {
+        INVALID_MODELS.add(currentModel);
+        if (candidateIdx < candidates.length - 1) {
+          passportOcrLog("model 404 not found, falling back to next candidate", {
+            failedModel: currentModel,
+            nextModel: candidates[candidateIdx + 1],
+            reason: lastDebug.reason,
+          });
+          break;
+        }
       }
 
       if (res.status === 402) throw toDebugError({ ...lastDebug, reason: "AI credits exhausted" }, "AI кредитҳо тамом шуданд. Лутфан кредитҳоро пур кунед.");
@@ -655,12 +680,13 @@ export async function extractPassportFromImages(data: PassportOcrInput): Promise
     {
       type: "text",
       text:
-        "OCR-и воқеӣ иҷро кун. Аз тасвир(ҳо) ҲАМАИ матни намоёнро бихон, ҳатто агар ҳуҷҷат passport/ID набошад. " +
-        "JSON баргардон: document_detected(boolean), document_type(string|null), visible_text(string), mrz_lines(array), notes(string|null). " +
-        "Матнро бо line breaks нигоҳ дор. Ҳеҷ майдонро тахмин накун. " +
-        "Дар ҳар ду тараф нишонаи РМА/ИНН/TIN ва 9 рақами баъди онро ҳатман ҷустуҷӯ ва ба visible_text дохил кун; PMA-и бо ҳарфҳои лотинӣ монанд низ РМА аст. " +
-        "ХЕЛЕ МУҲИМ: матнро АНИҚ ҳамон тавре ки дар ҳуҷҷат чоп шудааст нусхабардорӣ кун — ҳарфҳои кириллиро бо кириллӣ навис, ягон ҳарфро иваз накун ва ба лотинӣ тарҷума накун. " +
-        "Ном, насаб ва номи падарро ҳарф ба ҳарф аз қисмати кириллии ҳуҷҷат нусха бардор (на аз MRZ). Ҳарфҳои махсуси тоҷикӣ (Ӯ, Ҷ, Ҳ, Қ, Ғ, И, ӣ)-ро дуруст фарқ кун.",
+        "Read the passport/ID image and extract all fields as JSON: " +
+        "first_name,last_name,middle_name,fullname,birth_date,gender,nationality,passport_series,passport_number,personal_id,passport_issued_by,passport_issued_date,passport_expiry_date,issuing_authority,address,inn,visible_text. " +
+        "The key inn is the 9-digit tax ID printed as РМА/PMA/ИНН/TIN. " +
+        "Dates YYYY-MM-DD. Null if missing or uncertain. Do not invent. Treat front and back as ONE document. " +
+        "IMPORTANT: return first_name, last_name, middle_name and fullname in Tajik Cyrillic letter-by-letter as printed in the Cyrillic zone (never from MRZ, never re-transliterate). Distinguish Tajik letters correctly (Ӯ, Ҷ, Ҳ, Қ, Ғ, Ӣ). " +
+        "Also include visible_text containing all readable text and MRZ lines from the document. " +
+        FIELD_RULES_TJ,
     },
     { type: "image_url", image_url: { url: frontImage.dataUrl } },
   ];
@@ -673,7 +699,7 @@ export async function extractPassportFromImages(data: PassportOcrInput): Promise
     messages: [
       {
         role: "system",
-        content: "You are a vision OCR engine. Return only valid JSON. Do not invent missing text.",
+        content: "You are a precise passport OCR engine. Return only valid JSON. Do not invent missing text.",
       },
       { role: "user", content: ocrParts },
     ],
@@ -718,6 +744,24 @@ export async function extractPassportFromImages(data: PassportOcrInput): Promise
     raw_text_preview: rawOcrText.slice(0, 700),
   });
 
+  // Fast Single-Pass: агар дар қадами аввал маълумотҳо хонда шуда бошанд (ҳолати муқаррарӣ, ~2-3 сония):
+  const firstPassContent = messageContentText(ocr.json) || "{}";
+  let parsed = parsePassportText(JSON.stringify({ ...extractJsonObject(firstPassContent), raw_ocr_text: rawOcrText }));
+
+  if (hasExtractedFields(parsed)) {
+    parsed.raw_ocr_response = stringifyForDebug({ vision_ocr: ocr.debug.raw_response });
+    parsed.debug = { ...ocr.debug, stage: "completed", raw_text: rawOcrText };
+    parsed.raw = firstPassContent;
+    parsed.raw_ocr_text = rawOcrText;
+    passportOcrLog("completed via fast single-pass extraction in first attempt", {
+      model: ocr.debug.model,
+      has_fullname: !!parsed.fullname,
+      passport_number: parsed.passport_number,
+      inn: parsed.inn,
+    });
+    return parsed;
+  }
+
   // No usable OCR text (stage failed or returned nothing) → read the image directly,
   // first with the primary model, then with the second-opinion model.
   if (!rawOcrText.trim()) {
@@ -754,7 +798,7 @@ export async function extractPassportFromImages(data: PassportOcrInput): Promise
   // model. The preliminary transcript only helps verify ambiguous characters.
   const extracted = await callGatewayJson(provider, buildDirectBody(rawOcrText), "image_extraction", imageMimes);
   const extractionText = messageContentText(extracted.json) || "{}";
-  let parsed = parsePassportText(JSON.stringify({ ...extractJsonObject(extractionText), raw_ocr_text: rawOcrText }));
+  parsed = parsePassportText(JSON.stringify({ ...extractJsonObject(extractionText), raw_ocr_text: rawOcrText }));
 
 
   if (!hasExtractedFields(parsed)) {

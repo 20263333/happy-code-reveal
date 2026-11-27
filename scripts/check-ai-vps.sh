@@ -39,9 +39,9 @@ if [[ -n "$GEMINI_KEY" && ( "$FORCED" == "gemini" || "$FORCED" == "google" || ( 
   URL='https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'
   MODE="Google Gemini (personal key)"
   AUTH_HEADERS=(-H "Authorization: Bearer $GEMINI_KEY")
-  MODEL="${GEMINI_OCR_MODEL:-gemini-2.5-flash}"
-  if [[ "$MODEL" == "gemini-1.5-flash" || "$MODEL" == "gemini-1.5-pro" ]]; then
-    MODEL="gemini-2.5-flash"
+  MODEL="${GEMINI_OCR_MODEL:-gemini-2.0-flash}"
+  if [[ "$MODEL" == "gemini-1.5-flash" || "$MODEL" == "gemini-1.5-pro" || "$MODEL" == "gemini-2.5-flash" ]]; then
+    MODEL="gemini-2.0-flash"
   fi
 elif [[ -n "${OPENAI_API_KEY:-}" && ( "$FORCED" == "openai" || -z "$KEY" ) ]]; then
   URL='https://api.openai.com/v1/chat/completions'
