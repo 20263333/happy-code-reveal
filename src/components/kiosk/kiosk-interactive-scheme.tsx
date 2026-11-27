@@ -14,6 +14,9 @@ import {
   Tag,
   ArrowRight,
   Info,
+  Eye,
+  EyeOff,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -140,6 +143,12 @@ export function KioskInteractiveScheme({
   const [hoveredAptId, setHoveredAptId] = useState<string | null>(null);
   const [selectedAptId, setSelectedAptId] = useState<string | null>(null);
 
+  // Scheme visibility: Clean scheme toggle (show/hide pins)
+  const [showPins, setShowPins] = useState(true);
+
+  // Pin style: "compact" (sleek small circular pin - default) vs "cards" (larger rectangular badge)
+  const [pinStyle, setPinStyle] = useState<"compact" | "cards">("compact");
+
   // When floor changes, reset hover and pick the first apartment as selected
   useEffect(() => {
     if (currentApartments.length > 0) {
@@ -231,6 +240,11 @@ export function KioskInteractiveScheme({
   const handlePointerUpCanvas = () => {
     draggingCanvas.current = null;
     draggingPin.current = null;
+  };
+
+  const startEditing = () => {
+    setShowPins(true);
+    setIsEditing(true);
   };
 
   async function handleSavePins() {
@@ -503,17 +517,63 @@ export function KioskInteractiveScheme({
               )}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {/* Clean Scheme Toggle (Show/Hide Pins) */}
+              {schemeUrl && !isEditing && (
+                <Button
+                  size="sm"
+                  variant={showPins ? "outline" : "default"}
+                  className={cn(
+                    "h-8 text-xs gap-1.5 transition-all",
+                    !showPins
+                      ? "bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-sm"
+                      : "border-border hover:bg-muted text-muted-foreground hover:text-foreground"
+                  )}
+                  onClick={() => setShowPins((v) => !v)}
+                  title={
+                    showPins
+                      ? "Пинҳон кардани меткаҳо барои нишон додани нақшаи тоза ба муштарӣ"
+                      : "Нишон додани меткаҳо дар болои нақша"
+                  }
+                >
+                  {showPins ? (
+                    <>
+                      <EyeOff className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Схемаи тоза</span>
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-3.5 w-3.5" />
+                      <span>Нишон додани меткаҳо</span>
+                    </>
+                  )}
+                </Button>
+              )}
+
+              {/* Pin Style Toggle (Compact circles vs Detailed cards) */}
+              {schemeUrl && showPins && !isEditing && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 text-xs gap-1 border-border hover:bg-muted text-muted-foreground hover:text-foreground hidden sm:inline-flex"
+                  onClick={() => setPinStyle((s) => (s === "compact" ? "cards" : "compact"))}
+                  title="Иваз кардани тарзи намоиши меткаҳо (доирачаҳои хурд ё карточкаҳои васеъ)"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-primary" />
+                  <span>{pinStyle === "compact" ? "Доирачаҳо" : "Карточкаҳо"}</span>
+                </Button>
+              )}
+
               {canConfigure && schemeUrl && onSavePins && !isEditing && (
                 <Button
                   size="sm"
                   variant="outline"
                   className="h-8 text-xs gap-1.5 border-border hover:bg-muted"
-                  onClick={() => setIsEditing(true)}
+                  onClick={startEditing}
                   title="Танзими ҷойгиршавии хонаҳо дар болои схема"
                 >
                   <Move className="h-3.5 w-3.5 text-primary" />
-                  Танзими меткаҳо
+                  <span className="hidden sm:inline">Танзими меткаҳо</span>
                 </Button>
               )}
 
@@ -526,7 +586,7 @@ export function KioskInteractiveScheme({
                   title="Намоиш дар шакли шахматка"
                 >
                   <LayoutGrid className="h-3.5 w-3.5" />
-                  Шахматка
+                  <span className="hidden sm:inline">Шахматка</span>
                 </Button>
               )}
             </div>
@@ -541,6 +601,20 @@ export function KioskInteractiveScheme({
             onPointerCancel={handlePointerUpCanvas}
             onDoubleClick={resetZoom}
           >
+            {/* Notification Banner when Clean View is Active */}
+            {!showPins && !isEditing && schemeUrl && (
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-neutral-900/90 backdrop-blur-md border border-emerald-500/30 text-neutral-200 text-xs px-3.5 py-1.5 rounded-full shadow-2xl flex items-center gap-2 z-30 animate-in fade-in slide-in-from-top-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Ҳолати схемаи тоза: нақша бе ягон монеа намоиш ёфтааст</span>
+                <button
+                  onClick={() => setShowPins(true)}
+                  className="text-emerald-400 underline hover:text-emerald-300 font-semibold ml-1"
+                >
+                  Бозгардонидан
+                </button>
+              </div>
+            )}
+
             {schemeUrl ? (
               <div
                 ref={schemeContainerRef}
@@ -565,6 +639,10 @@ export function KioskInteractiveScheme({
                   const isHovered = hoveredAptId === apt.id;
                   const isSelected = selectedAptId === apt.id;
                   const isActiveGreen = isHovered || isSelected;
+
+                  // If showPins is false, show pin ONLY if user specifically hovered/selected this apartment
+                  const isVisible = showPins || isEditing || isActiveGreen;
+                  if (!isVisible) return null;
 
                   return (
                     <div
@@ -600,66 +678,93 @@ export function KioskInteractiveScheme({
                         isEditing && "cursor-move ring-2 ring-amber-400 ring-offset-2 ring-offset-background"
                       )}
                     >
-                      {/* Radial green aura glow when hovered/active ("дар болои хона мишкаро бони он хонаа сабз шавад толка хамон хона") */}
+                      {/* Radial green aura glow when hovered/active */}
                       {isActiveGreen && !isEditing && (
                         <div className="absolute inset-0 -m-3 rounded-full bg-emerald-500/40 blur-md pointer-events-none animate-pulse" />
                       )}
 
-                      {/* Interactive Card Pin */}
-                      <div
-                        className={cn(
-                          "relative px-3 py-1.5 rounded-xl font-medium border shadow-lg backdrop-blur-md transition-all flex flex-col items-center justify-center min-w-[68px]",
-                          // When hovered or selected: ONLY THIS APARTMENT TURNS VIVID GREEN!
-                          isActiveGreen
-                            ? "bg-emerald-500 text-white border-emerald-300 ring-4 ring-emerald-400/40 shadow-[0_0_25px_rgba(16,185,129,0.9)]"
-                            : "bg-neutral-900/85 text-white border-neutral-700/80 shadow-md hover:border-neutral-500",
-                          isEditing && "ring-2 ring-amber-400"
-                        )}
-                      >
-                        <div className="flex items-center gap-1 leading-none">
-                          <span
-                            className={cn(
-                              "text-base sm:text-lg font-black tracking-tight drop-shadow",
-                              isActiveGreen ? "text-white" : "text-neutral-100"
-                            )}
-                          >
-                            №{apt.apartment_number}
+                      {/* COMPACT PIN MODE: Sleek circular pin that leaves blueprint 100% visible */}
+                      {pinStyle === "compact" && !isEditing ? (
+                        <div
+                          className={cn(
+                            "relative w-7 h-7 sm:w-8 sm:h-8 rounded-full font-black text-xs sm:text-sm border-2 shadow-lg backdrop-blur-md transition-all flex items-center justify-center",
+                            isActiveGreen
+                              ? "bg-emerald-500 text-white border-white scale-125 ring-4 ring-emerald-400/50 shadow-[0_0_22px_rgba(16,185,129,0.95)]"
+                              : "bg-neutral-900/90 text-white border-neutral-600/80 shadow-md hover:border-emerald-400 hover:scale-110",
+                          )}
+                        >
+                          <span className="leading-none drop-shadow-sm font-bold">
+                            {apt.apartment_number}
                           </span>
-                        </div>
-                        {apt.area ? (
-                          <div
-                            className={cn(
-                              "text-[10px] font-medium leading-tight mt-0.5",
-                              isActiveGreen ? "text-emerald-100 font-bold" : "text-neutral-300"
-                            )}
-                          >
-                            {apt.area} м²
+
+                          {/* Mini Status Dot on Top-Right */}
+                          <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-neutral-950 border border-neutral-700 shadow-sm flex items-center justify-center">
+                            <div className={cn("w-1.5 h-1.5 rounded-full", cfg.dot)} />
                           </div>
-                        ) : null}
-
-                        {/* Status Dot / Indicator */}
-                        <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-neutral-900 border border-neutral-700 shadow-sm flex items-center justify-center">
-                          <div className={cn("w-1.5 h-1.5 rounded-full", cfg.dot)} />
                         </div>
-                      </div>
+                      ) : (
+                        /* DETAILED RECTANGULAR CARD PIN (Used in Edit Mode or if user switches to Cards) */
+                        <div
+                          className={cn(
+                            "relative px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl font-medium border shadow-lg backdrop-blur-md transition-all flex flex-col items-center justify-center min-w-[62px]",
+                            isActiveGreen
+                              ? "bg-emerald-500 text-white border-emerald-300 ring-4 ring-emerald-400/40 shadow-[0_0_25px_rgba(16,185,129,0.9)]"
+                              : "bg-neutral-900/85 text-white border-neutral-700/80 shadow-md hover:border-neutral-500",
+                            isEditing && "ring-2 ring-amber-400"
+                          )}
+                        >
+                          <div className="flex items-center gap-1 leading-none">
+                            <span
+                              className={cn(
+                                "text-sm sm:text-base font-black tracking-tight drop-shadow",
+                                isActiveGreen ? "text-white" : "text-neutral-100"
+                              )}
+                            >
+                              №{apt.apartment_number}
+                            </span>
+                          </div>
+                          {apt.area ? (
+                            <div
+                              className={cn(
+                                "text-[9px] sm:text-[10px] font-medium leading-tight mt-0.5",
+                                isActiveGreen ? "text-emerald-100 font-bold" : "text-neutral-300"
+                              )}
+                            >
+                              {apt.area} м²
+                            </div>
+                          ) : null}
 
-                      {/* Tooltip on Hover */}
+                          {/* Status Dot / Indicator */}
+                          <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-neutral-900 border border-neutral-700 shadow-sm flex items-center justify-center">
+                            <div className={cn("w-1.5 h-1.5 rounded-full", cfg.dot)} />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Floating Tooltip on Hover / Selection */}
                       {!isEditing && (
                         <div
                           className={cn(
-                            "absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 bg-neutral-900/95 text-white text-[11px] rounded-lg shadow-xl border border-white/10 whitespace-nowrap pointer-events-none transition-opacity",
-                            isActiveGreen ? "opacity-100" : "opacity-0"
+                            "absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-neutral-900/95 text-white text-[11px] rounded-xl shadow-2xl border border-white/15 whitespace-nowrap pointer-events-none transition-all duration-150 z-50",
+                            isActiveGreen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 translate-y-1"
                           )}
                         >
-                          <div className="font-semibold text-emerald-400">
-                            Квартира №{apt.apartment_number} • {cfg.label}
+                          <div className="font-bold text-emerald-400 flex items-center gap-1.5">
+                            <span>Хонаи №{apt.apartment_number}</span>
+                            <span className="text-[10px] text-muted-foreground">•</span>
+                            <span className="text-white/90 font-normal">{cfg.label}</span>
                           </div>
+                          {apt.area && (
+                            <div className="text-[10px] text-neutral-300 font-mono">
+                              Масоҳат: <strong className="text-white">{apt.area} м²</strong>
+                            </div>
+                          )}
                           {apt.price ? (
-                            <div className="text-white font-mono text-[10px]">
+                            <div className="text-emerald-300 font-mono text-[10px] font-bold">
                               {Number(apt.price).toLocaleString()} TJS
                             </div>
                           ) : null}
-                          <div className="text-[9px] text-muted-foreground mt-0.5">Барои харид пахш кунед</div>
+                          <div className="text-[9px] text-neutral-400 mt-0.5">Барои тафсилот пахш кунед</div>
                         </div>
                       )}
                     </div>
