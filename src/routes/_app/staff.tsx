@@ -15,7 +15,7 @@ import { ROLE_LABELS } from "@/lib/constants";
 import { useAuth, type AppRole } from "@/hooks/use-auth";
 import { useT } from "@/lib/i18n";
 import { revokeProjectAccess, addStaffToProject } from "@/lib/access.functions";
-import { createEmployee } from "@/lib/staff.functions";
+import { createEmployee, changeEmployeeRole, deleteEmployee } from "@/lib/staff.functions";
 import { deleteWorkerWithRefund } from "@/lib/workers.functions";
 import { setStaffPages, setStaffPassword } from "@/lib/staff-pages.functions";
 import { APP_PAGES, DEPARTMENT_LABEL, defaultPagesForDepartment } from "@/lib/app-pages";
@@ -37,6 +37,8 @@ function StaffPage() {
   const revokeFn = useServerFn(revokeProjectAccess);
   const addProjFn = useServerFn(addStaffToProject);
   const deleteWorkerFn = useServerFn(deleteWorkerWithRefund);
+  const changeRoleFn = useServerFn(changeEmployeeRole);
+  const deleteEmpFn = useServerFn(deleteEmployee);
   const [addOpen, setAddOpen] = useState(false);
   const [empOpen, setEmpOpen] = useState(false);
 
@@ -89,9 +91,7 @@ function StaffPage() {
 
   const setRole = useMutation({
     mutationFn: async ({ userId, role }: { userId: string; role: AppRole }) => {
-      await supabase.from("user_roles").delete().eq("user_id", userId);
-      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role });
-      if (error) throw error;
+      await changeRoleFn({ data: { user_id: userId, role } });
     },
     onSuccess: () => { toast.success("OK"); qc.invalidateQueries({ queryKey: ["staff-full"] }); },
     onError: (e: any) => toast.error(e.message),
@@ -113,10 +113,7 @@ function StaffPage() {
 
   const removeStaff = useMutation({
     mutationFn: async (userId: string) => {
-      await supabase.from("project_staff").delete().eq("user_id", userId);
-      await supabase.from("user_roles").delete().eq("user_id", userId);
-      const { error } = await supabase.from("profiles").delete().eq("id", userId);
-      if (error) throw error;
+      await deleteEmpFn({ data: { user_id: userId } });
     },
     onSuccess: () => { toast.success(tr("Сотрудник удалён")); qc.invalidateQueries({ queryKey: ["staff-full"] }); },
     onError: (e: any) => toast.error(e.message),
@@ -603,7 +600,6 @@ function CreateEmployeeForm({ onClose }: { onClose: () => void }) {
       if (!fullname.trim()) throw new Error(tr("Укажите ФИО"));
       if (!email.trim()) throw new Error(tr("Укажите email"));
       if (password.length < 6) throw new Error(tr("Пароль не менее 6 символов"));
-      if (needsProjects && projectIds.length === 0) throw new Error(tr("Выберите хотя бы один проект"));
       const defaults = new Set(defaultPagesForDepartment(department));
       const extra_pages: string[] = [];
       const denied_pages: string[] = [];
@@ -621,7 +617,7 @@ function CreateEmployeeForm({ onClose }: { onClose: () => void }) {
           phone: phone.trim() || undefined,
           role,
           department,
-          project_ids: role === "warehouse" ? undefined : projectIds,
+          project_ids: role === "warehouse" ? undefined : (projectIds.length > 0 ? projectIds : undefined),
           extra_pages,
           denied_pages,
         },
@@ -694,7 +690,7 @@ function CreateEmployeeForm({ onClose }: { onClose: () => void }) {
             </div>
           )}
           {role === "manager" && (
-            <p className="text-xs text-muted-foreground">{tr("Прораб видит только выбранные проекты (и их блоки).")}</p>
+            <p className="text-xs text-muted-foreground">{tr("Интихоби лоиҳа ихтиёрӣ аст (метавонед баъдтар низ дастрасӣ диҳед).")}</p>
           )}
           {role === "accountant" && (
             <p className="text-xs text-muted-foreground">{tr("Бухгалтер видит все проекты компании.")}</p>

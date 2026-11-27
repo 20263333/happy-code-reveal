@@ -1527,6 +1527,8 @@ DO $$ BEGIN ALTER TABLE public.payment_schedule ADD CONSTRAINT payment_schedule_
 DO $$ BEGIN ALTER TABLE public.contract_templates ADD CONSTRAINT contract_templates_pkey PRIMARY KEY (id); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.contract_templates ADD CONSTRAINT contract_templates_company_id_key UNIQUE (company_id); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.contract_templates ADD CONSTRAINT contract_templates_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.project_staff ADD CONSTRAINT project_staff_pkey PRIMARY KEY (id); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.project_staff ADD CONSTRAINT project_staff_project_id_user_id_key UNIQUE (project_id, user_id); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.floors ENABLE ROW LEVEL SECURITY;
