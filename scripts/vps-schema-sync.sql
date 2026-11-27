@@ -1871,3 +1871,4 @@ GRANT SELECT ON public.showcase_companies_public TO anon, authenticated;
 
 -- Схемаи лоиҳа (расми нақша) барои нишон додан ба муштариён дар киоск
 ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS scheme_image_path text;
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS scheme_pins jsonb DEFAULT '[]'::jsonb;

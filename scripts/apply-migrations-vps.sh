@@ -26,6 +26,8 @@ echo "==> 3.1/5 Ислоҳи RLS ва калидҳои contract_templates"
 run_sql "$DIR/vps-fix-contracts-rls.sql"
 echo "==> 3.2/5 Ислоҳи калидҳои project_staff"
 run_sql "$DIR/vps-fix-staff.sql"
+echo "==> 3.3/5 Сутуни scheme_pins барои схемаи интерактивии ошёна"
+run_sql "$DIR/vps-fix-kiosk-scheme.sql"
 
 echo "==> 4/5 Барқарор кардани кредити сканери паспорт"
 # Fail loudly: skipping a failed RPC repair would leave OCR unusable.

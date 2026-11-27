@@ -140,7 +140,7 @@ export const setProjectSchemeImage = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-// Returns a short-lived signed URL for the project's scheme image (authenticated).
+// Returns a short-lived signed URL for the project's scheme image (authenticated) along with pins.
 export const getProjectSchemeSignedUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ project_id: z.string().uuid() }).parse(d))
@@ -148,13 +148,57 @@ export const getProjectSchemeSignedUrl = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { data: project } = await (supabase as any)
       .from("projects")
-      .select("scheme_image_path")
+      .select("scheme_image_path, scheme_pins, parent_id")
       .eq("id", data.project_id)
       .maybeSingle();
-    if (!project?.scheme_image_path) return { url: null as string | null };
+
+    let path = project?.scheme_image_path;
+    let pins = (project?.scheme_pins as any[]) ?? [];
+
+    if (!path && project?.parent_id) {
+      const { data: parent } = await (supabase as any)
+        .from("projects")
+        .select("scheme_image_path, scheme_pins")
+        .eq("id", project.parent_id)
+        .maybeSingle();
+      if (parent?.scheme_image_path) {
+        path = parent.scheme_image_path;
+        if (!pins || pins.length === 0) {
+          pins = (parent.scheme_pins as any[]) ?? [];
+        }
+      }
+    }
+
+    if (!path) return { url: null as string | null, pins };
 
     const { data: signed } = await supabase.storage
       .from(BUCKET)
-      .createSignedUrl(project.scheme_image_path, 60 * 60 * 24);
-    return { url: signed?.signedUrl ?? null };
+      .createSignedUrl(path, 60 * 60 * 24);
+    return { url: signed?.signedUrl ?? null, pins };
+  });
+
+export const saveProjectSchemePins = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        project_id: z.string().uuid(),
+        pins: z.array(
+          z.object({
+            slot: z.number(),
+            x: z.number(),
+            y: z.number(),
+          }),
+        ),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { error } = await (supabase as any)
+      .from("projects")
+      .update({ scheme_pins: data.pins })
+      .eq("id", data.project_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });

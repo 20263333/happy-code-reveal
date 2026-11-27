@@ -249,7 +249,7 @@ export const kioskGetProject = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const admin = supabaseAdmin as any;
     const { data: project } = await admin.from("projects")
-      .select("id, name, location, parent_id, company_id")
+      .select("id, name, location, parent_id, company_id, scheme_image_path, scheme_pins, model_3d_path")
       .eq("id", data.project_id).maybeSingle();
     if (!project || project.company_id !== s.company_id) throw new Error("Not found");
 
@@ -257,7 +257,7 @@ export const kioskGetProject = createServerFn({ method: "POST" })
     let blocks: any[] = [];
     if (project.parent_id === null) {
       const { data: b } = await admin.from("projects")
-        .select("id, name").eq("parent_id", project.id).order("name");
+        .select("id, name, scheme_image_path, scheme_pins, model_3d_path").eq("parent_id", project.id).order("name");
       blocks = b ?? [];
       if (blocks.length === 0) blocks = [project];
     } else {
@@ -275,9 +275,40 @@ export const kioskGetProject = createServerFn({ method: "POST" })
     return { project, blocks, floors: floors ?? [], apartments: apartments ?? [] };
   });
 
+
+export const kioskSaveSchemePins = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        project_id: z.string().uuid(),
+        pins: z.array(
+          z.object({
+            slot: z.number(),
+            x: z.number(),
+            y: z.number(),
+          }),
+        ),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    const s = await requireUnlockedSession();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as any;
+
+    const { error } = await admin
+      .from("projects")
+      .update({ scheme_pins: data.pins })
+      .eq("id", data.project_id)
+      .eq("company_id", s.company_id);
+
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const kioskSignedUrl = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({
-    bucket: z.enum(["apartment-plans", "apartment-tours"]),
+    bucket: z.enum(["apartment-plans", "apartment-tours", "project-3d-models"]),
     path: z.string().min(1),
   }).parse(d))
   .handler(async ({ data }) => {
