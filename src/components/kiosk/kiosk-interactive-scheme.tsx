@@ -1,16 +1,62 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import { ZoomIn, ZoomOut, RotateCcw, Move, Check, Loader2, Sparkles, MapPin, Layers, LayoutGrid } from "lucide-react";
+import {
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Move,
+  Check,
+  Loader2,
+  MapPin,
+  Layers,
+  LayoutGrid,
+  Home,
+  Maximize2,
+  Tag,
+  ArrowRight,
+  Info,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export type PinCoord = { slot: number; x: number; y: number };
 
-const STATUS_CONFIG: Record<string, { label: string; bg: string; border: string; glow: string }> = {
-  empty: { label: "Холӣ", bg: "bg-emerald-500", border: "border-emerald-400", glow: "shadow-emerald-500/40" },
-  installment: { label: "Рассрочка", bg: "bg-blue-500", border: "border-blue-400", glow: "shadow-blue-500/40" },
-  sold: { label: "Фурӯхта", bg: "bg-red-500", border: "border-red-400", glow: "shadow-red-500/40" },
-  unavailable: { label: "Банд", bg: "bg-amber-500", border: "border-amber-400", glow: "shadow-amber-500/40" },
+const STATUS_CONFIG: Record<
+  string,
+  { label: string; bg: string; border: string; glow: string; text: string; dot: string }
+> = {
+  empty: {
+    label: "Холӣ",
+    bg: "bg-emerald-500",
+    border: "border-emerald-400",
+    glow: "shadow-emerald-500/50",
+    text: "text-emerald-400",
+    dot: "bg-emerald-500",
+  },
+  installment: {
+    label: "Рассрочка",
+    bg: "bg-blue-500",
+    border: "border-blue-400",
+    glow: "shadow-blue-500/50",
+    text: "text-blue-400",
+    dot: "bg-blue-500",
+  },
+  sold: {
+    label: "Фурӯхта",
+    bg: "bg-red-500",
+    border: "border-red-400",
+    glow: "shadow-red-500/50",
+    text: "text-red-400",
+    dot: "bg-red-500",
+  },
+  unavailable: {
+    label: "Банд",
+    bg: "bg-amber-500",
+    border: "border-amber-400",
+    glow: "shadow-amber-500/50",
+    text: "text-amber-400",
+    dot: "bg-amber-500",
+  },
 };
 
 function getDefaultPinPosition(slotIndex: number, totalSlots: number): { x: number; y: number } {
@@ -90,6 +136,33 @@ export function KioskInteractiveScheme({
     [apartmentsByFloor, activeFloorId],
   );
 
+  // Hovered and Selected apartment state
+  const [hoveredAptId, setHoveredAptId] = useState<string | null>(null);
+  const [selectedAptId, setSelectedAptId] = useState<string | null>(null);
+
+  // When floor changes, reset hover and pick the first apartment as selected
+  useEffect(() => {
+    if (currentApartments.length > 0) {
+      setSelectedAptId(currentApartments[0].id);
+    } else {
+      setSelectedAptId(null);
+    }
+    setHoveredAptId(null);
+  }, [activeFloorId]);
+
+  // Active apartment for the Left Info Card (hover takes instant priority, else selected)
+  const activeApt = useMemo(() => {
+    if (hoveredAptId) {
+      const found = currentApartments.find((a) => a.id === hoveredAptId);
+      if (found) return found;
+    }
+    if (selectedAptId) {
+      const found = currentApartments.find((a) => a.id === selectedAptId);
+      if (found) return found;
+    }
+    return currentApartments[0] ?? null;
+  }, [hoveredAptId, selectedAptId, currentApartments]);
+
   // Pins state
   const [pins, setPins] = useState<PinCoord[]>(initialPins ?? []);
   useEffect(() => {
@@ -98,16 +171,13 @@ export function KioskInteractiveScheme({
 
   const [isEditing, setIsEditing] = useState(false);
   const [savingPins, setSavingPins] = useState(false);
-  const [hoveredAptId, setHoveredAptId] = useState<string | null>(null);
 
   // Zoom / Pan state
   const [scale, setScale] = useState(1);
   const [tx, setTx] = useState(0);
   const [ty, setTy] = useState(0);
   const draggingCanvas = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null);
-  const pinch = useRef<{ dist: number; scale: number } | null>(null);
   const schemeContainerRef = useRef<HTMLDivElement>(null);
-
   const draggingPin = useRef<{ slot: number } | null>(null);
 
   const clamp = (s: number) => Math.min(4, Math.max(1, s));
@@ -188,6 +258,7 @@ export function KioskInteractiveScheme({
   }
 
   const activeFloor = sortedFloors.find((f) => f.id === activeFloorId);
+  const activeAptCfg = activeApt ? STATUS_CONFIG[activeApt.status] ?? STATUS_CONFIG.empty : null;
 
   return (
     <div className="h-full flex flex-col bg-background/50 overflow-hidden select-none">
@@ -230,11 +301,12 @@ export function KioskInteractiveScheme({
         </div>
       )}
 
-      {/* Main Container: Floors List + Scheme Canvas */}
+      {/* Main Container: Left Sidebar (Floors + Apartment Card) + Scheme Canvas */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Floor Selector Column */}
-        <div className="w-48 sm:w-56 shrink-0 border-r border-border bg-card/60 flex flex-col overflow-hidden">
-          <div className="p-3 border-b border-border/80 flex items-center justify-between">
+        {/* Left Column: Floors List + Dedicated Apartment Detail Card */}
+        <div className="w-72 sm:w-80 shrink-0 border-r border-border bg-card/75 flex flex-col overflow-hidden">
+          {/* Floor Selector Header */}
+          <div className="p-3 border-b border-border/80 flex items-center justify-between shrink-0">
             <div className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
               <Layers className="h-3.5 w-3.5 text-primary" />
               Ошёнаҳо
@@ -242,7 +314,8 @@ export function KioskInteractiveScheme({
             <span className="text-xs text-muted-foreground font-mono">{sortedFloors.length} ошёна</span>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+          {/* Floors Scrollable List */}
+          <div className="max-h-48 sm:max-h-56 overflow-y-auto p-2 space-y-1 shrink-0 border-b border-border/80">
             {sortedFloors.map((f) => {
               const apts = apartmentsByFloor.get(f.id) ?? [];
               const isActive = f.id === activeFloorId;
@@ -255,16 +328,16 @@ export function KioskInteractiveScheme({
                     setActiveFloorId(f.id);
                   }}
                   className={cn(
-                    "w-full text-left p-2.5 rounded-xl transition flex items-center justify-between group",
+                    "w-full text-left p-2 rounded-xl transition flex items-center justify-between group",
                     isActive
-                      ? "bg-primary text-primary-foreground shadow-md scale-[1.01]"
+                      ? "bg-primary text-primary-foreground shadow-sm scale-[1.01]"
                       : "hover:bg-muted/70 text-card-foreground border border-transparent"
                   )}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div
                       className={cn(
-                        "w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm shrink-0",
+                        "w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0",
                         isActive
                           ? "bg-primary-foreground/20 text-primary-foreground"
                           : "bg-muted text-foreground border border-border/60"
@@ -273,10 +346,15 @@ export function KioskInteractiveScheme({
                       {f.floor_number}
                     </div>
                     <div className="min-w-0">
-                      <div className="text-sm font-semibold truncate leading-tight">
+                      <div className="text-xs font-semibold truncate leading-tight">
                         {f.floor_number === 0 ? "Цокол" : `${f.floor_number}-ум ошёна`}
                       </div>
-                      <div className={cn("text-[11px] truncate", isActive ? "text-primary-foreground/80" : "text-muted-foreground")}>
+                      <div
+                        className={cn(
+                          "text-[10px] truncate",
+                          isActive ? "text-primary-foreground/80" : "text-muted-foreground"
+                        )}
+                      >
                         {apts.length > 0 ? `${apts.length} квартира` : "Хона нест"}
                       </div>
                     </div>
@@ -287,12 +365,11 @@ export function KioskInteractiveScheme({
                       {emptyCount > 0 ? (
                         <span
                           className={cn(
-                            "px-1.5 py-0.5 rounded text-[10px] font-bold",
+                            "px-1.5 py-0.5 rounded text-[9px] font-bold",
                             isActive
                               ? "bg-primary-foreground text-primary"
                               : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
                           )}
-                          title={`${emptyCount} хонаи холӣ`}
                         >
                           {emptyCount} холӣ
                         </span>
@@ -305,6 +382,109 @@ export function KioskInteractiveScheme({
               );
             })}
           </div>
+
+          {/* DEDICATED APARTMENT CARD (Карточкаи хона) */}
+          <div className="flex-1 flex flex-col p-3 overflow-y-auto bg-card/40">
+            {activeApt && activeAptCfg ? (
+              <div className="flex-1 flex flex-col justify-between rounded-2xl border border-emerald-500/30 bg-gradient-to-b from-card to-background p-4 shadow-lg animate-in fade-in duration-150 relative overflow-hidden">
+                {/* Background decorative glow */}
+                <div className="absolute -top-10 -right-10 w-28 h-28 rounded-full bg-emerald-500/10 blur-2xl pointer-events-none" />
+
+                <div className="space-y-3.5 relative">
+                  {/* Card Header: Badge & Status */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                      <Home className="h-3.5 w-3.5 text-emerald-400" />
+                      Карточкаи хона
+                    </span>
+                    <span
+                      className={cn(
+                        "px-2.5 py-0.5 rounded-full text-[11px] font-bold border flex items-center gap-1 shadow-sm",
+                        activeAptCfg.bg,
+                        "text-white",
+                        activeAptCfg.border
+                      )}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                      {activeAptCfg.label}
+                    </span>
+                  </div>
+
+                  {/* Big Apartment Title */}
+                  <div className="border-b border-border/80 pb-3">
+                    <div className="text-2xl sm:text-3xl font-black text-foreground tracking-tight flex items-baseline gap-2">
+                      <span className="text-emerald-400">№{activeApt.apartment_number}</span>
+                      <span className="text-xs text-muted-foreground font-normal">
+                        ({activeFloor?.floor_number}-ум ошёна)
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Apartment Specs Grid */}
+                  <div className="grid grid-cols-2 gap-2.5 pt-1">
+                    {/* Area (Квадрат) */}
+                    <div className="bg-muted/60 rounded-xl p-2.5 border border-border/60">
+                      <div className="text-[10px] text-muted-foreground uppercase font-semibold flex items-center gap-1">
+                        <Maximize2 className="h-3 w-3 text-emerald-400" />
+                        Масоҳат
+                      </div>
+                      <div className="text-lg font-black text-foreground mt-0.5">
+                        {activeApt.area ? `${activeApt.area} м²` : "—"}
+                      </div>
+                    </div>
+
+                    {/* Rooms / Type */}
+                    <div className="bg-muted/60 rounded-xl p-2.5 border border-border/60">
+                      <div className="text-[10px] text-muted-foreground uppercase font-semibold flex items-center gap-1">
+                        <Tag className="h-3 w-3 text-emerald-400" />
+                        Ҳуҷраҳо
+                      </div>
+                      <div className="text-sm font-bold text-foreground mt-1">
+                        {activeApt.rooms ? `${activeApt.rooms}-ҳуҷрагӣ` : "Истиқоматӣ"}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Pricing Info */}
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
+                    <div className="text-[10px] uppercase font-semibold text-emerald-400">Нархи умумӣ</div>
+                    <div className="text-xl font-black text-emerald-300 mt-0.5 font-mono">
+                      {activeApt.price ? `${Number(activeApt.price).toLocaleString()} TJS` : "Бо маслиҳат"}
+                    </div>
+                    {activeApt.price_per_sqm || (activeApt.price && activeApt.area) ? (
+                      <div className="text-[11px] text-muted-foreground mt-1 font-mono">
+                        {activeApt.price_per_sqm
+                          ? `${Number(activeApt.price_per_sqm).toLocaleString()} TJS / м²`
+                          : `${Math.round(Number(activeApt.price) / Number(activeApt.area)).toLocaleString()} TJS / м²`}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
+                {/* Open Modal / Purchase Button */}
+                <div className="pt-3">
+                  <Button
+                    onClick={() => onApartmentClick(activeApt)}
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-10 text-xs sm:text-sm rounded-xl shadow-md gap-1.5 transition-all hover:shadow-emerald-500/25"
+                  >
+                    <span>Маълумоти пурра ва харид</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                  <p className="text-[10px] text-center text-muted-foreground mt-2 flex items-center justify-center gap-1">
+                    <Info className="h-3 w-3" /> Барои дидани тарҳ ё фармоиш пахш кунед
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-4 border border-dashed border-border rounded-2xl text-muted-foreground space-y-2">
+                <MapPin className="h-8 w-8 text-muted-foreground/60 animate-pulse" />
+                <div className="text-xs font-semibold text-foreground">Хона интихоб нашудааст</div>
+                <div className="text-[11px] text-muted-foreground leading-relaxed">
+                  Мушро ба болои хона дар нақша баред ё пахш кунед, то маълумоти пурраи он дар инҷо намоиш ёбад.
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Scheme Interactive Area */}
@@ -316,6 +496,11 @@ export function KioskInteractiveScheme({
                 {activeFloor ? `${activeFloor.floor_number}-ум ошёна` : "Ошёна"}
               </span>
               <span className="text-xs text-muted-foreground">({currentApartments.length} хона дар нақша)</span>
+              {activeApt && (
+                <span className="hidden md:inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                  Фаъол: №{activeApt.apartment_number} ({activeApt.area} м²)
+                </span>
+              )}
             </div>
 
             <div className="flex items-center gap-2">
@@ -378,6 +563,8 @@ export function KioskInteractiveScheme({
                   const coord = getSlotCoord(slotIndex, currentApartments.length);
                   const cfg = STATUS_CONFIG[apt.status] ?? STATUS_CONFIG.empty;
                   const isHovered = hoveredAptId === apt.id;
+                  const isSelected = selectedAptId === apt.id;
+                  const isActiveGreen = isHovered || isSelected;
 
                   return (
                     <div
@@ -385,7 +572,7 @@ export function KioskInteractiveScheme({
                       style={{
                         left: `${coord.x}%`,
                         top: `${coord.y}%`,
-                        zIndex: isHovered ? 40 : 20,
+                        zIndex: isActiveGreen ? 50 : 20,
                       }}
                       onPointerDown={(e) => {
                         if (isEditing) {
@@ -396,41 +583,63 @@ export function KioskInteractiveScheme({
                       onClick={(e) => {
                         if (!isEditing) {
                           e.stopPropagation();
+                          setSelectedAptId(apt.id);
                           onApartmentClick(apt);
                         }
                       }}
-                      onMouseEnter={() => setHoveredAptId(apt.id)}
-                      onMouseLeave={() => setHoveredAptId(null)}
+                      onMouseEnter={() => {
+                        setHoveredAptId(apt.id);
+                        setSelectedAptId(apt.id);
+                      }}
+                      onMouseLeave={() => {
+                        setHoveredAptId(null);
+                      }}
                       className={cn(
-                        "absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-transform duration-150 group",
-                        isHovered ? "scale-110 z-40" : "scale-100",
+                        "absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-200 group",
+                        isActiveGreen ? "scale-115 z-50" : "scale-100",
                         isEditing && "cursor-move ring-2 ring-amber-400 ring-offset-2 ring-offset-background"
                       )}
                     >
+                      {/* Radial green aura glow when hovered/active ("дар болои хона мишкаро бони он хонаа сабз шавад толка хамон хона") */}
+                      {isActiveGreen && !isEditing && (
+                        <div className="absolute inset-0 -m-3 rounded-full bg-emerald-500/40 blur-md pointer-events-none animate-pulse" />
+                      )}
+
                       {/* Interactive Card Pin */}
                       <div
                         className={cn(
-                          "relative px-3 py-1.5 rounded-xl text-white font-medium border shadow-lg backdrop-blur-sm transition-all flex flex-col items-center justify-center min-w-[70px]",
-                          cfg.bg,
-                          cfg.border,
-                          cfg.glow,
-                          isHovered && "ring-2 ring-white shadow-2xl brightness-110"
+                          "relative px-3 py-1.5 rounded-xl font-medium border shadow-lg backdrop-blur-md transition-all flex flex-col items-center justify-center min-w-[68px]",
+                          // When hovered or selected: ONLY THIS APARTMENT TURNS VIVID GREEN!
+                          isActiveGreen
+                            ? "bg-emerald-500 text-white border-emerald-300 ring-4 ring-emerald-400/40 shadow-[0_0_25px_rgba(16,185,129,0.9)]"
+                            : "bg-neutral-900/85 text-white border-neutral-700/80 shadow-md hover:border-neutral-500",
+                          isEditing && "ring-2 ring-amber-400"
                         )}
                       >
                         <div className="flex items-center gap-1 leading-none">
-                          <span className="text-base sm:text-lg font-black tracking-tight drop-shadow">
+                          <span
+                            className={cn(
+                              "text-base sm:text-lg font-black tracking-tight drop-shadow",
+                              isActiveGreen ? "text-white" : "text-neutral-100"
+                            )}
+                          >
                             №{apt.apartment_number}
                           </span>
                         </div>
                         {apt.area ? (
-                          <div className="text-[10px] font-medium opacity-95 leading-tight mt-0.5">
+                          <div
+                            className={cn(
+                              "text-[10px] font-medium leading-tight mt-0.5",
+                              isActiveGreen ? "text-emerald-100 font-bold" : "text-neutral-300"
+                            )}
+                          >
                             {apt.area} м²
                           </div>
                         ) : null}
 
                         {/* Status Dot / Indicator */}
-                        <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-white border border-neutral-900 shadow-sm flex items-center justify-center">
-                          <div className={cn("w-1.5 h-1.5 rounded-full", cfg.bg)} />
+                        <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-neutral-900 border border-neutral-700 shadow-sm flex items-center justify-center">
+                          <div className={cn("w-1.5 h-1.5 rounded-full", cfg.dot)} />
                         </div>
                       </div>
 
@@ -439,12 +648,14 @@ export function KioskInteractiveScheme({
                         <div
                           className={cn(
                             "absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 bg-neutral-900/95 text-white text-[11px] rounded-lg shadow-xl border border-white/10 whitespace-nowrap pointer-events-none transition-opacity",
-                            isHovered ? "opacity-100" : "opacity-0"
+                            isActiveGreen ? "opacity-100" : "opacity-0"
                           )}
                         >
-                          <div className="font-semibold">{cfg.label}</div>
+                          <div className="font-semibold text-emerald-400">
+                            Квартира №{apt.apartment_number} • {cfg.label}
+                          </div>
                           {apt.price ? (
-                            <div className="text-emerald-400 font-mono text-[10px]">
+                            <div className="text-white font-mono text-[10px]">
                               {Number(apt.price).toLocaleString()} TJS
                             </div>
                           ) : null}
@@ -511,23 +722,32 @@ export function KioskInteractiveScheme({
             <div className="border-t border-border bg-card/80 backdrop-blur-sm p-3 shrink-0">
               <div className="text-[11px] font-semibold text-muted-foreground uppercase mb-1.5 flex items-center justify-between">
                 <span>Хонаҳои {activeFloor?.floor_number}-ум ошёна</span>
-                <span className="text-[10px] lowercase text-muted-foreground">барои маълумот пахш кунед</span>
+                <span className="text-[10px] lowercase text-muted-foreground">мушро ба болояш баред ё пахш кунед</span>
               </div>
               <div className="flex items-center gap-2 overflow-x-auto pb-1">
                 {currentApartments.map((a) => {
                   const cfg = STATUS_CONFIG[a.status] ?? STATUS_CONFIG.empty;
                   const isHovered = hoveredAptId === a.id;
+                  const isSelected = selectedAptId === a.id;
+                  const isActiveGreen = isHovered || isSelected;
 
                   return (
                     <button
                       key={a.id}
-                      onClick={() => onApartmentClick(a)}
-                      onMouseEnter={() => setHoveredAptId(a.id)}
+                      onClick={() => {
+                        setSelectedAptId(a.id);
+                        onApartmentClick(a);
+                      }}
+                      onMouseEnter={() => {
+                        setHoveredAptId(a.id);
+                        setSelectedAptId(a.id);
+                      }}
                       onMouseLeave={() => setHoveredAptId(null)}
                       className={cn(
-                        "rounded-xl p-2.5 min-w-[100px] text-white flex flex-col items-center justify-center transition-all hover:scale-105 shrink-0 shadow",
-                        cfg.bg,
-                        isHovered && "ring-2 ring-white brightness-110"
+                        "rounded-xl p-2.5 min-w-[100px] flex flex-col items-center justify-center transition-all shrink-0 shadow",
+                        isActiveGreen
+                          ? "bg-emerald-500 text-white ring-2 ring-emerald-300 scale-105 shadow-emerald-500/40"
+                          : "bg-muted/80 text-foreground hover:bg-muted border border-border/80"
                       )}
                     >
                       <div className="text-xl font-black">№{a.apartment_number}</div>

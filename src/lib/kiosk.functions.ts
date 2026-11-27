@@ -269,7 +269,7 @@ export const kioskGetProject = createServerFn({ method: "POST" })
       .select("id, project_id, floor_number").in("project_id", blockIds)
       .order("floor_number", { ascending: true });
     const { data: apartments } = await admin.from("apartments")
-      .select("id, project_id, floor_id, apartment_number, area, price, price_per_sqm, status, plan_image_path, tour_url, tour_media_paths")
+      .select("id, project_id, floor_id, apartment_number, area, price, price_per_sqm, status, rooms, plan_image_path, tour_url, tour_media_paths")
       .in("project_id", blockIds);
 
     return { project, blocks, floors: floors ?? [], apartments: apartments ?? [] };
