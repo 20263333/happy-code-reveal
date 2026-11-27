@@ -53,21 +53,31 @@ const FLASH_MODEL = "google/gemini-3.8-flash";
 const PRO_MODEL = "google/gemini-3.8-flash";
 const FALLBACK_MODEL = "google/gemini-3.8-flash";
 
-// Моделҳои муосири Google Gemini барои OCR
-// gemini-2.0-flash модели асосӣ ва ниҳоят тез (1-3 сония) аст
+// Моделҳои муосири Google Gemini барои OCR (2026)
+// gemini-3.8-flash ва gemini-3.5-flash моделҳои расмии Google буда, дар 1-2 сония бо сифати баланд хониш мекунанд
 const GEMINI_CANDIDATE_MODELS = [
-  "gemini-2.0-flash",
-  "gemini-2.0-flash-lite",
-  "gemini-1.5-flash-latest",
+  "gemini-3.8-flash",
+  "gemini-3.5-flash",
+  "gemini-3.6-flash",
+  "gemini-3.1-flash-lite",
+  "gemini-3.0-flash",
+  "gemini-2.5-flash",
 ];
 
 let rememberedWorkingModel: string | null = null;
-const INVALID_MODELS = new Set<string>();
+const INVALID_MODELS = new Set<string>([
+  "gemini-1.5-flash",
+  "gemini-1.5-pro",
+  "gemini-1.5-flash-latest",
+  "gemini-2.0-flash",
+  "gemini-2.0-flash-lite",
+  "gemini-2.0-flash-thinking-exp",
+]);
 
 function getGeminiCandidateModels(): string[] {
   const custom = process.env.GEMINI_OCR_MODEL?.trim();
   const list: string[] = [];
-  if (custom && custom !== "gemini-1.5-flash" && custom !== "gemini-1.5-pro" && !INVALID_MODELS.has(custom)) {
+  if (custom && !INVALID_MODELS.has(custom)) {
     list.push(custom);
   }
   if (rememberedWorkingModel && !INVALID_MODELS.has(rememberedWorkingModel) && !list.includes(rememberedWorkingModel)) {
@@ -76,7 +86,7 @@ function getGeminiCandidateModels(): string[] {
   for (const m of GEMINI_CANDIDATE_MODELS) {
     if (!INVALID_MODELS.has(m) && !list.includes(m)) list.push(m);
   }
-  return list.length > 0 ? list : ["gemini-2.0-flash"];
+  return list.length > 0 ? list : ["gemini-3.8-flash"];
 }
 
 type OcrProvider = {
@@ -142,12 +152,15 @@ function resolveOcrProvider(): OcrProvider | null {
   // 4. Lovable AI Gateway
   if (lovableKey && (!forced || forced === "lovable")) {
     return {
-      name: "OpenAI",
-      url: "https://api.openai.com/v1/chat/completions",
-      headers: { Authorization: `Bearer ${openaiKey}` },
-      flash: process.env.OPENAI_OCR_MODEL?.trim() || "gpt-4o-mini",
-      pro: process.env.OPENAI_OCR_MODEL_PRO?.trim() || "gpt-4o",
-      fallback: process.env.OPENAI_OCR_MODEL_PRO?.trim() || "gpt-4o",
+      name: "Lovable AI Gateway",
+      url: "https://ai.gateway.lovable.dev/v1/chat/completions",
+      headers: {
+        Authorization: `Bearer ${lovableKey}`,
+        "Lovable-API-Key": lovableKey,
+      },
+      flash: FLASH_MODEL,
+      pro: PRO_MODEL,
+      fallback: FALLBACK_MODEL,
     };
   }
 
@@ -204,12 +217,17 @@ const SUPPORTED_IMAGE_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/we
 
 /** Қоидаҳои махсуси майдонҳо — рақами паспорт, ИНН/РМА ва «Кӣ додаст». */
 const FIELD_RULES_TJ =
-  "ҚОИДАҲОИ МАЙДОНҲО: " +
-  "0) Майдонҳоро аз ҶОЙГИРШАВӢ ва нишонаи чопшудаи назди онҳо хон. НОМ/Имя/Given names = first_name; НАСАБ/Фамилия/Surname = last_name; НОМИ ПАДАР/Отчество/Patronymic = middle_name. Номи як сатрро ба майдони дигар нагузор. fullname бояд маҳз last_name + first_name + middle_name бошад. Номи лотинӣ ва MRZ-ро танҳо барои санҷиш истифода бар, на барои иваз кардани номи кириллӣ. " +
-  "1) passport_series + passport_number: дар паспорти тоҷикӣ рақам чун 'A01234567' ё 'AB 1234567' чоп мешавад — ҳарф(ҳо)-ро ба passport_series ва танҳо рақамҳоро ба passport_number гузор. Ҳарфро партофтан мумкин нест. Рақамро аз минтақаи намоён гир, на аз MRZ, ва 0↔O, 1↔I, 5↔S, 8↔B-ро дуруст фарқ кун. " +
-  "2) inn — ин РМА/ИНН (Рақами мушаххаси андозсупоранда, 'РМА', 'ИНН', 'TIN'), ДАҚИҚ 9 рақам аст ва аксар вақт бо фосила ҳамчун 3 гурӯҳи 3-рақама чоп мешавад. Онро дар ҳар ду тарафи ҳуҷҷат, махсусан назди нишонаи РМА/ИНН/TIN ва қисми поёнӣ, махсус ҷустуҷӯ кун. РМА номи ҳамин майдон аст, на personal_id (рақами шахсӣ/ЖШШР). Танҳо 9 рақамро баргардон. Агар аломати рақам ба O/I/S/B монанд бошад, аз рӯйи қатори 9-рақама онро ҳамчун 0/1/5/8 бихон. " +
-  "3) issuing_authority ва passport_issued_by — ин 'Кӣ додаст' / 'Кем выдан' / 'Authority' мебошад (масалан 'ШВКД ВКД ш. Душанбе' ё 'Хадамоти шиносномавӣ'). Матни пурраи чопшударо ҳамон тавре ки ҳаст, бо кириллӣ нусха бардор; ихтисорҳоро васеъ накун ва тарҷума накун. " +
-  "4) Агар ин майдонҳо дар тасвир набошанд — null гузор, ҳеҷ гоҳ тахмин накун. ";
+  "ҚОИДАҲОИ МАЙДОНҲО ДАР ШИНОСНОМАИ ТОҶИКИСТОН: " +
+  "0) Шиносномаи шаҳрванди Ҷумҳурии Тоҷикистон (Identity Card) ва Паспорти хориҷӣ (Паспорт). Маълумотҳоро дар кириллӣ гир. " +
+  "НОМ / Name = first_name (масалан РАҲМАТУЛЛО); НАСАБ / Surname = last_name (масалан ШОЙМАРДОНЗОДА); НОМИ ПАДАР / Father's name = middle_name (масалан АВАЗХОН). " +
+  "fullname бояд маҳз last_name + ' ' + first_name + ' ' + middle_name бошад. Ҳарфҳои тоҷикиро дуруст хон (Ҳ, Ҷ, Ӣ, Ӯ, Ғ, Қ). " +
+  "1) passport_series ва passport_number: дар корти шиносномаи тоҷикӣ 'Рақами шиноснома / Document No.' чун 'A03274451' чоп мешавад — ҳарфи 'A'-ро ба passport_series ва '03274451'-ро ба passport_number гузор (ё серия 'A' ва рақам 'A03274451'). " +
+  "2) inn: РМА / Tax Payer ID number (ё ИНН/TIN) дар тарафи қафои корт (BACK) чоп мешавад ва ДАҚИҚ 9 рақам аст (масалан 196136969). Ҳатман онро ба майдони inn гузор. " +
+  "3) personal_id: 'Рақами ягонаи миллӣ / National ID No.' (14 рақам, масалан 3500105993337). " +
+  "4) issuing_authority ва passport_issued_by: 'Мақоми шиносномадиҳанда / Issuing Authority' (масалан 'ШВКД ДАР НОҲИЯИ ВОСЕЪ'). " +
+  "5) address: дар тарафи қафои корт сатри 'Нишонӣ / Address' (масалан 'ВИЛОЯТИ ХАТЛОН, ВОСЕЪ...'). " +
+  "6) birth_date, passport_issued_date, passport_expiry_date: формати YYYY-MM-DD. " +
+  "7) gender: М / M (мард) ё Ч / F (зан). ";
 
 
 function passportOcrLog(message: string, details?: Record<string, unknown>) {
@@ -310,7 +328,7 @@ function normalizeInn(value: unknown): string | null {
 }
 
 function findInnInText(text: string): string | null {
-  const labels = /(?:Р\s*[МM]\s*[АA]|И\s*[НH]\s*[НH]|INN|TIN|Рақами\s+(?:мушаххаси\s+)?андоз[^\n:]*)/gi;
+  const labels = /(?:Р\s*[МM]\s*[АA]|P\s*M\s*A|Tax\s*Payer\s*ID|И\s*[НH]\s*[НH]|INN|TIN|Рақами\s+(?:мушаххаси\s+)?андоз[^\n:]*)/gi;
   for (const match of text.matchAll(labels)) {
     const start = (match.index ?? 0) + match[0].length;
     const nearby = text.slice(start, start + 90);
@@ -323,7 +341,7 @@ function findInnInText(text: string): string | null {
 
 function findAuthorityInText(text: string): string | null {
   const m = text.match(
-    /(?:Кӣ\s+додаст|Ки\s+додаст|Кем\s+выдан|Authority|Issued\s+by|Мақоми\s+додашуда)\s*[:\-]?\s*([^\n]{3,120})/i,
+    /(?:Мақоми\s+шиносномадиҳанда|Мақоми\s+додашуда|Кӣ\s+додаст|Ки\s+додаст|Кем\s+выдан|Issuing\s+Authority|Authority|Issued\s+by)\s*[:\-]?\s*([^\n]{3,120})/i,
   );
   return m ? compactLine(m[1]) : null;
 }
@@ -435,7 +453,7 @@ function parsePassportText(text: string): PassportOcrResult {
     nationality: nullableString(parsed.nationality),
     passport_series: series,
     passport_number: number,
-    personal_id: normalizeDigits(parsed.personal_id),
+    personal_id: normalizeDigits(parsed.personal_id ?? parsed.national_id ?? parsed.national_id_no ?? parsed.pin ?? parsed.jshshr ?? parsed.pinfl),
     passport_issued_by: issuingAuthority,
     passport_issued_date: normalizeDate(parsed.passport_issued_date),
     passport_expiry_date: normalizeDate(parsed.passport_expiry_date) ?? mrz.passport_expiry_date ?? null,
@@ -582,11 +600,32 @@ async function callGatewayJson(provider: OcrProvider, body: unknown, stage: Pass
         run_id: debug.run_id,
       });
 
-      // Агар модел вуҷуд надошта бошад (HTTP 404 ё "not found"), дарҳол ба модели дигар гузар
-      if (res.status === 404 || (errorText && errorText.toLowerCase().includes("not found"))) {
+      // Агар модел дастрас набошад (404, "not found", "no longer available", "deprecated")
+      const isUnavailable =
+        res.status === 404 ||
+        (errorText && (
+          errorText.toLowerCase().includes("not found") ||
+          errorText.toLowerCase().includes("no longer available") ||
+          errorText.toLowerCase().includes("is no longer available") ||
+          errorText.toLowerCase().includes("deprecated") ||
+          errorText.toLowerCase().includes("unsupported")
+        ));
+
+      if (isUnavailable) {
         INVALID_MODELS.add(currentModel);
+        // Агар Google дар паёми хатогӣ модели ҷойгузинро пешниҳод кунад (масалан: "Please update your code to use models/gemini-3.8-flash")
+        const suggestedMatch = errorText.match(/models\/([a-zA-Z0-9.-]+)/);
+        if (suggestedMatch && suggestedMatch[1]) {
+          const suggestedModel = suggestedMatch[1];
+          if (!INVALID_MODELS.has(suggestedModel) && !candidates.includes(suggestedModel)) {
+            passportOcrLog("auto-discovered replacement model from provider error", {
+              suggestedModel,
+            });
+            candidates.splice(candidateIdx + 1, 0, suggestedModel);
+          }
+        }
         if (candidateIdx < candidates.length - 1) {
-          passportOcrLog("model 404 not found, falling back to next candidate", {
+          passportOcrLog("model unavailable, falling back to next candidate", {
             failedModel: currentModel,
             nextModel: candidates[candidateIdx + 1],
             reason: lastDebug.reason,

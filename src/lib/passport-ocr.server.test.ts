@@ -78,9 +78,58 @@ test("fast single-pass OCR finishes in exactly 1 call when model extracts fields
 
   const result = await extractPassportFromImages({ front: "data:image/png;base64,dGVzdA==" });
   assert.equal(calls.length, 1, "Must complete in exactly 1 call for fast speed");
-  assert.equal(calls[0].model, "gemini-2.0-flash", "Must use fast gemini-2.0-flash");
+  assert.equal(calls[0].model, "gemini-3.8-flash", "Must use fast gemini-3.8-flash");
   assert.equal(result.first_name, "Юсуф");
   assert.equal(result.last_name, "Каримов");
   assert.equal(result.passport_number, "9876543");
   assert.equal(result.inn, "123456789");
+});
+
+
+test("passport OCR gracefully recovers when Gemini returns model no longer available with suggested model", async () => {
+  const calls: Array<{ model?: string }> = [];
+  process.env.GEMINI_API_KEY = "test-gemini-key";
+  delete process.env.OPENAI_API_KEY;
+  delete process.env.LOVABLE_API_KEY;
+  process.env.AI_PROVIDER = "gemini";
+
+  globalThis.fetch = (async (url: string, init?: RequestInit) => {
+    const body = init?.body ? JSON.parse(String(init.body)) : {};
+    calls.push({ model: body.model });
+
+    if (calls.length === 1) {
+      return new Response(
+        JSON.stringify({
+          error: {
+            code: 404,
+            message: "This model models/" + body.model + " is no longer available. Please update your code to use models/gemini-3.8-flash",
+          },
+        }),
+        { status: 404, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    const content = {
+      first_name: "РАҲМАТУЛЛО",
+      last_name: "ШОЙМАРДОНЗОДА",
+      middle_name: "АВАЗХОН",
+      fullname: "ШОЙМАРДОНЗОДА РАҲМАТУЛЛО АВАЗХОН",
+      passport_series: "A",
+      passport_number: "03274451",
+      personal_id: "3500105993337",
+      inn: "196136969",
+      issuing_authority: "ШВКД ДАР НОҲИЯИ ВОСЕЪ",
+      address: "ВИЛОЯТИ ХАТЛОН, ВОСЕЪ Ш.ҲУЛБУК КУЧАИ А.ҚАРАЕВ № 6/А",
+      birth_date: "2002-12-18",
+    };
+    return Response.json({ choices: [{ message: { content: JSON.stringify(content) } }] });
+  }) as typeof fetch;
+
+  const result = await extractPassportFromImages({ front: "data:image/png;base64,dGVzdA==" });
+  assert.equal(calls.length, 2, "Must retry with fallback/suggested model");
+  assert.equal(result.fullname, "ШОЙМАРДОНЗОДА РАҲМАТУЛЛО АВАЗХОН");
+  assert.equal(result.inn, "196136969");
+  assert.equal(result.passport_number, "03274451");
+  assert.equal(result.passport_series, "A");
+  assert.equal(result.issuing_authority, "ШВКД ДАР НОҲИЯИ ВОСЕЪ");
 });

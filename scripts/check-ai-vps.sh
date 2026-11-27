@@ -39,9 +39,9 @@ if [[ -n "$GEMINI_KEY" && ( "$FORCED" == "gemini" || "$FORCED" == "google" || ( 
   URL='https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'
   MODE="Google Gemini (personal key)"
   AUTH_HEADERS=(-H "Authorization: Bearer $GEMINI_KEY")
-  MODEL="${GEMINI_OCR_MODEL:-gemini-2.0-flash}"
-  if [[ "$MODEL" == "gemini-1.5-flash" || "$MODEL" == "gemini-1.5-pro" || "$MODEL" == "gemini-2.5-flash" ]]; then
-    MODEL="gemini-2.0-flash"
+  MODEL="${GEMINI_OCR_MODEL:-gemini-3.8-flash}"
+  if [[ "$MODEL" == "gemini-1.5-flash" || "$MODEL" == "gemini-1.5-pro" || "$MODEL" == "gemini-2.5-flash" || "$MODEL" == "gemini-2.0-flash" || "$MODEL" == "gemini-2.0-flash-lite" ]]; then
+    MODEL="gemini-3.8-flash"
   fi
 elif [[ -n "${OPENAI_API_KEY:-}" && ( "$FORCED" == "openai" || -z "$KEY" ) ]]; then
   URL='https://api.openai.com/v1/chat/completions'
@@ -83,8 +83,27 @@ STATUS=$(curl -sS -o "$TMP_FILE" -w '%{http_code}' \
   --data "$BODY")
 
 if [[ "$STATUS" == "200" ]]; then
-  echo "OK: selected AI model responded successfully."
+  echo "OK: selected AI model ($MODEL) responded successfully."
   exit 0
+fi
+
+# If Gemini returned 404/not available, try candidate models automatically
+if [[ -n "$GEMINI_KEY" && "$MODE" == *"Gemini"* && "$STATUS" == "404" ]]; then
+  for ALT in "gemini-3.5-flash" "gemini-3.6-flash" "gemini-3.1-flash-lite"; do
+    if [[ "$ALT" != "$MODEL" ]]; then
+      echo "Checking alternative Gemini model: $ALT..."
+      ALT_BODY=$(python3 - "$ALT" <<'PY'
+import json, sys
+print(json.dumps({"model": sys.argv[1], "messages": [{"role": "user", "content": "Return only this JSON: {"ok":true}"}], "response_format": {"type": "json_object"}}))
+PY
+)
+      ALT_STATUS=$(curl -sS -o "$TMP_FILE" -w '%{http_code}' "$URL" -H 'Content-Type: application/json' "${AUTH_HEADERS[@]}" --data "$ALT_BODY")
+      if [[ "$ALT_STATUS" == "200" ]]; then
+        echo "OK: $ALT is working! Set GEMINI_OCR_MODEL="$ALT" in /root/binosoz.env"
+        exit 0
+      fi
+    fi
+  done
 fi
 
 echo "ERROR: AI endpoint returned HTTP $STATUS"
