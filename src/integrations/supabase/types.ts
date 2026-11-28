@@ -1298,7 +1298,6 @@ export type Database = {
           docx_installment_path: string | null
           docx_shop_full_path: string | null
           docx_shop_installment_path: string | null
-          docx_schedule_path: string | null
           footer_text: string | null
           id: string
           inn: string | null
@@ -1320,7 +1319,6 @@ export type Database = {
           docx_installment_path?: string | null
           docx_shop_full_path?: string | null
           docx_shop_installment_path?: string | null
-          docx_schedule_path?: string | null
           footer_text?: string | null
           id?: string
           inn?: string | null
@@ -1342,7 +1340,6 @@ export type Database = {
           docx_installment_path?: string | null
           docx_shop_full_path?: string | null
           docx_shop_installment_path?: string | null
-          docx_schedule_path?: string | null
           footer_text?: string | null
           id?: string
           inn?: string | null
