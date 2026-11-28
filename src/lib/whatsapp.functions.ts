@@ -68,10 +68,13 @@ export const sendWhatsappMessage = createServerFn({ method: "POST" })
       throw new Error(res.error);
     }
 
-    await supabaseAdmin
+    const { error: sentError } = await supabaseAdmin
       .from("whatsapp_messages")
       .update({ status: "sent", wappi_message_id: res.messageId })
       .eq("id", msg.id);
+    if (sentError) throw new Error("Паём фиристода шуд, аммо ҳолати он сабт нашуд; журналро санҷед.");
+    // A delivery status can arrive before the send call returns its message id.
+    await supabaseAdmin.rpc("recover_wappi_events", { _limit: 10 });
     await supabaseAdmin
       .from("whatsapp_chats")
       .update({

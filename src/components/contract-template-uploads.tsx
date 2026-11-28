@@ -1,3 +1,4 @@
+import { DocumentTemplateTags } from "@/components/document-template-tags";
 import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -7,11 +8,12 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { uploadContractTemplateDocx, deleteContractTemplateDocx } from "@/lib/contract.functions";
 
-type Kind = "full" | "installment" | "shop_full" | "shop_installment" | "schedule";
+type Kind = "full" | "installment" | "shop_full" | "shop_installment" | "schedule" | "receipt";
 
-type Column = "docx_full_path" | "docx_installment_path" | "docx_shop_full_path" | "docx_shop_installment_path" | "docx_schedule_path";
+type Column = "docx_full_path" | "docx_installment_path" | "docx_shop_full_path" | "docx_shop_installment_path" | "docx_schedule_path" | "docx_receipt_path";
 
 const META: Record<Kind, { column: Column; title: string; hint: string }> = {
+  receipt: { column: "docx_receipt_path", title: "Шаблони чек (DOCX)", hint: "Чек / квитансия" },
   full: {
     column: "docx_full_path",
     title: "Шартномаи 100% (пардохти пурра)",
@@ -55,8 +57,13 @@ export function ContractTemplateUploads({ companyId, canEdit }: { companyId: str
         <Slot kind="shop_full" companyId={companyId} canEdit={canEdit} />
         <Slot kind="shop_installment" companyId={companyId} canEdit={canEdit} />
       </div>
+      <DocumentTemplateTags />
     </div>
   );
+}
+
+export function ReceiptTemplateUpload({ companyId, canEdit }: { companyId: string | null; canEdit: boolean }) {
+  return <Slot kind="receipt" companyId={companyId} canEdit={canEdit} />;
 }
 
 function Slot({ kind, companyId, canEdit }: { kind: Kind; companyId: string | null; canEdit: boolean }) {
@@ -100,7 +107,7 @@ function Slot({ kind, companyId, canEdit }: { kind: Kind; companyId: string | nu
         reader.onload = () => {
           const res = reader.result as string;
           const base64 = res.split(",")[1];
-          resolve(base64);
+          if (!base64) reject(new Error("Файл холӣ аст")); else resolve(base64);
         };
         reader.onerror = reject;
       });

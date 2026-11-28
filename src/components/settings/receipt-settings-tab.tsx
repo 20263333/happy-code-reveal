@@ -1,3 +1,6 @@
+import { ReceiptTemplateUpload } from "@/components/contract-template-uploads";
+import { DocumentTemplateTags } from "@/components/document-template-tags";
+import { useAuth } from "@/hooks/use-auth";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Receipt, Upload, Trash2 } from "lucide-react";
@@ -40,6 +43,7 @@ async function compressImage(file: File, maxSide = 1200, quality = 0.82): Promis
 
 export function ReceiptSettingsSection({ companyId }: { companyId: string }) {
   const { tr } = useT();
+  const { isOwner, isDirector } = useAuth();
   const qc = useQueryClient();
   const [bg, setBg] = useState<string | null>(null);
   const [stamp, setStamp] = useState<string | null>(null);
@@ -108,6 +112,9 @@ export function ReceiptSettingsSection({ companyId }: { companyId: string }) {
       <p className="text-xs text-muted-foreground mb-4">
         {tr("Расми чеки худро уплод кунед — маълумоти клиент худкор пур мешавад ҳангоми чоп.")}
       </p>
+
+      <ReceiptTemplateUpload companyId={companyId} canEdit={isOwner && !isDirector} />
+      <DocumentTemplateTags receipt />
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">

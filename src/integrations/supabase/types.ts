@@ -1296,6 +1296,7 @@ export type Database = {
           director_position: string | null
           docx_full_path: string | null
           docx_installment_path: string | null
+          docx_receipt_path: string | null
           docx_shop_full_path: string | null
           docx_shop_installment_path: string | null
           footer_text: string | null
@@ -1317,6 +1318,7 @@ export type Database = {
           director_position?: string | null
           docx_full_path?: string | null
           docx_installment_path?: string | null
+          docx_receipt_path?: string | null
           docx_shop_full_path?: string | null
           docx_shop_installment_path?: string | null
           footer_text?: string | null
@@ -1338,6 +1340,7 @@ export type Database = {
           director_position?: string | null
           docx_full_path?: string | null
           docx_installment_path?: string | null
+          docx_receipt_path?: string | null
           docx_shop_full_path?: string | null
           docx_shop_installment_path?: string | null
           footer_text?: string | null
@@ -4999,6 +5002,39 @@ export type Database = {
         }
         Relationships: []
       }
+      wappi_webhook_events: {
+        Row: {
+          company_id: string | null
+          delivery_id: string
+          normalized_event: Json
+          payload: Json
+          processed_at: string | null
+          processing_error: string | null
+          received_at: string
+          retry_at: string
+        }
+        Insert: {
+          company_id?: string | null
+          delivery_id: string
+          normalized_event: Json
+          payload: Json
+          processed_at?: string | null
+          processing_error?: string | null
+          received_at?: string
+          retry_at?: string
+        }
+        Update: {
+          company_id?: string | null
+          delivery_id?: string
+          normalized_event?: Json
+          payload?: Json
+          processed_at?: string | null
+          processing_error?: string | null
+          received_at?: string
+          retry_at?: string
+        }
+        Relationships: []
+      }
       warehouse_issues: {
         Row: {
           company_id: string
@@ -5777,11 +5813,17 @@ export type Database = {
           viewers: number
         }[]
       }
+      process_wappi_event: { Args: { _delivery_id: string }; Returns: Json }
       recalc_payable: { Args: { _payable_id: string }; Returns: undefined }
+      receive_wappi_event: {
+        Args: { _delivery_id: string; _event: Json; _payload: Json }
+        Returns: Json
+      }
       recompute_project_distributions: {
         Args: { _project_id: string }
         Returns: Json
       }
+      recover_wappi_events: { Args: { _limit?: number }; Returns: number }
       release_expired_holds: { Args: never; Returns: number }
       remove_apartment_tour: {
         Args: { _apartment_id: string }

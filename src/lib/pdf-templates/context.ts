@@ -16,6 +16,9 @@ export type ContractCtx = {
   block_name: string;
   floor_number: string;
   apt_number: string;
+  rooms_number: string;
+  sale_price_per_m2: number;
+  docx_receipt_path: string;
   area: string;
   price_per_m2: string;
   base_price_per_m2: string;
@@ -99,7 +102,7 @@ export async function buildContractContext(saleId: string, opts?: { usdRate?: nu
 
   const [custRes, aptRes, projRes] = await Promise.all([
     supabase.from("customers").select("fullname, birth_date, passport_series, passport_number, passport_issued_by, passport_issued_date, phone, address, inn").eq("id", sale.customer_id).maybeSingle(),
-    supabase.from("apartments").select("apartment_number, area, floor_id").eq("id", sale.apartment_id).maybeSingle(),
+    supabase.from("apartments").select("apartment_number, area, rooms, floor_id").eq("id", sale.apartment_id).maybeSingle(),
     supabase.from("projects").select("id, name, parent_id, company_id").eq("id", sale.project_id).maybeSingle(),
   ]);
   const c: any = custRes.data ?? {};
@@ -137,7 +140,7 @@ export async function buildContractContext(saleId: string, opts?: { usdRate?: nu
   const companyId = project?.company_id;
   const [compRes, tplRes] = await Promise.all([
     companyId ? supabase.from("companies").select("name, phone, receipt_inn, receipt_address, receipt_signer").eq("id", companyId).maybeSingle() : Promise.resolve({ data: null } as any),
-    companyId ? supabase.from("contract_templates").select("*").eq("company_id", companyId).maybeSingle() : Promise.resolve({ data: null } as any),
+    companyId ? supabase.from("contract_templates").select("*").eq("company_id", companyId).order("updated_at", { ascending: false }).limit(1).maybeSingle() : Promise.resolve({ data: null } as any),
   ]);
   const company: any = compRes.data ?? {};
   const tpl: any = tplRes.data ?? {};
@@ -168,6 +171,9 @@ export async function buildContractContext(saleId: string, opts?: { usdRate?: nu
     block_name: blockName,
     floor_number: floor?.floor_number != null ? String(floor.floor_number) : "",
     apt_number: a?.apartment_number || "",
+    rooms_number: a.rooms != null ? String(a.rooms) : "",
+    sale_price_per_m2: Number(sale.sale_price_per_m2 ?? (Number(sale.area_snapshot ?? a.area ?? 0) > 0 ? total / Number(sale.area_snapshot ?? a.area) : 0)),
+    docx_receipt_path: tpl.docx_receipt_path || "",
     area: sale.area_snapshot != null ? String(sale.area_snapshot) : (a?.area != null ? String(a.area) : ""),
     price_per_m2: fmt(Number(sale.sale_price_per_m2 ?? (Number(sale.area_snapshot ?? a?.area ?? 0) > 0 ? total / Number(sale.area_snapshot ?? a?.area) : 0))),
     base_price_per_m2: fmt(Number(sale.base_price_per_m2 ?? 0)),

@@ -2,13 +2,10 @@ import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
 import pkg from "file-saver";
 const { saveAs } = pkg;
-import { amountToTajikWords } from "@/lib/num-to-words";
+import { buildContractContext } from "./context";
+import { buildContractTags, buildReceiptTags } from "./template-tags";
 
 const TEMPLATE_URL = "/contract-templates/receipt.docx";
-
-function fmtMoney(n: number): string {
-  return new Intl.NumberFormat("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(n || 0));
-}
 
 export type ReceiptDocxData = {
   receipt_number: string;
@@ -16,29 +13,39 @@ export type ReceiptDocxData = {
   contract_number: string;
   client_full_name: string;
   amount: number;
+  sale_id?: string;
+  usd_rate?: number;
   qr_code?: string;
 };
 
 export async function downloadReceiptDocx(data: ReceiptDocxData) {
-  const res = await fetch(TEMPLATE_URL);
-  if (!res.ok) throw new Error("Шаблони DOCX ёфт нашуд");
-  const buf = await res.arrayBuffer();
+  const ctx = data.sale_id ? await buildContractContext(data.sale_id, data.usd_rate ? { usdRate: data.usd_rate } : {}) : null;
+  let buf: ArrayBuffer;
+  if (ctx?.docx_receipt_path) {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data: file, error } = await supabase.storage.from("contract-templates").download(ctx.docx_receipt_path);
+    if (error || !file) throw new Error("Шаблони чеки ширкат бор нашуд");
+    buf = await file.arrayBuffer();
+  } else {
+    const res = await fetch(TEMPLATE_URL);
+    if (!res.ok) throw new Error("Шаблони DOCX ёфт нашуд");
+    buf = await res.arrayBuffer();
+  }
 
   const zip = new PizZip(buf);
   const doc = new Docxtemplater(zip, {
     delimiters: { start: "{{", end: "}}" },
     paragraphLoop: true,
     linebreaks: true,
+    nullGetter: () => "",
   });
 
   doc.render({
-    receipt_number: data.receipt_number || "",
-    receipt_date: data.receipt_date || "",
     contract_number: data.contract_number || "",
     client_full_name: data.client_full_name || "",
-    total_price: fmtMoney(data.amount),
-    advance_payment_price_words: amountToTajikWords(Number(data.amount || 0)),
     qr_code: data.qr_code || "",
+    // Bundled legacy receipt uses total_price for the individual payment.
+    ...buildReceiptTags(ctx ? buildContractTags(ctx) : {}, data, !ctx?.docx_receipt_path),
   });
 
   const out = doc.getZip().generate({

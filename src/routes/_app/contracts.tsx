@@ -17,7 +17,7 @@ import { ContractTemplateUploads } from "@/components/contract-template-uploads"
 import { saveContractTemplate, type ContractExtractResult } from "@/lib/contract.functions";
 
 export const Route = createFileRoute("/_app/contracts")({
-  head: () => ({ meta: [{ title: "Договор — Binosoz.tj" }] }),
+  head: () => ({ meta: [{ title: "Шаблонҳои шартнома — Binosoz.tj" }, { name: "description", content: "Шаблонҳои Word ва тегҳои шартномаҳои ширкати сохтмонӣ." }, { property: "og:title", content: "Шаблонҳои шартнома — Binosoz.tj" }, { property: "og:description", content: "Шаблонҳои Word ва тегҳои шартномаҳои ширкати сохтмонӣ." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: ContractsPage,
 });
 

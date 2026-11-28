@@ -54,7 +54,7 @@ export const Route = createFileRoute("/api/public/hooks/whatsapp-leads")({
 
         try {
           const result = await handleWappiWebhook(payload);
-          return json({ ok: result.ok, result: result.result });
+          return json({ ok: result.ok, result: result.result }, result.ok ? 200 : 503);
         } catch (e: any) {
           console.error("[wappi] webhook error", e?.message);
           return json({ ok: false, error: e?.message ?? "unknown error" }, 500);

@@ -13,6 +13,8 @@ import { KioskSaleFlow } from "./kiosk-sale-flow";
 import { usePrefs } from "@/lib/preferences";
 import { openPrintWindow, esc } from "@/lib/print";
 import { amountToTajikWords } from "@/lib/num-to-words";
+import { contractTagsFromRecords, fillDocumentTags } from "@/lib/pdf-templates/template-tags";
+import { useUsdRate } from "@/lib/use-usd-rate";
 import { fixStorageUrl } from "@/lib/storage-url";
 
 type View = "overview" | "tour" | "sale" | "contract";
@@ -40,6 +42,7 @@ export function ApartmentModal({
   const getSaleFn = useServerFn(kioskGetSaleByApartment);
   const getTemplateFn = useServerFn(kioskGetContractTemplate);
   const { formatMoney } = usePrefs();
+  const usdRate = useUsdRate();
 
   const { data: signedPlanUrl } = useQuery({
     queryKey: ["kiosk-plan-url", apartment.plan_image_path],
@@ -89,7 +92,8 @@ export function ApartmentModal({
     const fmt = (d?: string | null) => (d ? new Date(d).toLocaleDateString("ru-RU") : "");
     const passport = [customer.passport_series, customer.passport_number].filter(Boolean).join(" ");
 
-    const fill = (txt?: string | null) => String(txt ?? "")
+    const tags = contractTagsFromRecords(sale, customer, apartment, usdRate || 10.9);
+    const fill = (txt?: string | null) => fillDocumentTags(String(txt ?? ""), tags)
       .replaceAll("{client}", customer.fullname || "")
       .replaceAll("{passport}", passport)
       .replaceAll("{passport_series}", customer.passport_series || "")

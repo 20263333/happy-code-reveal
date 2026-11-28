@@ -3,6 +3,7 @@ import Docxtemplater from "docxtemplater";
 import pkg from "file-saver";
 const { saveAs } = pkg;
 import { buildContractContext } from "./context";
+import { buildContractTags } from "./template-tags";
 import { amountToTajikWords } from "@/lib/num-to-words";
 
 
@@ -119,7 +120,9 @@ async function loadTemplateBuffer(kind: TemplateKind, ctx: Awaited<ReturnType<ty
 function repairTemplateZip(zip: PizZip) {
   for (const name of Object.keys(zip.files)) {
     if (!/^word\/(document|header\d*|footer\d*)\.xml$/.test(name)) continue;
-    const xml = zip.files[name].asText();
+    const file = zip.files[name];
+    if (!file) continue;
+    const xml = file.asText();
     const fixed = xml.replace(/>([^<>{}]*?)([A-Za-z_][A-Za-z0-9_]*)\}\}</g, (m, pre: string, tag: string) =>
       pre.includes("{{") || /\{\{\s*$/.test(pre) ? m : `>${pre}{{${tag}}}<`,
     );
@@ -193,6 +196,7 @@ export async function downloadContractDocx(kind: TemplateKind, saleId: string, u
     schedule_rows: buildScheduleRows(ctx),
     schedule: buildScheduleRows(ctx),
     items: buildScheduleRows(ctx),
+    ...buildContractTags(ctx),
   };
 
 

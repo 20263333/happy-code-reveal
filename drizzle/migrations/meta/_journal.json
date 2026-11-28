@@ -29,6 +29,20 @@
       "when": 1795604667950,
       "tag": "0003_company_ai_actions",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795880323059,
+      "tag": "0004_wappi_crm_receipts",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795880404715,
+      "tag": "0005_receipt_docx_template",
+      "breakpoints": true
     }
   ]
 }

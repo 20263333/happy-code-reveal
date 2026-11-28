@@ -28,7 +28,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/payments")({
-  head: () => ({ meta: [{ title: "Платежи — Binosoz.tj" }] }),
+  head: () => ({ meta: [{ title: "Пардохтҳо ва чекҳо — Binosoz.tj" }, { name: "description", content: "Пардохтҳо, квитансияҳо ва чекҳои муштариён." }, { property: "og:title", content: "Пардохтҳо ва чекҳо — Binosoz.tj" }, { property: "og:description", content: "Пардохтҳо, квитансияҳо ва чекҳои муштариён." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: PaymentsPage,
 });
 
@@ -545,6 +545,8 @@ function PaymentsPage() {
                             contract_number: p.sale?.sale_number || "",
                             client_full_name: p.sale?.customer?.fullname || "",
                             amount: Number(p.amount),
+                            sale_id: p.sale_id,
+                            ...(usdRate ? { usd_rate: usdRate } : {}),
                           });
                         } catch (e: any) {
                           toast.error(e?.message ?? "DOCX error");

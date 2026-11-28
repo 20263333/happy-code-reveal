@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageCircle, Send, Settings, ScrollText, Paperclip, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { wappiWebhookUrl } from "@/lib/wappi-events";
 import { sendWhatsappMessage } from "@/lib/whatsapp.functions";
 import { backfillWhatsappAvatars } from "@/lib/whatsapp-avatars.functions";
 import {
@@ -31,6 +32,10 @@ export const Route = createFileRoute("/_app/whatsapp")({
   head: () => ({
     meta: [
       { title: "WhatsApp (Wappi) — Binosoz.tj" },
+      { property: "og:title", content: "WhatsApp — Binosoz.tj" },
+      { property: "og:description", content: "Чатҳои WhatsApp-и мизоҷон дар CRM." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       {
         name: "description",
         content: "Чатҳои WhatsApp-и мизоҷон дар CRM: паёмҳои воридотӣ ва содиротӣ.",
@@ -63,19 +68,21 @@ function WhatsappPage() {
   const send = useServerFn(sendWhatsappMessage);
   const endRef = useRef<HTMLDivElement>(null);
 
-  const { data: allChats = [] } = useQuery({
+  const { data: allChats = [], error: chatsError } = useQuery({
     queryKey: ["wa-chats", companyId],
     enabled: !!companyId,
     refetchInterval: 10000,
     staleTime: 5000,
     refetchOnWindowFocus: false,
     queryFn: async () => {
-      const { data } = await supabase
+      if (!companyId) return [];
+      const { data, error } = await supabase
         .from("whatsapp_chats")
         .select("id, customer_id, phone, display_name, avatar_url, last_direction, last_message_at, last_message_text, unread_count")
-        .eq("company_id", companyId!)
+        .eq("company_id", companyId)
         .order("last_message_at", { ascending: false, nullsFirst: false })
         .limit(500);
+      if (error) throw error;
       return data ?? [];
     },
   });
@@ -139,17 +146,19 @@ function WhatsappPage() {
   const active = useMemo(() => chats.find((c: any) => c.id === activeId) ?? null, [chats, activeId]);
 
   const { data: messages = [] } = useQuery({
-    queryKey: ["wa-messages", activeId],
+    queryKey: ["wa-messages", activeId, companyId],
     enabled: !!activeId,
     refetchInterval: 5000,
     staleTime: 2500,
     queryFn: async () => {
-      const { data } = await supabase
+      if (!companyId || !activeId) return [];
+      const { data, error } = await supabase
         .from("whatsapp_messages")
         .select("id, direction, body, media_url, media_meta, message_type, status, sent_at")
-        .eq("chat_id", activeId!)
+        .eq("chat_id", activeId).eq("company_id", companyId)
         .order("sent_at", { ascending: false })
         .limit(200);
+      if (error) throw error;
       return (data ?? []).slice().reverse();
     },
   });
@@ -199,7 +208,7 @@ function WhatsappPage() {
         </TabsList>
 
         <TabsContent value="chats" className="mt-4">
-          {chats.length === 0 ? (
+          {chatsError ? <div role="alert" className="text-destructive">Чатҳо бор нашуданд: {chatsError.message}</div> : chats.length === 0 ? (
             <EmptyState
               icon={MessageCircle}
               title="Ҳоло чат нест"
@@ -417,9 +426,8 @@ function WhatsappSettings({ companyId }: { companyId: string | null }) {
   });
 
 
-  // Суроғаи доимӣ (Wappi бояд маҳз ба ин фиристад)
-  const webhookUrl =
-    "https://project--63d19137-8c20-4d78-9f11-31bd62013944.lovable.app/api/public/hooks/whatsapp-leads";
+  const [webhookUrl, setWebhookUrl] = useState("");
+  useEffect(() => setWebhookUrl(wappiWebhookUrl(window.location.origin)), []);
 
   return (
     <div className="max-w-xl space-y-4">
@@ -487,20 +495,23 @@ function WhatsappSettings({ companyId }: { companyId: string | null }) {
 }
 
 function WhatsappLogs({ companyId }: { companyId: string | null }) {
-  const { data: logs = [] } = useQuery({
+  const { data: logs = [], error: logsError } = useQuery({
     queryKey: ["wa-logs", companyId],
     enabled: !!companyId,
     refetchInterval: 10000,
     queryFn: async () => {
-      const { data } = await supabase
+      if (!companyId) return [];
+      const { data, error } = await supabase
         .from("whatsapp_webhook_logs")
-        .select("*")
+        .select("*").eq("company_id", companyId)
         .order("created_at", { ascending: false })
         .limit(100);
+      if (error) throw error;
       return data ?? [];
     },
   });
 
+  if (logsError) return <div role="alert" className="text-destructive">Журнал бор нашуд: {logsError.message}</div>;
   if (logs.length === 0)
     return <EmptyState icon={ScrollText} title="Журнал холӣ" description="Ҳоло рӯйдоде сабт нашудааст" />;
 

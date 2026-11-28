@@ -470,7 +470,7 @@ export const kioskGetSaleByApartment = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const admin = supabaseAdmin as any;
     const { data: sale } = await admin.from("sales")
-      .select("id, customer_id, apartment_id, project_id, full_price, paid_amount, installment_months, created_at")
+      .select("id, sale_number, customer_id, apartment_id, project_id, full_price, area_snapshot, sale_price_per_m2, paid_amount, installment_months, created_at")
       .eq("apartment_id", data.apartment_id)
       .order("created_at", { ascending: false })
       .limit(1).maybeSingle();
@@ -483,7 +483,7 @@ export const kioskGetSaleByApartment = createServerFn({ method: "POST" })
     }
     if (companyId !== s.company_id) return { sale: null, customer: null, schedule: [] as any[] };
     const { data: customer } = await admin.from("customers")
-      .select("fullname, phone, passport_series, passport_number, birth_date, address, passport_issued_by, passport_issued_date, passport_expiry_date")
+      .select("fullname, phone, inn, passport_series, passport_number, birth_date, address, passport_issued_by, passport_issued_date, passport_expiry_date")
       .eq("id", sale.customer_id).maybeSingle();
     const { data: schedule } = await admin.from("payment_schedule")
       .select("id, due_date, amount, paid_amount, status")

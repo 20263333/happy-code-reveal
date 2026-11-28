@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { providerFailure } from "./ai-service-errors.server";
+import { ownerRoleMatchesCompany } from "./company-template-access";
 
 const InputSchema = z.object({
   pages: z.array(z.string().min(10)).min(1).max(8),
@@ -150,7 +151,10 @@ async function verifyCompanyOwnerOrAdmin(supabase: any, userId: string, companyI
     .eq("user_id", userId)
     .eq("role", "owner")
     .maybeSingle();
-  if (role) return true;
+  if (role) {
+    const { data: ownCompany } = await supabase.rpc("user_company_id", { _user_id: userId });
+    if (ownerRoleMatchesCompany(role.role, ownCompany, companyId)) return true;
+  }
 
   throw new Error("Танҳо соҳиби ширкат метавонад шаблонро танзим кунад");
 }
@@ -215,9 +219,9 @@ export const uploadContractTemplateDocx = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
     z.object({
       company_id: z.string().uuid(),
-      kind: z.enum(["full", "installment", "shop_full", "shop_installment", "schedule"]),
-      file_base64: z.string(),
-      file_name: z.string(),
+      kind: z.enum(["full", "installment", "shop_full", "shop_installment", "schedule", "receipt"]),
+      file_base64: z.string().min(1).max(28_000_000),
+      file_name: z.string().min(1).max(255).regex(/\.docx$/i),
     }).parse(d)
   )
   .handler(async ({ data, context }) => {
@@ -233,8 +237,10 @@ export const uploadContractTemplateDocx = createServerFn({ method: "POST" })
       shop_full: "docx_shop_full_path",
       shop_installment: "docx_shop_installment_path",
       schedule: "docx_schedule_path",
+      receipt: "docx_receipt_path",
     };
     const column = columnMap[data.kind];
+    if (!column) throw new Error("Шаблон муайян нашуд");
 
     const { data: current } = await admin
       .from("contract_templates")
@@ -244,11 +250,8 @@ export const uploadContractTemplateDocx = createServerFn({ method: "POST" })
       .limit(1)
       .maybeSingle();
     const oldPath = current?.[column];
-    if (oldPath) {
-      await admin.storage.from("contract-templates").remove([oldPath]);
-    }
-
     const buffer = Buffer.from(data.file_base64, "base64");
+    if (buffer.length > 20 * 1024 * 1024 || buffer[0] !== 80 || buffer[1] !== 75) throw new Error("Файли DOCX нодуруст ё аз 20 MB зиёд аст");
     const objPath = `${data.company_id}/${data.kind}-${Date.now()}.docx`;
 
     const { error: upErr } = await admin.storage
@@ -276,6 +279,7 @@ export const uploadContractTemplateDocx = createServerFn({ method: "POST" })
       if (dbErr) throw new Error(dbErr.message);
     }
 
+    if (oldPath && oldPath !== objPath) await admin.storage.from("contract-templates").remove([oldPath]);
     return { ok: true, path: objPath };
   });
 
@@ -284,7 +288,7 @@ export const deleteContractTemplateDocx = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
     z.object({
       company_id: z.string().uuid(),
-      kind: z.enum(["full", "installment", "shop_full", "shop_installment", "schedule"]),
+      kind: z.enum(["full", "installment", "shop_full", "shop_installment", "schedule", "receipt"]),
     }).parse(d)
   )
   .handler(async ({ data, context }) => {
@@ -300,8 +304,10 @@ export const deleteContractTemplateDocx = createServerFn({ method: "POST" })
       shop_full: "docx_shop_full_path",
       shop_installment: "docx_shop_installment_path",
       schedule: "docx_schedule_path",
+      receipt: "docx_receipt_path",
     };
     const column = columnMap[data.kind];
+    if (!column) throw new Error("Шаблон муайян нашуд");
 
     const { data: current } = await admin
       .from("contract_templates")

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
+import { loadCrmCustomers } from "@/lib/crm-data";
 import { sendWhatsappMessage } from "@/lib/whatsapp.functions";
 import { pushLeadChange } from "@/lib/funnel-sync.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,7 +21,7 @@ import { toast } from "sonner";
 import { formatDate } from "@/lib/constants";
 
 export const Route = createFileRoute("/_app/crm-funnel")({
-  head: () => ({ meta: [{ title: "Воронка фурӯш — Binosoz.tj" }] }),
+  head: () => ({ meta: [{ title: "Воронка фурӯш — Binosoz.tj" }, { name: "description", content: "Муштариён ва паёмҳои WhatsApp дар воронкаи фурӯши Binosoz.tj." }, { property: "og:title", content: "Воронка фурӯш — Binosoz.tj" }, { property: "og:description", content: "Муштариён ва паёмҳои WhatsApp дар CRM." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: CrmFunnelPage,
 });
 
@@ -124,17 +125,13 @@ function CrmFunnelPage() {
   const [search, setSearch] = useState("");
   const canModify = !isDirector;
 
-  const { data: customers = [] } = useQuery({
+  const { data: customers = [], error: customersError } = useQuery({
     queryKey: ["crm-funnel", companyId],
+    refetchInterval: 5000,
+    staleTime: 2500,
     queryFn: async () => {
       if (!companyId) return [];
-      const { data } = await (supabase as any)
-        .from("customers")
-        .select("*, sales(id), manager:sales_team_members!customers_assigned_manager_id_fkey(id, fullname)")
-        .eq("company_id", companyId)
-        .not("status", "in", "(active,closed)")
-        .order("created_at", { ascending: false });
-      return data ?? [];
+      return loadCrmCustomers(supabase, companyId);
     },
     enabled: !!companyId,
   });
@@ -192,8 +189,8 @@ function CrmFunnelPage() {
       return data ?? [];
     },
     enabled: !!companyId,
-    staleTime: 60_000,
-    refetchInterval: 60_000,
+    staleTime: 2500,
+    refetchInterval: 5000,
     refetchOnWindowFocus: false,
   });
   const avatarFor = (c: any): string | null => {
@@ -373,7 +370,8 @@ function CrmFunnelPage() {
         ))}
       </div>
 
-      {customers.length === 0 && <EmptyState icon={Users} title="Лидҳо нест" description="Тугмаи «Сделкаи нав»-ро зер кунед ё аз саҳифаи Мизоҷҳо илова кунед" />}
+      {customersError && <div role="alert" className="text-destructive">Воронка бор нашуд: {customersError.message}</div>}
+      {!customersError && customers.length === 0 && <EmptyState icon={Users} title="Лидҳо нест" description="Тугмаи «Сделкаи нав»-ро зер кунед ё аз саҳифаи Мизоҷҳо илова кунед" />}
 
       {detail && <CustomerDrawer customer={detail} canEdit={canModify} onClose={() => setDetail(null)} />}
       {newLeadOpen && <NewLeadDialog onClose={() => setNewLeadOpen(false)} />}
@@ -494,17 +492,18 @@ function CustomerDrawer({ customer, canEdit, onClose }: { customer: any; canEdit
       return (chats ?? []).find((c: any) => c.avatar_url) ?? (chats ?? [])[0] ?? null;
     },
     enabled: !!companyId,
-    staleTime: 5 * 60_000,
+    staleTime: 2500,
+    refetchInterval: 5000,
     refetchOnWindowFocus: false,
   });
 
   const { data: waMessages = [] } = useQuery({
-    queryKey: ["cust-wa", waChat?.id],
+    queryKey: ["cust-wa", waChat?.id, companyId],
     queryFn: async () => {
-      if (!waChat?.id) return [];
+      if (!waChat?.id || !companyId) return [];
       const { data: msgs } = await (supabase as any).from("whatsapp_messages")
         .select("id, direction, body, media_url, media_meta, message_type, sent_at")
-        .eq("chat_id", waChat.id).order("sent_at", { ascending: false }).limit(100);
+        .eq("chat_id", waChat.id).eq("company_id", companyId).order("sent_at", { ascending: false }).limit(100);
       return (msgs ?? []).slice().reverse();
     },
     enabled: !!waChat?.id,
@@ -857,7 +856,7 @@ function DealFields({ customer, canEdit }: { customer: any; canEdit: boolean }) 
               <Select value={values[f.k] ?? ""} onValueChange={(v) => set(f.k, v)}>
                 <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Выбрать" /></SelectTrigger>
                 <SelectContent>
-                  {f.opts!.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                  {(f.opts ?? []).map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                 </SelectContent>
               </Select>
             ) : (

@@ -23,10 +23,12 @@ import { cn } from "@/lib/utils";
 import { usePeriodFilter } from "@/components/period-filter";
 import { inRange } from "@/lib/finance";
 import { ZhkBlockFilter, useZhkBlockFilter, type ZhkBlockValue } from "@/components/zhk-block-filter";
+import { contractTagsFromRecords, fillDocumentTags } from "@/lib/pdf-templates/template-tags";
+import { useUsdRate } from "@/lib/use-usd-rate";
 import { ContractGeneratorButtons } from "@/components/contract-generator-buttons";
 
 export const Route = createFileRoute("/_app/customers")({
-  head: () => ({ meta: [{ title: "Клиенты — Binosoz.tj" }] }),
+  head: () => ({ meta: [{ title: "Муштариён — Binosoz.tj" }, { name: "description", content: "Муштариён ва шартномаҳои ширкати сохтмонӣ." }, { property: "og:title", content: "Муштариён — Binosoz.tj" }, { property: "og:description", content: "Муштариён ва шартномаҳои ширкати сохтмонӣ." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: CustomersPage,
 });
 
@@ -43,6 +45,7 @@ function CustomerStatusBadge({ status }: { status: string }) {
 }
 
 function CustomersPage() {
+  const usdRate = useUsdRate();
   const { tr } = useT();
   const qc = useQueryClient();
   const { isOwner, isDirector, companyId } = useAuth();
@@ -85,16 +88,16 @@ function CustomersPage() {
     enabled: !!companyId,
   });
 
-  const { data: customers = [] } = useQuery({
+  const { data: customers = [], error: customersError } = useQuery({
     queryKey: ["customers", companyId],
     queryFn: async () => {
       if (!companyId) return [];
       const { data, error } = await supabase
         .from("customers")
-        .select("*, sales(id, sale_number, full_price, paid_amount, remaining_amount, payment_deadline, installment_months, sales_manager_id, created_at, apartment:apartments(apartment_number, area, rooms, plan_image_path, floor:floors(floor_number), project:projects(id, name, parent_id)))")
+        .select("*, sales(id, sale_number, full_price, area_snapshot, sale_price_per_m2, paid_amount, remaining_amount, payment_deadline, installment_months, sales_manager_id, created_at, apartment:apartments(apartment_number, area, rooms, plan_image_path, floor:floors(floor_number), project:projects(id, name, parent_id)))")
         .eq("company_id", companyId)
         .order("created_at", { ascending: false });
-      if (error) { console.error("customers query error", error); return []; }
+      if (error) throw error;
       const parentIds = Array.from(new Set(
         (data ?? []).flatMap((c: any) => (c.sales ?? []).map((s: any) => s.apartment?.project?.parent_id).filter(Boolean))
       ));
@@ -403,8 +406,9 @@ function CustomersPage() {
     const first = c.sales[0];
     const ap = first?.apartment;
 
+    const documentTags = contractTagsFromRecords(first ?? {}, c, ap ?? {}, usdRate || 10.9);
     const fill = (txt: string) =>
-      String(txt ?? "")
+      fillDocumentTags(String(txt ?? ""), documentTags)
         .replaceAll("{client}", c.fullname || "")
         .replaceAll("{passport}", c.passport || "")
         .replaceAll("{phone}", c.phone || "")
@@ -512,7 +516,7 @@ function CustomersPage() {
       <div class="meta">
         <span>${tr("Дата")}: ${esc(today)}</span>
       </div>
-      ${contract.intro_text ? `<p class="pre">${esc(contract.intro_text)}</p>` : ""}
+      ${contract.intro_text ? `<p class="pre">${esc(fill(contract.intro_text))}</p>` : ""}
       <div class="parties">
         <div><div class="role">${tr("Продавец")}</div>${sellerLines}</div>
         <div><div class="role">${tr("Покупатель")}</div>${buyerLines}</div>
@@ -659,7 +663,7 @@ function CustomersPage() {
         </div>
       </div>
 
-      {listCustomers.length === 0 ? (
+      {customersError ? <div role="alert" className="text-destructive">Муштариён бор нашуданд: {customersError.message}</div> : listCustomers.length === 0 ? (
         <EmptyState icon={Users} title={customers.length === 0 ? tr("Клиентов пока нет") : tr("Ничего не найдено")} description={customers.length === 0 ? tr("Добавьте первого покупателя через проект.") : undefined} />
       ) : (
         <div className="grid gap-4 md:grid-cols-2">

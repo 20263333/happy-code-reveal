@@ -45,6 +45,19 @@ if ! docker exec -i --user root supabase-db psql -v ON_ERROR_STOP=1 -U supabase_
   exit 1
 fi
 
+echo "==> Барқарор кардани қабули WhatsApp ва CRM"
+if ! docker exec -i --user root supabase-db psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres < "$DIR/vps-wappi-crm-sync.sql" >> "$LOG" 2>&1; then
+  echo "ERROR: WhatsApp ва CRM ҳамоҳанг нашуд."
+  grep -i '^ERROR' "$LOG" | tail -10
+  exit 1
+fi
+
+echo "==> Илова кардани шаблони Word-и чек"
+if ! docker exec -i --user root supabase-db psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres < "$DIR/vps-receipt-template-sync.sql" >> "$LOG" 2>&1; then
+  echo "ERROR: Шаблони чек ҳамоҳанг нашуд."
+  exit 1
+fi
+
 echo "==> Хатогиҳо (агар бошанд):"
 grep -i '^ERROR' "$LOG" | sort | uniq -c | sort -rn | head -25
 echo "==> Тайёр. Лог: $LOG"
